@@ -296,6 +296,18 @@ export default function AdminsManagement() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number (for login)</Label>
                     <Input
                       id="phone"
