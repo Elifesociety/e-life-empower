@@ -14,18 +14,32 @@ export function exportRegistrationsToXlsx(
   // Sort questions by sort_order
   const sortedQuestions = [...questions].sort((a, b) => a.sort_order - b.sort_order);
 
-  // Create header row
-  const headers = ["#", "Registration Date", ...sortedQuestions.map((q) => q.question_text)];
+  // Create header row with fixed fields first
+  const headers = [
+    "#",
+    "Registration Date",
+    "Name",
+    "Mobile Number",
+    "Panchayath",
+    "Ward",
+    ...sortedQuestions.map((q) => q.question_text),
+  ];
 
   // Create data rows
   const rows = registrations.map((reg, index) => {
     const answers = reg.answers as Record<string, any>;
+    const fixedData = answers._fixed || {};
+
     const row: any[] = [
       index + 1,
       new Date(reg.created_at).toLocaleString("en-IN", {
         dateStyle: "medium",
         timeStyle: "short",
       }),
+      fixedData.name || "",
+      fixedData.mobile || "",
+      fixedData.panchayath_name || "",
+      fixedData.ward ? `Ward ${fixedData.ward}` : "",
     ];
 
     sortedQuestions.forEach((question) => {

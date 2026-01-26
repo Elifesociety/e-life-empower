@@ -27,6 +27,12 @@ import { Loader2, Calendar, MapPin, ArrowLeft, Check, Megaphone, Video } from "l
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Program, ProgramFormQuestion, ProgramAnnouncement, ProgramAdvertisement } from "@/hooks/usePrograms";
+import {
+  FixedRegistrationFields,
+  FixedFieldValues,
+  FIXED_FIELD_DEFAULTS,
+  validateFixedFields,
+} from "@/components/programs/FixedRegistrationFields";
 
 export default function ProgramPublicPage() {
   const { id } = useParams<{ id: string }>();
@@ -35,6 +41,8 @@ export default function ProgramPublicPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [fixedFields, setFixedFields] = useState<FixedFieldValues>(FIXED_FIELD_DEFAULTS);
+  const [fixedFieldErrors, setFixedFieldErrors] = useState<Partial<Record<keyof FixedFieldValues, string>>>({});
 
   const { toast } = useToast();
 
@@ -73,7 +81,20 @@ export default function ProgramPublicPage() {
 
     if (!program) return;
 
-    // Validate required fields
+    // Validate fixed fields first
+    const fixedValidation = validateFixedFields(fixedFields);
+    if (!fixedValidation.valid) {
+      setFixedFieldErrors(fixedValidation.errors);
+      toast({
+        title: "Required field",
+        description: "Please fill in all required fields",
+        variant: "destructive",
+      });
+      return;
+    }
+    setFixedFieldErrors({});
+
+    // Validate custom required fields
     const sortedQuestions = (program.form_questions || []).sort(
       (a, b) => a.sort_order - b.sort_order
     );
@@ -100,9 +121,21 @@ export default function ProgramPublicPage() {
     setIsSubmitting(true);
 
     try {
+      // Combine fixed fields with custom answers
+      const combinedAnswers = {
+        _fixed: {
+          name: fixedFields.name,
+          mobile: fixedFields.mobile,
+          panchayath_id: fixedFields.panchayath_id,
+          panchayath_name: fixedFields.panchayath_name,
+          ward: fixedFields.ward,
+        },
+        ...answers,
+      };
+
       const { error } = await supabase.from("program_registrations").insert({
         program_id: program.id,
-        answers: answers,
+        answers: combinedAnswers,
       });
 
       if (error) throw error;
@@ -438,7 +471,7 @@ export default function ProgramPublicPage() {
         )}
 
         {/* Registration Form */}
-        {hasRegistrationModule && sortedQuestions.length > 0 && (
+        {hasRegistrationModule && (
           <Card>
             <CardHeader>
               <CardTitle>Register for this Program</CardTitle>
@@ -459,6 +492,21 @@ export default function ProgramPublicPage() {
                 </div>
               ) : (
                 <form onSubmit={handleSubmit} className="space-y-6">
+                  {/* Fixed Required Fields */}
+                  <FixedRegistrationFields
+                    values={fixedFields}
+                    onChange={setFixedFields}
+                    errors={fixedFieldErrors}
+                  />
+
+                  {/* Separator if there are custom questions */}
+                  {sortedQuestions.length > 0 && (
+                    <div className="border-t pt-6">
+                      <p className="text-sm text-muted-foreground mb-4">Additional Information</p>
+                    </div>
+                  )}
+
+                  {/* Custom Questions */}
                   {sortedQuestions.map((question) => (
                     <div key={question.id} className="space-y-2">
                       <Label>

@@ -60,6 +60,15 @@ export function RegistrationsTable({
     return String(answer);
   };
 
+  const getFixedFieldDisplay = (registration: ProgramRegistration, field: string) => {
+    const answers = registration.answers as Record<string, any>;
+    const fixedData = answers._fixed;
+    if (!fixedData) return "-";
+    const value = fixedData[field];
+    if (value === undefined || value === null || value === "") return "-";
+    return String(value);
+  };
+
   if (isLoading) {
     return (
       <Card>
@@ -112,13 +121,12 @@ export function RegistrationsTable({
                   <TableRow>
                     <TableHead className="w-12">#</TableHead>
                     <TableHead>Date</TableHead>
-                    {sortedQuestions.slice(0, 3).map((question) => (
-                      <TableHead key={question.id} className="max-w-[200px] truncate">
-                        {question.question_text}
-                      </TableHead>
-                    ))}
-                    {sortedQuestions.length > 3 && (
-                      <TableHead>+{sortedQuestions.length - 3} more</TableHead>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Mobile</TableHead>
+                    <TableHead>Panchayath</TableHead>
+                    <TableHead>Ward</TableHead>
+                    {sortedQuestions.length > 0 && (
+                      <TableHead>+{sortedQuestions.length} more</TableHead>
                     )}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -130,12 +138,19 @@ export function RegistrationsTable({
                       <TableCell>
                         {format(new Date(registration.created_at), "MMM d, yyyy")}
                       </TableCell>
-                      {sortedQuestions.slice(0, 3).map((question) => (
-                        <TableCell key={question.id} className="max-w-[200px] truncate">
-                          {getAnswerDisplay(registration, question.id)}
-                        </TableCell>
-                      ))}
-                      {sortedQuestions.length > 3 && <TableCell>...</TableCell>}
+                      <TableCell className="font-medium">
+                        {getFixedFieldDisplay(registration, "name")}
+                      </TableCell>
+                      <TableCell>
+                        {getFixedFieldDisplay(registration, "mobile")}
+                      </TableCell>
+                      <TableCell>
+                        {getFixedFieldDisplay(registration, "panchayath_name")}
+                      </TableCell>
+                      <TableCell>
+                        {getFixedFieldDisplay(registration, "ward")}
+                      </TableCell>
+                      {sortedQuestions.length > 0 && <TableCell>...</TableCell>}
                       <TableCell className="text-right">
                         <Button
                           variant="ghost"
@@ -170,17 +185,59 @@ export function RegistrationsTable({
 
           {selectedRegistration && (
             <div className="space-y-4">
-              {sortedQuestions.map((question) => (
-                <div key={question.id} className="space-y-1">
+              {/* Fixed Fields */}
+              <div className="space-y-3 pb-4 border-b">
+                <div className="space-y-1">
                   <p className="text-sm font-medium text-muted-foreground">
-                    {question.question_text}
-                    {question.is_required && <span className="text-destructive ml-1">*</span>}
+                    Name <span className="text-destructive">*</span>
                   </p>
                   <p className="text-foreground">
-                    {getAnswerDisplay(selectedRegistration, question.id)}
+                    {getFixedFieldDisplay(selectedRegistration, "name")}
                   </p>
                 </div>
-              ))}
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Mobile Number <span className="text-destructive">*</span>
+                  </p>
+                  <p className="text-foreground">
+                    {getFixedFieldDisplay(selectedRegistration, "mobile")}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Panchayath <span className="text-destructive">*</span>
+                  </p>
+                  <p className="text-foreground">
+                    {getFixedFieldDisplay(selectedRegistration, "panchayath_name")}
+                  </p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Ward <span className="text-destructive">*</span>
+                  </p>
+                  <p className="text-foreground">
+                    Ward {getFixedFieldDisplay(selectedRegistration, "ward")}
+                  </p>
+                </div>
+              </div>
+
+              {/* Custom Questions */}
+              {sortedQuestions.length > 0 && (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground uppercase tracking-wide">Additional Information</p>
+                  {sortedQuestions.map((question) => (
+                    <div key={question.id} className="space-y-1">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {question.question_text}
+                        {question.is_required && <span className="text-destructive ml-1">*</span>}
+                      </p>
+                      <p className="text-foreground">
+                        {getAnswerDisplay(selectedRegistration, question.id)}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </DialogContent>
