@@ -40,6 +40,7 @@ interface Admin {
   division_id: string;
   is_active: boolean;
   created_at: string;
+  phone?: string;
   profile?: {
     email: string;
     full_name: string | null;
@@ -66,6 +67,7 @@ export default function AdminsManagement() {
   const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newFullName, setNewFullName] = useState("");
+  const [newPhone, setNewPhone] = useState("");
   const [selectedDivision, setSelectedDivision] = useState("");
 
   const { user } = useAuth();
@@ -130,8 +132,12 @@ export default function AdminsManagement() {
     setIsSubmitting(true);
 
     try {
-      // 1. Create auth user via edge function or admin API
-      // For now, we'll use signUp but this should ideally be done via edge function
+      // Validate phone
+      if (!newPhone || newPhone.length < 10) {
+        throw new Error("Please enter a valid phone number");
+      }
+
+      // 1. Create auth user via signUp
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: newEmail,
         password: newPassword,
@@ -149,7 +155,14 @@ export default function AdminsManagement() {
         throw new Error("Failed to create user");
       }
 
-      // 2. Add admin role
+      // 2. Hash the password for phone-based login
+      const encoder = new TextEncoder();
+      const data = encoder.encode(newPassword);
+      const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+      const hashArray = Array.from(new Uint8Array(hashBuffer));
+      const passwordHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+
+      // 3. Add admin role
       const { error: roleError } = await supabase
         .from("user_roles")
         .insert({
@@ -159,20 +172,22 @@ export default function AdminsManagement() {
 
       if (roleError) throw roleError;
 
-      // 3. Add admin record with division assignment
+      // 4. Add admin record with division assignment, phone, and password hash
       const { error: adminError } = await supabase
         .from("admins")
         .insert({
           user_id: authData.user.id,
           division_id: selectedDivision,
           created_by: user?.id,
+          phone: newPhone.replace(/\s+/g, "").trim(),
+          password_hash: passwordHash,
         });
 
       if (adminError) throw adminError;
 
       toast({
         title: "Admin created",
-        description: "New admin has been created successfully.",
+        description: "New admin has been created successfully. They can login with their phone number.",
       });
 
       setIsDialogOpen(false);
@@ -189,6 +204,7 @@ export default function AdminsManagement() {
     setNewEmail("");
     setNewPassword("");
     setNewFullName("");
+    setNewPhone("");
     setSelectedDivision("");
     setError("");
   };
@@ -278,6 +294,18 @@ export default function AdminsManagement() {
                 </div>
 
                 <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number (for login)</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={newPhone}
+                    onChange={(e) => setNewPhone(e.target.value)}
+                    placeholder="+91 9876543210"
+                    required
+                  />
+                </div>
+
+                <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
                   <Input
                     id="email"
@@ -351,6 +379,7 @@ export default function AdminsManagement() {
             <TableHeader>
               <TableRow>
                 <TableHead>Name</TableHead>
+                <TableHead>Phone</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Division</TableHead>
                 <TableHead>Status</TableHead>
@@ -361,7 +390,7 @@ export default function AdminsManagement() {
             <TableBody>
               {admins.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
                     No admins found. Create your first admin to get started.
                   </TableCell>
                 </TableRow>
@@ -371,6 +400,7 @@ export default function AdminsManagement() {
                     <TableCell className="font-medium">
                       {admin.profile?.full_name || "N/A"}
                     </TableCell>
+                    <TableCell>{admin.phone || "N/A"}</TableCell>
                     <TableCell>{admin.profile?.email || "N/A"}</TableCell>
                     <TableCell>{admin.division?.name || "N/A"}</TableCell>
                     <TableCell>

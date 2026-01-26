@@ -11,7 +11,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
-  const { user, roles, isLoading } = useAuth();
+  const { user, roles, isLoading, adminToken } = useAuth();
   const location = useLocation();
 
   if (isLoading) {
@@ -22,7 +22,8 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
     );
   }
 
-  if (!user) {
+  // Check if user is authenticated via Supabase or admin token
+  if (!user && !adminToken) {
     return <Navigate to="/auth" state={{ from: location }} replace />;
   }
 

@@ -21,6 +21,8 @@ export type Database = {
           division_id: string
           id: string
           is_active: boolean | null
+          password_hash: string | null
+          phone: string | null
           user_id: string
         }
         Insert: {
@@ -29,6 +31,8 @@ export type Database = {
           division_id: string
           id?: string
           is_active?: boolean | null
+          password_hash?: string | null
+          phone?: string | null
           user_id: string
         }
         Update: {
@@ -37,6 +41,8 @@ export type Database = {
           division_id?: string
           id?: string
           is_active?: boolean | null
+          password_hash?: string | null
+          phone?: string | null
           user_id?: string
         }
         Relationships: [
