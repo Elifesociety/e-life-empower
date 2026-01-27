@@ -38,6 +38,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Loader2, Plus, ArrowLeft, AlertCircle, MapPin, Building } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Panchayath {
   id: string;
@@ -84,8 +85,30 @@ export default function LocationsManagement() {
   const [selectedPanchayath, setSelectedPanchayath] = useState("");
 
   const { toast } = useToast();
+  const { adminToken } = useAuth();
 
   const fetchPanchayaths = async () => {
+    // Use edge function for admin-token sessions
+    if (adminToken) {
+      try {
+        const response = await supabase.functions.invoke("admin-locations", {
+          headers: { "x-admin-token": adminToken },
+          body: null,
+        });
+        
+        if (response.error) {
+          console.error("Error fetching panchayaths via edge function:", response.error);
+          return;
+        }
+        
+        setPanchayaths(response.data?.data || []);
+      } catch (err) {
+        console.error("Error fetching panchayaths:", err);
+      }
+      return;
+    }
+
+    // Fallback to direct query for Supabase-authenticated users
     const { data, error } = await supabase
       .from("panchayaths")
       .select("*")
@@ -100,6 +123,27 @@ export default function LocationsManagement() {
   };
 
   const fetchClusters = async () => {
+    // Use edge function for admin-token sessions
+    if (adminToken) {
+      try {
+        const response = await supabase.functions.invoke("admin-locations?resource=clusters", {
+          headers: { "x-admin-token": adminToken },
+          body: null,
+        });
+        
+        if (response.error) {
+          console.error("Error fetching clusters via edge function:", response.error);
+          return;
+        }
+        
+        setClusters(response.data?.data || []);
+      } catch (err) {
+        console.error("Error fetching clusters:", err);
+      }
+      return;
+    }
+
+    // Fallback to direct query for Supabase-authenticated users
     const { data, error } = await supabase
       .from("clusters")
       .select(`
@@ -123,7 +167,7 @@ export default function LocationsManagement() {
       setIsLoading(false);
     };
     loadData();
-  }, []);
+  }, [adminToken]);
 
   const handleCreatePanchayath = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -131,17 +175,29 @@ export default function LocationsManagement() {
     setIsSubmitting(true);
 
     try {
-      const { error: insertError } = await supabase
-        .from("panchayaths")
-        .insert({
-          name: panchayathName.trim(),
-          name_ml: panchayathNameMl.trim() || null,
-          district: panchayathDistrict.trim() || null,
-          ward: panchayathWard.trim() || null,
-          state: panchayathState.trim() || "Kerala",
-        });
+      const panchayathData = {
+        name: panchayathName.trim(),
+        name_ml: panchayathNameMl.trim() || null,
+        district: panchayathDistrict.trim() || null,
+        ward: panchayathWard.trim() || null,
+        state: panchayathState.trim() || "Kerala",
+      };
 
-      if (insertError) throw insertError;
+      if (adminToken) {
+        const response = await supabase.functions.invoke("admin-locations?resource=panchayaths&action=create", {
+          method: "POST",
+          headers: { "x-admin-token": adminToken },
+          body: panchayathData,
+        });
+        
+        if (response.error) throw new Error(response.error.message);
+      } else {
+        const { error: insertError } = await supabase
+          .from("panchayaths")
+          .insert(panchayathData);
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Panchayath created",
@@ -168,15 +224,27 @@ export default function LocationsManagement() {
         throw new Error("Please select a panchayath");
       }
 
-      const { error: insertError } = await supabase
-        .from("clusters")
-        .insert({
-          name: clusterName.trim(),
-          name_ml: clusterNameMl.trim() || null,
-          panchayath_id: selectedPanchayath,
-        });
+      const clusterData = {
+        name: clusterName.trim(),
+        name_ml: clusterNameMl.trim() || null,
+        panchayath_id: selectedPanchayath,
+      };
 
-      if (insertError) throw insertError;
+      if (adminToken) {
+        const response = await supabase.functions.invoke("admin-locations?resource=clusters&action=create", {
+          method: "POST",
+          headers: { "x-admin-token": adminToken },
+          body: clusterData,
+        });
+        
+        if (response.error) throw new Error(response.error.message);
+      } else {
+        const { error: insertError } = await supabase
+          .from("clusters")
+          .insert(clusterData);
+
+        if (insertError) throw insertError;
+      }
 
       toast({
         title: "Cluster created",
@@ -210,49 +278,71 @@ export default function LocationsManagement() {
   };
 
   const togglePanchayathStatus = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("panchayaths")
-      .update({ is_active: !currentStatus })
-      .eq("id", id);
+    try {
+      if (adminToken) {
+        const response = await supabase.functions.invoke("admin-locations?resource=panchayaths&action=update", {
+          method: "PATCH",
+          headers: { "x-admin-token": adminToken },
+          body: { id, is_active: !currentStatus },
+        });
+        
+        if (response.error) throw response.error;
+      } else {
+        const { error } = await supabase
+          .from("panchayaths")
+          .update({ is_active: !currentStatus })
+          .eq("id", id);
 
-    if (error) {
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Status updated",
+        description: `Panchayath has been ${!currentStatus ? "activated" : "deactivated"}.`,
+      });
+
+      fetchPanchayaths();
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update panchayath status",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Status updated",
-      description: `Panchayath has been ${!currentStatus ? "activated" : "deactivated"}.`,
-    });
-
-    fetchPanchayaths();
   };
 
   const toggleClusterStatus = async (id: string, currentStatus: boolean) => {
-    const { error } = await supabase
-      .from("clusters")
-      .update({ is_active: !currentStatus })
-      .eq("id", id);
+    try {
+      if (adminToken) {
+        const response = await supabase.functions.invoke("admin-locations?resource=clusters&action=update", {
+          method: "PATCH",
+          headers: { "x-admin-token": adminToken },
+          body: { id, is_active: !currentStatus },
+        });
+        
+        if (response.error) throw response.error;
+      } else {
+        const { error } = await supabase
+          .from("clusters")
+          .update({ is_active: !currentStatus })
+          .eq("id", id);
 
-    if (error) {
+        if (error) throw error;
+      }
+
+      toast({
+        title: "Status updated",
+        description: `Cluster has been ${!currentStatus ? "activated" : "deactivated"}.`,
+      });
+
+      fetchClusters();
+    } catch (error) {
       toast({
         title: "Error",
         description: "Failed to update cluster status",
         variant: "destructive",
       });
-      return;
     }
-
-    toast({
-      title: "Status updated",
-      description: `Cluster has been ${!currentStatus ? "activated" : "deactivated"}.`,
-    });
-
-    fetchClusters();
   };
 
   if (isLoading) {

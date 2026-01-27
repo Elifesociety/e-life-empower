@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.admin-form-questions]
 verify_jwt = false
+
+[functions.admin-locations]
+verify_jwt = false
