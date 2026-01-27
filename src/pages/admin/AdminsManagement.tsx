@@ -37,15 +37,12 @@ import { useToast } from "@/hooks/use-toast";
 
 interface Admin {
   id: string;
-  user_id: string;
+  user_id: string | null;
   division_id: string;
   is_active: boolean;
   created_at: string;
   phone?: string;
-  profile?: {
-    email: string;
-    full_name: string | null;
-  };
+  full_name?: string;
   division?: {
     name: string;
   };
@@ -65,7 +62,6 @@ export default function AdminsManagement() {
   const [error, setError] = useState("");
 
   // Form state
-  const [newEmail, setNewEmail] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [newFullName, setNewFullName] = useState("");
   const [newPhone, setNewPhone] = useState("");
@@ -88,19 +84,7 @@ export default function AdminsManagement() {
       return;
     }
 
-    // Fetch profiles separately since we can't join across schemas
-    const adminData = data || [];
-    const profilePromises = adminData.map(async (admin) => {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("email, full_name")
-        .eq("id", admin.user_id)
-        .single();
-      return { ...admin, profile };
-    });
-
-    const adminsWithProfiles = await Promise.all(profilePromises);
-    setAdmins(adminsWithProfiles);
+    setAdmins(data || []);
   };
 
   const fetchDivisions = async () => {
@@ -138,50 +122,39 @@ export default function AdminsManagement() {
         throw new Error("Please enter a valid phone number");
       }
 
-      // 1. Create auth user via signUp
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: newEmail,
-        password: newPassword,
-        options: {
-          emailRedirectTo: `${window.location.origin}/`,
-          data: {
-            full_name: newFullName,
-          },
-        },
-      });
-
-      if (authError) throw authError;
-
-      if (!authData.user) {
-        throw new Error("Failed to create user");
+      // Validate password
+      if (!newPassword || newPassword.length < 6) {
+        throw new Error("Password must be at least 6 characters");
       }
 
-      // 2. Hash the password for phone-based login
+      // Check if phone already exists
+      const normalizedPhone = newPhone.replace(/\s+/g, "").trim();
+      const { data: existingAdmin } = await supabase
+        .from("admins")
+        .select("id")
+        .eq("phone", normalizedPhone)
+        .single();
+
+      if (existingAdmin) {
+        throw new Error("An admin with this phone number already exists");
+      }
+
+      // Hash the password for phone-based login
       const encoder = new TextEncoder();
       const data = encoder.encode(newPassword);
       const hashBuffer = await crypto.subtle.digest("SHA-256", data);
       const hashArray = Array.from(new Uint8Array(hashBuffer));
       const passwordHash = hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
 
-      // 3. Add admin role
-      const { error: roleError } = await supabase
-        .from("user_roles")
-        .insert({
-          user_id: authData.user.id,
-          role: "admin",
-        });
-
-      if (roleError) throw roleError;
-
-      // 4. Add admin record with division assignment, phone, and password hash
+      // Add admin record with division assignment, phone, password hash, and full_name
       const { error: adminError } = await supabase
         .from("admins")
         .insert({
-          user_id: authData.user.id,
           division_id: selectedDivision,
           created_by: user?.id,
-          phone: newPhone.replace(/\s+/g, "").trim(),
+          phone: normalizedPhone,
           password_hash: passwordHash,
+          full_name: newFullName,
         });
 
       if (adminError) throw adminError;
@@ -202,7 +175,6 @@ export default function AdminsManagement() {
   };
 
   const resetForm = () => {
-    setNewEmail("");
     setNewPassword("");
     setNewFullName("");
     setNewPhone("");
@@ -295,17 +267,6 @@ export default function AdminsManagement() {
                     />
                   </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={newEmail}
-                      onChange={(e) => setNewEmail(e.target.value)}
-                      placeholder="admin@example.com"
-                      required
-                    />
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone Number (for login)</Label>
@@ -382,19 +343,18 @@ export default function AdminsManagement() {
             <Table className="min-w-[800px]">
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[150px]">Name</TableHead>
-                  <TableHead className="w-[130px]">Phone</TableHead>
-                  <TableHead className="w-[180px]">Email</TableHead>
-                  <TableHead className="w-[120px]">Division</TableHead>
-                  <TableHead className="w-[80px]">Status</TableHead>
-                  <TableHead className="w-[100px]">Created</TableHead>
+                  <TableHead className="w-[180px]">Name</TableHead>
+                  <TableHead className="w-[150px]">Phone</TableHead>
+                  <TableHead className="w-[150px]">Division</TableHead>
+                  <TableHead className="w-[100px]">Status</TableHead>
+                  <TableHead className="w-[120px]">Created</TableHead>
                   <TableHead className="w-[100px] text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {admins.length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
                       No admins found. Create your first admin to get started.
                     </TableCell>
                   </TableRow>
