@@ -191,18 +191,20 @@ export default function ProgramsManagement() {
 
   return (
     <Layout>
-      <div className="container py-8">
-        <div className="flex items-center gap-4 mb-6">
-          <Button asChild variant="ghost" size="icon">
-            <Link to="/dashboard">
-              <ArrowLeft className="h-5 w-5" />
-            </Link>
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-3xl font-bold text-foreground">Manage Programs</h1>
-            <p className="text-muted-foreground">
-              Create and manage programs for your division
-            </p>
+      <div className="container py-4 md:py-8 px-4">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
+          <div className="flex items-center gap-3">
+            <Button asChild variant="golden" size="icon">
+              <Link to="/dashboard">
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+            </Button>
+            <div className="flex-1 min-w-0">
+              <h1 className="text-xl sm:text-3xl font-bold text-foreground truncate">Manage Programs</h1>
+              <p className="text-sm text-muted-foreground">
+                Create and manage programs for your division
+              </p>
+            </div>
           </div>
           <Dialog
             open={isDialogOpen}
@@ -211,7 +213,7 @@ export default function ProgramsManagement() {
               if (!open) resetForm();
             }}
           >
-            <Button onClick={() => setIsDialogOpen(true)}>
+            <Button onClick={() => setIsDialogOpen(true)} variant="golden" className="w-full sm:w-auto">
               <Plus className="h-4 w-4 mr-2" />
               Add Program
             </Button>
@@ -316,11 +318,11 @@ export default function ProgramsManagement() {
                   </div>
                 </div>
 
-                <DialogFooter>
-                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
+                <DialogFooter className="flex-col sm:flex-row gap-2">
+                  <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)} className="w-full sm:w-auto">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting}>
+                  <Button type="submit" disabled={isSubmitting} variant="golden" className="w-full sm:w-auto">
                     {isSubmitting ? (
                       <>
                         <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -338,21 +340,23 @@ export default function ProgramsManagement() {
 
         {/* Filter */}
         {isSuperAdmin && (
-          <div className="flex items-center gap-4 mb-6">
-            <Filter className="h-5 w-5 text-muted-foreground" />
-            <Select value={filterDivision} onValueChange={setFilterDivision}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Filter by division" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Divisions</SelectItem>
-                {divisions.map((division) => (
-                  <SelectItem key={division.id} value={division.id}>
-                    {division.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <Filter className="h-5 w-5 text-muted-foreground" />
+              <Select value={filterDivision} onValueChange={setFilterDivision}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <SelectValue placeholder="Filter by division" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Divisions</SelectItem>
+                  {divisions.map((division) => (
+                    <SelectItem key={division.id} value={division.id}>
+                      {division.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <span className="text-sm text-muted-foreground">
               {filteredPrograms.length} program{filteredPrograms.length !== 1 ? "s" : ""} found
             </span>
@@ -367,7 +371,7 @@ export default function ProgramsManagement() {
             <p className="text-sm">Create your first program to get started.</p>
           </div>
         ) : (
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
             {filteredPrograms.map((program) => (
               <ProgramCard key={program.id} program={program} isAdmin />
             ))}
