@@ -76,7 +76,7 @@ export default function LocationsManagement() {
   const [panchayathName, setPanchayathName] = useState("");
   const [panchayathNameMl, setPanchayathNameMl] = useState("");
   const [panchayathDistrict, setPanchayathDistrict] = useState("");
-  const [panchayathWard, setPanchayathWard] = useState("");
+  const [panchayathWard, setPanchayathWard] = useState<number | "">("");
   const [panchayathState, setPanchayathState] = useState("Kerala");
 
   // Cluster form state
@@ -179,7 +179,7 @@ export default function LocationsManagement() {
         name: panchayathName.trim(),
         name_ml: panchayathNameMl.trim() || null,
         district: panchayathDistrict.trim() || null,
-        ward: panchayathWard.trim() || null,
+        ward: panchayathWard ? String(panchayathWard) : null,
         state: panchayathState.trim() || "Kerala",
       };
 
@@ -456,13 +456,18 @@ export default function LocationsManagement() {
                     </div>
 
                     <div className="space-y-2">
-                      <Label htmlFor="panchayathWard">Ward</Label>
+                      <Label htmlFor="panchayathWard">Ward Count</Label>
                       <Input
                         id="panchayathWard"
+                        type="number"
+                        min="1"
                         value={panchayathWard}
-                        onChange={(e) => setPanchayathWard(e.target.value)}
-                        placeholder="Ward number or name"
+                        onChange={(e) => setPanchayathWard(e.target.value ? Number(e.target.value) : "")}
+                        placeholder="Number of wards (e.g., 25 means ward 1-25)"
                       />
+                      <p className="text-xs text-muted-foreground">
+                        Enter total ward count. E.g., 25 means wards 1 to 25.
+                      </p>
                     </div>
 
                     <DialogFooter>

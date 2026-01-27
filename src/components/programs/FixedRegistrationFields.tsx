@@ -64,27 +64,15 @@ export function FixedRegistrationFields({
         (p) => p.id === values.panchayath_id
       );
       if (selectedPanchayath?.ward) {
-        // Parse ward numbers - assuming format like "1-15" or "1,2,3,4,5"
-        const wardString = selectedPanchayath.ward;
-        let wardList: string[] = [];
-
-        if (wardString.includes("-")) {
-          // Range format: "1-15"
-          const [start, end] = wardString.split("-").map((n) => parseInt(n.trim()));
-          if (!isNaN(start) && !isNaN(end)) {
-            for (let i = start; i <= end; i++) {
-              wardList.push(String(i));
-            }
-          }
-        } else if (wardString.includes(",")) {
-          // Comma separated: "1,2,3,4,5"
-          wardList = wardString.split(",").map((w) => w.trim());
+        // Ward is now a count - e.g., "25" means wards 1-25
+        const wardCount = parseInt(selectedPanchayath.ward, 10);
+        if (!isNaN(wardCount) && wardCount > 0) {
+          const wardList = Array.from({ length: wardCount }, (_, i) => String(i + 1));
+          setWards(wardList);
         } else {
-          // Single ward or custom format
-          wardList = [wardString.trim()];
+          // Fallback: generate default wards 1-20 if invalid
+          setWards(Array.from({ length: 20 }, (_, i) => String(i + 1)));
         }
-
-        setWards(wardList);
       } else {
         // Generate default wards 1-20 if no ward info
         setWards(Array.from({ length: 20 }, (_, i) => String(i + 1)));
