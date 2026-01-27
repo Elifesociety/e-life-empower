@@ -19,7 +19,7 @@ export function HeroSection() {
           
           <h1 className="font-display text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight mb-6">
             ഓരോ വീടും ഒരു സംരംഭം ,{" "}
-            <span className="text-primary">Building Kerala</span>
+            <span className="text-primary">ഒരു വീട്ടിൽ ഒരു സംരംഭക </span>
           </h1>
           
           <p className="text-lg md:text-xl text-muted-foreground mb-8 leading-relaxed">
