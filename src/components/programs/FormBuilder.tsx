@@ -276,8 +276,8 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
           if (!open) resetForm();
         }}
       >
-        <DialogContent>
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader className="text-left">
             <DialogTitle>
               {editingQuestion ? "Edit Question" : "Add Question"}
             </DialogTitle>
@@ -286,9 +286,9 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="questionText">Question Text</Label>
+              <Label htmlFor="questionText" className="text-sm font-medium">Question Text</Label>
               <Input
                 id="questionText"
                 value={questionText}
@@ -298,9 +298,9 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="questionType">Question Type</Label>
+              <Label htmlFor="questionType" className="text-sm font-medium">Question Type</Label>
               <Select value={questionType} onValueChange={setQuestionType}>
-                <SelectTrigger>
+                <SelectTrigger className="text-base">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -315,41 +315,50 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
 
             {needsOptions && (
               <div className="space-y-2">
-                <Label htmlFor="options">Options (one per line)</Label>
+                <Label htmlFor="options" className="text-sm font-medium">Options (one per line)</Label>
                 <Textarea
                   id="options"
                   value={options}
                   onChange={(e) => setOptions(e.target.value)}
                   placeholder="Option 1&#10;Option 2&#10;Option 3"
                   rows={4}
+                  className="text-base resize-none"
                 />
               </div>
             )}
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3 py-2">
               <Switch
                 id="isRequired"
                 checked={isRequired}
                 onCheckedChange={setIsRequired}
               />
-              <Label htmlFor="isRequired">Required field</Label>
+              <Label htmlFor="isRequired" className="text-sm font-medium cursor-pointer">Required field</Label>
             </div>
           </div>
 
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsDialogOpen(false)}>
+          <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setIsDialogOpen(false)}
+              className="w-full sm:w-auto"
+            >
               Cancel
             </Button>
-            <Button onClick={handleSubmit} disabled={isSubmitting}>
+            <Button 
+              onClick={handleSubmit} 
+              disabled={isSubmitting}
+              className="w-full sm:w-auto"
+            >
               {isSubmitting ? (
                 <>
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                   Saving...
                 </>
               ) : editingQuestion ? (
-                "Update Question"
+                "Update"
               ) : (
-                "Add Question"
+                "Add"
               )}
             </Button>
           </DialogFooter>
