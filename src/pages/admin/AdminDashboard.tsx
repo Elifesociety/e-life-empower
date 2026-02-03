@@ -27,7 +27,8 @@ import {
   Loader2,
   Building2,
   Clock,
-  ExternalLink
+  ExternalLink,
+  Network
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -183,6 +184,12 @@ export default function AdminDashboard() {
             <Link to="/admin/programs" className="flex flex-col items-center gap-1.5 sm:gap-2">
               <ArrowRight className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-xs sm:text-sm">New Program</span>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto py-3 sm:py-4 border-orange-200 hover:bg-orange-50 dark:border-orange-800 dark:hover:bg-orange-950">
+            <Link to="/admin/pennyekart-agents" className="flex flex-col items-center gap-1.5 sm:gap-2">
+              <Network className="h-5 w-5 sm:h-6 sm:w-6 text-orange-600" />
+              <span className="text-xs sm:text-sm text-orange-600">Pennyekart Agents</span>
             </Link>
           </Button>
         </div>

@@ -226,6 +226,66 @@ export type Database = {
         }
         Relationships: []
       }
+      pennyekart_agents: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          customer_count: number | null
+          id: string
+          is_active: boolean | null
+          mobile: string
+          name: string
+          panchayath_id: string
+          parent_agent_id: string | null
+          role: Database["public"]["Enums"]["pennyekart_agent_role"]
+          updated_at: string | null
+          ward: string
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          mobile: string
+          name: string
+          panchayath_id: string
+          parent_agent_id?: string | null
+          role: Database["public"]["Enums"]["pennyekart_agent_role"]
+          updated_at?: string | null
+          ward: string
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          customer_count?: number | null
+          id?: string
+          is_active?: boolean | null
+          mobile?: string
+          name?: string
+          panchayath_id?: string
+          parent_agent_id?: string | null
+          role?: Database["public"]["Enums"]["pennyekart_agent_role"]
+          updated_at?: string | null
+          ward?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pennyekart_agents_panchayath_id_fkey"
+            columns: ["panchayath_id"]
+            isOneToOne: false
+            referencedRelation: "panchayaths"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "pennyekart_agents_parent_agent_id_fkey"
+            columns: ["parent_agent_id"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string | null
@@ -564,6 +624,11 @@ export type Database = {
     }
     Enums: {
       app_role: "super_admin" | "admin" | "member"
+      pennyekart_agent_role:
+        | "team_leader"
+        | "coordinator"
+        | "group_leader"
+        | "pro"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -692,6 +757,12 @@ export const Constants = {
   public: {
     Enums: {
       app_role: ["super_admin", "admin", "member"],
+      pennyekart_agent_role: [
+        "team_leader",
+        "coordinator",
+        "group_leader",
+        "pro",
+      ],
     },
   },
 } as const

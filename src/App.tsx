@@ -24,6 +24,7 @@ import ProgramsManagement from "./pages/admin/ProgramsManagement";
 import ProgramDetail from "./pages/admin/ProgramDetail";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
+import PennyekartAgentHierarchy from "./pages/admin/PennyekartAgentHierarchy";
 
 const queryClient = new QueryClient();
 
@@ -130,6 +131,16 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["admin", "super_admin"]}>
                   <ProgramDetail />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Pennyekart Agent Hierarchy - Admin & Super Admin */}
+            <Route
+              path="/admin/pennyekart-agents"
+              element={
+                <ProtectedRoute requiredRoles={["admin", "super_admin"]}>
+                  <PennyekartAgentHierarchy />
                 </ProtectedRoute>
               }
             />
