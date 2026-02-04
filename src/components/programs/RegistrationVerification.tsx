@@ -15,6 +15,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Star, CheckCircle2, User } from "lucide-react";
 import { format } from "date-fns";
 
@@ -39,6 +40,7 @@ export function RegistrationVerification({
   const [scores, setScores] = useState<Record<string, number>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { toast } = useToast();
+  const { adminToken } = useAuth();
 
   // Filter questions that should be scored (exclude personal details)
   const scorableQuestions = questions.filter(
@@ -99,29 +101,42 @@ export function RegistrationVerification({
 
   const handleSubmitVerification = async () => {
     if (!registration) return;
+    
+    if (!adminToken) {
+      toast({
+        title: "Error",
+        description: "You must be logged in as admin to verify registrations",
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
       const { totalScore, maxScore, percentage } = calculateTotals();
 
-      // Get current user ID
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("User not authenticated");
-
-      const { error } = await supabase
-        .from("program_registrations")
-        .update({
+      const response = await supabase.functions.invoke("admin-registrations", {
+        method: "PUT",
+        headers: {
+          "x-admin-token": adminToken,
+        },
+        body: {
+          registration_id: registration.id,
           verification_scores: scores,
           total_score: totalScore,
           max_score: maxScore,
-          percentage: Math.round(percentage * 100) / 100,
-          verified_by: user.id,
-          verified_at: new Date().toISOString(),
-          verification_status: "verified",
-        })
-        .eq("id", registration.id);
+          percentage: percentage,
+        },
+      });
 
-      if (error) throw error;
+      if (response.error) {
+        throw new Error(response.error.message || "Failed to save verification");
+      }
+
+      if (response.data?.error) {
+        throw new Error(response.data.error);
+      }
 
       toast({
         title: "Verification completed",

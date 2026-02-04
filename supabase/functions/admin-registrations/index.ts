@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-token",
-  "Access-Control-Allow-Methods": "GET, OPTIONS",
+  "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
 };
 
 Deno.serve(async (req) => {
@@ -41,7 +41,88 @@ Deno.serve(async (req) => {
       );
     }
 
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
     const url = new URL(req.url);
+
+    // Handle PUT for verification updates
+    if (req.method === "PUT") {
+      const body = await req.json();
+      const { registration_id, verification_scores, total_score, max_score, percentage } = body;
+
+      if (!registration_id) {
+        return new Response(
+          JSON.stringify({ error: "registration_id is required" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Get the registration to verify program ownership
+      const { data: registration, error: regFetchError } = await supabase
+        .from("program_registrations")
+        .select("program_id")
+        .eq("id", registration_id)
+        .single();
+
+      if (regFetchError || !registration) {
+        return new Response(
+          JSON.stringify({ error: "Registration not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Verify the program belongs to the admin's division
+      const { data: program, error: programError } = await supabase
+        .from("programs")
+        .select("division_id")
+        .eq("id", registration.program_id)
+        .single();
+
+      if (programError || !program) {
+        return new Response(
+          JSON.stringify({ error: "Program not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (program.division_id !== divisionId) {
+        return new Response(
+          JSON.stringify({ error: "Access denied: Program belongs to different division" }),
+          { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Update the registration with verification data
+      const { error: updateError } = await supabase
+        .from("program_registrations")
+        .update({
+          verification_scores,
+          total_score,
+          max_score,
+          percentage: Math.round(percentage * 100) / 100,
+          verified_by: adminId,
+          verified_at: new Date().toISOString(),
+          verification_status: "verified",
+        })
+        .eq("id", registration_id);
+
+      if (updateError) {
+        console.error("Error updating verification:", updateError);
+        return new Response(
+          JSON.stringify({ error: "Failed to save verification" }),
+          { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ success: true }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // GET - Fetch registrations
     const programId = url.searchParams.get("program_id");
 
     if (!programId) {
@@ -50,10 +131,6 @@ Deno.serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Verify the program belongs to the admin's division
     const { data: program, error: programError } = await supabase

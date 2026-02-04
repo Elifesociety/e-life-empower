@@ -25,11 +25,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, ChevronsUpDown, X, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { 
   PennyekartAgent, 
@@ -40,6 +46,7 @@ import {
   useAgentMutations 
 } from "@/hooks/usePennyekartAgents";
 import { toast } from "sonner";
+import { cn } from "@/lib/utils";
 
 const agentFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
@@ -70,6 +77,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [potentialParents, setPotentialParents] = useState<PennyekartAgent[]>([]);
   const [isLoadingPanchayaths, setIsLoadingPanchayaths] = useState(false);
+  const [panchayathPopoverOpen, setPanchayathPopoverOpen] = useState(false);
   const { createAgent, updateAgent, isSubmitting } = useAgentMutations();
 
   const isEditing = !!agent;
@@ -90,6 +98,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
 
   const selectedRole = form.watch("role");
   const selectedPanchayath = form.watch("panchayath_id");
+  const selectedResponsiblePanchayaths = form.watch("responsible_panchayath_ids");
 
   // Load panchayaths
   useEffect(() => {
@@ -223,215 +232,270 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
     }
   };
 
+  const getSelectedPanchayathNames = () => {
+    return panchayaths
+      .filter(p => selectedResponsiblePanchayaths?.includes(p.id))
+      .map(p => p.name);
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] flex flex-col p-0">
-        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6 text-left">
+      <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6 text-left shrink-0">
           <DialogTitle className="text-lg">{isEditing ? "Edit Agent" : "Add New Agent"}</DialogTitle>
           <DialogDescription className="text-sm">
             {isEditing ? "Update agent details" : "Add a new agent to the hierarchy"}
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 px-4 sm:px-6">
-          <Form {...form}>
-            <form id="agent-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 pb-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Name</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Agent name" className="h-10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="mobile"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Mobile Number</FormLabel>
-                    <FormControl>
-                      <Input placeholder="10-digit mobile" maxLength={10} className="h-10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <ScrollArea className="flex-1 min-h-0">
+          <div className="px-4 sm:px-6 py-4">
+            <Form {...form}>
+              <form id="agent-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
-                  name="role"
+                  name="name"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-sm font-medium">Role</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder="Select role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {ROLE_HIERARCHY.map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {ROLE_LABELS[role]}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="panchayath_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Panchayath</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder={isLoadingPanchayaths ? "Loading..." : "Select"} />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {panchayaths.map((p) => (
-                            <SelectItem key={p.id} value={p.id}>
-                              {p.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-
-              <FormField
-                control={form.control}
-                name="ward"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm font-medium">Ward</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ward name/number" className="h-10" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              {needsParent && (
-                <FormField
-                  control={form.control}
-                  name="parent_agent_id"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">
-                        Reports To ({parentRole ? ROLE_LABELS[parentRole] : ""})
-                      </FormLabel>
-                      <Select 
-                        onValueChange={field.onChange} 
-                        value={field.value || ""}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-10">
-                            <SelectValue placeholder={
-                              !selectedPanchayath 
-                                ? "Select panchayath first" 
-                                : potentialParents.length === 0 
-                                  ? `No ${parentRole ? ROLE_LABELS[parentRole] : "parent"} available` 
-                                  : "Select parent"
-                            } />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {potentialParents.map((parent) => (
-                            <SelectItem key={parent.id} value={parent.id}>
-                              {parent.name} ({parent.ward})
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {selectedRole === "team_leader" && (
-                <FormField
-                  control={form.control}
-                  name="responsible_panchayath_ids"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Responsible Panchayaths</FormLabel>
-                      <div className="border rounded-md p-3 max-h-40 overflow-y-auto space-y-2 bg-muted/30">
-                        {isLoadingPanchayaths ? (
-                          <p className="text-sm text-muted-foreground">Loading...</p>
-                        ) : panchayaths.length === 0 ? (
-                          <p className="text-sm text-muted-foreground">No panchayaths available</p>
-                        ) : (
-                          panchayaths.map((p) => (
-                            <div key={p.id} className="flex items-center gap-2">
-                              <Checkbox
-                                id={`resp-${p.id}`}
-                                checked={(field.value || []).includes(p.id)}
-                                onCheckedChange={(checked) => 
-                                  handleResponsiblePanchayathToggle(p.id, checked === true)
-                                }
-                              />
-                              <label 
-                                htmlFor={`resp-${p.id}`} 
-                                className="text-sm cursor-pointer flex-1"
-                              >
-                                {p.name}
-                              </label>
-                            </div>
-                          ))
-                        )}
-                      </div>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              )}
-
-              {selectedRole === "pro" && (
-                <FormField
-                  control={form.control}
-                  name="customer_count"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm font-medium">Customer Count</FormLabel>
+                      <FormLabel className="text-sm font-medium">Name</FormLabel>
                       <FormControl>
-                        <Input 
-                          type="number" 
-                          min={0}
-                          className="h-10"
-                          {...field}
-                          onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                        />
+                        <Input placeholder="Agent name" className="h-10" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-              )}
-            </form>
-          </Form>
+
+                <FormField
+                  control={form.control}
+                  name="mobile"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Mobile Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="10-digit mobile" maxLength={10} className="h-10" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name="role"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Role</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Select role" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {ROLE_HIERARCHY.map((role) => (
+                              <SelectItem key={role} value={role}>
+                                {ROLE_LABELS[role]}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+
+                  <FormField
+                    control={form.control}
+                    name="panchayath_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Panchayath</FormLabel>
+                        <Select onValueChange={field.onChange} value={field.value}>
+                          <FormControl>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder={isLoadingPanchayaths ? "Loading..." : "Select"} />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {panchayaths.map((p) => (
+                              <SelectItem key={p.id} value={p.id}>
+                                {p.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+
+                <FormField
+                  control={form.control}
+                  name="ward"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Ward</FormLabel>
+                      <FormControl>
+                        <Input placeholder="Ward name/number" className="h-10" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                {needsParent && (
+                  <FormField
+                    control={form.control}
+                    name="parent_agent_id"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">
+                          Reports To ({parentRole ? ROLE_LABELS[parentRole] : ""})
+                        </FormLabel>
+                        <Select 
+                          onValueChange={field.onChange} 
+                          value={field.value || ""}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder={
+                                !selectedPanchayath 
+                                  ? "Select panchayath first" 
+                                  : potentialParents.length === 0 
+                                    ? `No ${parentRole ? ROLE_LABELS[parentRole] : "parent"} available` 
+                                    : "Select parent"
+                              } />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {potentialParents.map((parent) => (
+                              <SelectItem key={parent.id} value={parent.id}>
+                                {parent.name} ({parent.ward})
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {selectedRole === "team_leader" && (
+                  <FormField
+                    control={form.control}
+                    name="responsible_panchayath_ids"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Responsible Panchayaths</FormLabel>
+                        <Popover open={panchayathPopoverOpen} onOpenChange={setPanchayathPopoverOpen}>
+                          <PopoverTrigger asChild>
+                            <FormControl>
+                              <Button
+                                variant="outline"
+                                role="combobox"
+                                aria-expanded={panchayathPopoverOpen}
+                                className={cn(
+                                  "w-full justify-between h-auto min-h-10 py-2",
+                                  !field.value?.length && "text-muted-foreground"
+                                )}
+                              >
+                                <span className="flex flex-wrap gap-1 text-left">
+                                  {field.value?.length ? (
+                                    field.value.length <= 2 ? (
+                                      getSelectedPanchayathNames().map((name, i) => (
+                                        <Badge key={i} variant="secondary" className="text-xs">
+                                          {name}
+                                        </Badge>
+                                      ))
+                                    ) : (
+                                      <Badge variant="secondary" className="text-xs">
+                                        {field.value.length} selected
+                                      </Badge>
+                                    )
+                                  ) : (
+                                    "Select panchayaths..."
+                                  )}
+                                </span>
+                                <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                              </Button>
+                            </FormControl>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-[280px] p-0" align="start">
+                            <div className="p-2 border-b">
+                              <p className="text-xs text-muted-foreground">
+                                {field.value?.length || 0} selected
+                              </p>
+                            </div>
+                            <ScrollArea className="h-[200px]">
+                              <div className="p-2 space-y-1">
+                                {isLoadingPanchayaths ? (
+                                  <p className="text-sm text-muted-foreground text-center py-4">Loading...</p>
+                                ) : panchayaths.length === 0 ? (
+                                  <p className="text-sm text-muted-foreground text-center py-4">No panchayaths</p>
+                                ) : (
+                                  panchayaths.map((p) => {
+                                    const isSelected = (field.value || []).includes(p.id);
+                                    return (
+                                      <div
+                                        key={p.id}
+                                        className={cn(
+                                          "flex items-center gap-2 px-2 py-1.5 rounded-md cursor-pointer hover:bg-accent",
+                                          isSelected && "bg-accent"
+                                        )}
+                                        onClick={() => handleResponsiblePanchayathToggle(p.id, !isSelected)}
+                                      >
+                                        <div className={cn(
+                                          "h-4 w-4 border rounded flex items-center justify-center shrink-0",
+                                          isSelected ? "bg-primary border-primary" : "border-input"
+                                        )}>
+                                          {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
+                                        </div>
+                                        <span className="text-sm flex-1">{p.name}</span>
+                                      </div>
+                                    );
+                                  })
+                                )}
+                              </div>
+                            </ScrollArea>
+                          </PopoverContent>
+                        </Popover>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
+                {selectedRole === "pro" && (
+                  <FormField
+                    control={form.control}
+                    name="customer_count"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="text-sm font-medium">Customer Count</FormLabel>
+                        <FormControl>
+                          <Input 
+                            type="number" 
+                            min={0}
+                            className="h-10"
+                            {...field}
+                            onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+              </form>
+            </Form>
+          </div>
         </ScrollArea>
 
-        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2 px-4 pb-4 sm:px-6 sm:pb-6 border-t pt-4">
+        <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2 px-4 pb-4 sm:px-6 sm:pb-6 border-t pt-4 shrink-0">
           <Button 
             type="button" 
             variant="outline" 
