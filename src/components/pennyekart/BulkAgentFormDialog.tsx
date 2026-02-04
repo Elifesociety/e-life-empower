@@ -443,62 +443,64 @@ export function BulkAgentFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[650px] max-h-[90vh]">
-        <DialogHeader>
+      <DialogContent className="w-[95vw] max-w-[650px] max-h-[85vh] flex flex-col p-0 gap-0">
+        <DialogHeader className="px-4 pt-4 pb-2 sm:px-6 sm:pt-6 flex-shrink-0">
           <DialogTitle>{isEditing ? "Edit Agent" : "Add Agents"}</DialogTitle>
-          <DialogDescription>
-            {isEditing ? "Update agent details and responsibilities" : "Add single or multiple agents with their responsibilities"}
+          <DialogDescription className="text-xs sm:text-sm">
+            {isEditing ? "Update agent details" : "Add agents to the network"}
           </DialogDescription>
         </DialogHeader>
 
         {isEditing ? (
-          <ScrollArea className="max-h-[70vh] pr-4">
-            <Form {...singleForm}>
-              <form onSubmit={singleForm.handleSubmit(onSubmitSingle)} className="space-y-4">
-                <SingleFormContent
-                  form={singleForm}
-                  panchayaths={panchayaths}
-                  wardOptions={wardOptions}
-                  potentialParents={potentialParents}
-                  isLoadingPanchayaths={isLoadingPanchayaths}
-                  needsParent={singleNeedsParent}
-                  parentRole={singleParentRole}
-                  selectedPanchayath={selectedSinglePanchayath}
-                  selectedRole={selectedSingleRole}
-                  selectedResponsiblePanchayaths={selectedResponsiblePanchayaths}
-                  togglePanchayathSelection={togglePanchayathSelection}
-                  toggleWardSelection={(ward) => toggleWardSelection(ward, "single")}
-                  getWardsForPanchayath={getWardsForPanchayath}
-                />
-                <div className="flex justify-end gap-3 pt-4">
-                  <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isSubmitting}>
-                    {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                    Update
-                  </Button>
-                </div>
-              </form>
-            </Form>
-          </ScrollArea>
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <ScrollArea className="flex-1 px-4 sm:px-6">
+              <Form {...singleForm}>
+                <form onSubmit={singleForm.handleSubmit(onSubmitSingle)} className="space-y-3 pb-4">
+                  <SingleFormContent
+                    form={singleForm}
+                    panchayaths={panchayaths}
+                    wardOptions={wardOptions}
+                    potentialParents={potentialParents}
+                    isLoadingPanchayaths={isLoadingPanchayaths}
+                    needsParent={singleNeedsParent}
+                    parentRole={singleParentRole}
+                    selectedPanchayath={selectedSinglePanchayath}
+                    selectedRole={selectedSingleRole}
+                    selectedResponsiblePanchayaths={selectedResponsiblePanchayaths}
+                    togglePanchayathSelection={togglePanchayathSelection}
+                    toggleWardSelection={(ward) => toggleWardSelection(ward, "single")}
+                    getWardsForPanchayath={getWardsForPanchayath}
+                  />
+                </form>
+              </Form>
+            </ScrollArea>
+            <div className="flex justify-end gap-2 px-4 py-3 sm:px-6 sm:py-4 border-t bg-background flex-shrink-0">
+              <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                Cancel
+              </Button>
+              <Button size="sm" disabled={isSubmitting} onClick={singleForm.handleSubmit(onSubmitSingle)}>
+                {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                Update
+              </Button>
+            </div>
+          </div>
         ) : (
-          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "single" | "bulk")}>
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="single" className="flex items-center gap-2">
-                <UserPlus className="h-4 w-4" />
-                Single Agent
+          <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "single" | "bulk")} className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-2 mx-4 sm:mx-6 mt-2 flex-shrink-0" style={{ width: 'calc(100% - 2rem)' }}>
+              <TabsTrigger value="single" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                Single
               </TabsTrigger>
-              <TabsTrigger value="bulk" className="flex items-center gap-2">
-                <Users className="h-4 w-4" />
-                Bulk Add
+              <TabsTrigger value="bulk" className="flex items-center gap-1.5 text-xs sm:text-sm">
+                <Users className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
+                Bulk
               </TabsTrigger>
             </TabsList>
 
-            <TabsContent value="single" className="mt-4">
-              <ScrollArea className="max-h-[60vh] pr-4">
+            <TabsContent value="single" className="flex-1 overflow-hidden flex flex-col mt-0 data-[state=inactive]:hidden">
+              <ScrollArea className="flex-1 px-4 sm:px-6 pt-3">
                 <Form {...singleForm}>
-                  <form onSubmit={singleForm.handleSubmit(onSubmitSingle)} className="space-y-4">
+                  <form className="space-y-3 pb-4">
                     <SingleFormContent
                       form={singleForm}
                       panchayaths={panchayaths}
@@ -514,24 +516,24 @@ export function BulkAgentFormDialog({
                       toggleWardSelection={(ward) => toggleWardSelection(ward, "single")}
                       getWardsForPanchayath={getWardsForPanchayath}
                     />
-                    <div className="flex justify-end gap-3 pt-4">
-                      <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Create
-                      </Button>
-                    </div>
                   </form>
                 </Form>
               </ScrollArea>
+              <div className="flex justify-end gap-2 px-4 py-3 sm:px-6 sm:py-4 border-t bg-background flex-shrink-0">
+                <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" disabled={isSubmitting} onClick={singleForm.handleSubmit(onSubmitSingle)}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create
+                </Button>
+              </div>
             </TabsContent>
 
-            <TabsContent value="bulk" className="mt-4">
-              <ScrollArea className="max-h-[60vh] pr-4">
+            <TabsContent value="bulk" className="flex-1 overflow-hidden flex flex-col mt-0 data-[state=inactive]:hidden">
+              <ScrollArea className="flex-1 px-4 sm:px-6 pt-3">
                 <Form {...bulkForm}>
-                  <form onSubmit={bulkForm.handleSubmit(onSubmitBulk)} className="space-y-4">
+                  <form className="space-y-3 pb-4">
                     <BulkFormContent
                       form={bulkForm}
                       fields={fields}
@@ -547,18 +549,18 @@ export function BulkAgentFormDialog({
                       selectedRole={selectedBulkRole}
                       toggleWardSelection={(ward) => toggleWardSelection(ward, "bulk")}
                     />
-                    <div className="flex justify-end gap-3 pt-4">
-                      <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-                        Cancel
-                      </Button>
-                      <Button type="submit" disabled={isSubmitting}>
-                        {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Create {fields.length} Agent{fields.length > 1 ? "s" : ""}
-                      </Button>
-                    </div>
                   </form>
                 </Form>
               </ScrollArea>
+              <div className="flex justify-end gap-2 px-4 py-3 sm:px-6 sm:py-4 border-t bg-background flex-shrink-0">
+                <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button size="sm" disabled={isSubmitting} onClick={bulkForm.handleSubmit(onSubmitBulk)}>
+                  {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create {fields.length} Agent{fields.length > 1 ? "s" : ""}
+                </Button>
+              </div>
             </TabsContent>
           </Tabs>
         )}
@@ -604,50 +606,52 @@ function SingleFormContent({
   return (
     <>
       {/* Personal Details Section */}
-      <div className="space-y-4">
-        <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-          <User className="h-4 w-4" />
+      <div className="space-y-3">
+        <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
+          <User className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           Personal Details
         </div>
         
-        <FormField
-          control={form.control}
-          name="name"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Name</FormLabel>
-              <FormControl>
-                <Input placeholder="Agent name" {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <FormField
+            control={form.control}
+            name="name"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs sm:text-sm">Name</FormLabel>
+                <FormControl>
+                  <Input placeholder="Agent name" className="h-9" {...field} />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="mobile"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Mobile Number</FormLabel>
-              <FormControl>
-                <Input placeholder="10-digit mobile" maxLength={10} {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
+          <FormField
+            control={form.control}
+            name="mobile"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs sm:text-sm">Mobile</FormLabel>
+                <FormControl>
+                  <Input placeholder="10-digit mobile" maxLength={10} className="h-9" {...field} />
+                </FormControl>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
+        </div>
 
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="role"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Role</FormLabel>
+                <FormLabel className="text-xs sm:text-sm">Role</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder="Select role" />
                     </SelectTrigger>
                   </FormControl>
@@ -659,7 +663,7 @@ function SingleFormContent({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
@@ -669,10 +673,10 @@ function SingleFormContent({
             name="panchayath_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Own Panchayath</FormLabel>
+                <FormLabel className="text-xs sm:text-sm">Panchayath</FormLabel>
                 <Select onValueChange={field.onChange} value={field.value}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder={isLoadingPanchayaths ? "Loading..." : "Select"} />
                     </SelectTrigger>
                   </FormControl>
@@ -684,109 +688,112 @@ function SingleFormContent({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
         </div>
 
-        <FormField
-          control={form.control}
-          name="ward"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Own Ward</FormLabel>
-              <Select onValueChange={field.onChange} value={field.value} disabled={wardOptions.length === 0}>
-                <FormControl>
-                  <SelectTrigger>
-                    <SelectValue placeholder={
-                      !selectedPanchayath 
-                        ? "Select panchayath first" 
-                        : wardOptions.length === 0 
-                          ? "No wards available" 
-                          : "Select ward"
-                    } />
-                  </SelectTrigger>
-                </FormControl>
-                <SelectContent>
-                  {wardOptions.map((w) => (
-                    <SelectItem key={w} value={w}>Ward {w}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        {needsParent && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <FormField
             control={form.control}
-            name="parent_agent_id"
+            name="ward"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>
-                  Reports To ({parentRole ? ROLE_LABELS[parentRole] : ""})
-                </FormLabel>
-                <Select 
-                  onValueChange={field.onChange} 
-                  value={field.value || ""}
-                >
+                <FormLabel className="text-xs sm:text-sm">Ward</FormLabel>
+                <Select onValueChange={field.onChange} value={field.value} disabled={wardOptions.length === 0}>
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className="h-9">
                       <SelectValue placeholder={
                         !selectedPanchayath 
                           ? "Select panchayath first" 
-                          : potentialParents.length === 0 
-                            ? `No ${parentRole ? ROLE_LABELS[parentRole] : "parent"} available` 
-                            : "Select parent"
+                          : wardOptions.length === 0 
+                            ? "No wards" 
+                            : "Select ward"
                       } />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {potentialParents.map((parent) => (
-                      <SelectItem key={parent.id} value={parent.id}>
-                        {parent.name} (Ward {parent.ward})
-                      </SelectItem>
+                    {wardOptions.map((w) => (
+                      <SelectItem key={w} value={w}>Ward {w}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-                <FormMessage />
+                <FormMessage className="text-xs" />
               </FormItem>
             )}
           />
-        )}
 
-        {selectedRole === "pro" && (
-          <FormField
-            control={form.control}
-            name="customer_count"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Customer Count</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    min={0}
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-        )}
+          {needsParent && (
+            <FormField
+              control={form.control}
+              name="parent_agent_id"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs sm:text-sm">
+                    Reports To {parentRole ? `(${ROLE_LABELS[parentRole]})` : ""}
+                  </FormLabel>
+                  <Select 
+                    onValueChange={field.onChange} 
+                    value={field.value || ""}
+                  >
+                    <FormControl>
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder={
+                          !selectedPanchayath 
+                            ? "Select panchayath" 
+                            : potentialParents.length === 0 
+                              ? "None available" 
+                              : "Select"
+                        } />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {potentialParents.map((parent) => (
+                        <SelectItem key={parent.id} value={parent.id}>
+                          {parent.name} (W{parent.ward})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {selectedRole === "pro" && (
+            <FormField
+              control={form.control}
+              name="customer_count"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs sm:text-sm">Customer Count</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      min={0}
+                      className="h-9"
+                      {...field}
+                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                    />
+                  </FormControl>
+                  <FormMessage className="text-xs" />
+                </FormItem>
+              )}
+            />
+          )}
+        </div>
       </div>
 
       {/* Responsibility Section - Only for Team Leaders and Coordinators */}
       {(selectedRole === "team_leader" || selectedRole === "coordinator") && (
         <>
-          <Separator />
+          <Separator className="my-2" />
           
-          <div className="space-y-4">
-            <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-              <MapPin className="h-4 w-4" />
+          <div className="space-y-3">
+            <div className="flex items-center gap-2 text-xs sm:text-sm font-medium text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
               Responsibility Scope
             </div>
 
