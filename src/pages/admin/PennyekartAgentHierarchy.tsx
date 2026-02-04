@@ -58,11 +58,6 @@ export default function PennyekartAgentHierarchy() {
   const { agents, isLoading, error, refetch } = usePennyekartAgents(filters);
   const { deleteAgent } = useAgentMutations();
 
-  // Check permissions
-  if (!isAdmin && !isSuperAdmin) {
-    return <Navigate to="/unauthorized" replace />;
-  }
-
   // Load panchayaths
   useEffect(() => {
     const fetchPanchayaths = async () => {
@@ -94,6 +89,11 @@ export default function PennyekartAgentHierarchy() {
     };
     fetchWards();
   }, [filters.panchayath_id]);
+
+  // Check permissions - moved after hooks
+  if (!isAdmin && !isSuperAdmin) {
+    return <Navigate to="/unauthorized" replace />;
+  }
 
   const handleAddAgent = () => {
     setEditingAgent(null);
@@ -153,61 +153,63 @@ export default function PennyekartAgentHierarchy() {
 
   return (
     <Layout>
-      <div className="container py-6">
+      <div className="container py-4 sm:py-6 max-w-full overflow-x-hidden">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-3 mb-2">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-4 sm:mb-6">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 sm:gap-3 mb-1 sm:mb-2">
               <Link to="/admin-dashboard">
-                <Button variant="ghost" size="icon" className="h-8 w-8">
+                <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                   <ArrowLeft className="h-4 w-4" />
                 </Button>
               </Link>
-              <h1 className="text-2xl font-bold">Pennyekart Agent Hierarchy</h1>
+              <h1 className="text-lg sm:text-2xl font-bold truncate">Pennyekart Agents</h1>
             </div>
-            <p className="text-muted-foreground text-sm ml-11">
-              Manage agent network and customer assignments
+            <p className="text-muted-foreground text-xs sm:text-sm ml-9 sm:ml-11">
+              Manage agent network
             </p>
           </div>
-          <Button onClick={handleAddAgent}>
+          <Button onClick={handleAddAgent} size="sm" className="w-full sm:w-auto">
             <Plus className="h-4 w-4 mr-2" />
             Add Agent
           </Button>
         </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-          <Card className="p-3">
-            <div className="text-2xl font-bold">{totalAgents}</div>
-            <div className="text-xs text-muted-foreground">Total Agents</div>
-          </Card>
-          {ROLE_HIERARCHY.map(role => (
-            <Card key={role} className="p-3">
-              <div className="text-2xl font-bold">{byRole[role]}</div>
-              <div className="text-xs text-muted-foreground">{ROLE_LABELS[role]}s</div>
+        {/* Stats - Scrollable on mobile */}
+        <div className="overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 mb-4 sm:mb-6">
+          <div className="flex sm:grid sm:grid-cols-3 lg:grid-cols-6 gap-2 sm:gap-3 min-w-max sm:min-w-0">
+            <Card className="p-2 sm:p-3 min-w-[80px] sm:min-w-0">
+              <div className="text-lg sm:text-2xl font-bold">{totalAgents}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">Total</div>
             </Card>
-          ))}
-          <Card className="p-3">
-            <div className="text-2xl font-bold">{totalCustomers}</div>
-            <div className="text-xs text-muted-foreground">Total Customers</div>
-          </Card>
+            {ROLE_HIERARCHY.map(role => (
+              <Card key={role} className="p-2 sm:p-3 min-w-[80px] sm:min-w-0">
+                <div className="text-lg sm:text-2xl font-bold">{byRole[role]}</div>
+                <div className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">{ROLE_LABELS[role]}s</div>
+              </Card>
+            ))}
+            <Card className="p-2 sm:p-3 min-w-[80px] sm:min-w-0">
+              <div className="text-lg sm:text-2xl font-bold">{totalCustomers}</div>
+              <div className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">Customers</div>
+            </Card>
+          </div>
         </div>
 
-        {/* Filters */}
-        <Card className="mb-6">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base flex items-center gap-2">
+        {/* Filters - Collapsible on mobile */}
+        <Card className="mb-4 sm:mb-6">
+          <CardHeader className="pb-2 sm:pb-3 px-3 sm:px-6 py-2 sm:py-4">
+            <CardTitle className="text-sm sm:text-base flex items-center gap-2">
               <Filter className="h-4 w-4" />
               Filters
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+          <CardContent className="px-3 sm:px-6 pb-3 sm:pb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2 sm:gap-3">
               <div className="relative lg:col-span-2">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
-                  placeholder="Search by name or mobile..."
-                  className="pl-9"
+                  placeholder="Search..."
+                  className="pl-9 h-9"
                   value={filters.search || ""}
                   onChange={(e) => handleFilterChange("search", e.target.value || undefined)}
                 />
@@ -217,9 +219,9 @@ export default function PennyekartAgentHierarchy() {
                 value={filters.panchayath_id || "all"}
                 onValueChange={(v) => handleFilterChange("panchayath_id", v)}
               >
-                <SelectTrigger>
-                  <Building2 className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="All Panchayaths" />
+                <SelectTrigger className="h-9">
+                  <Building2 className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                  <SelectValue placeholder="Panchayath" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Panchayaths</SelectItem>
@@ -234,8 +236,8 @@ export default function PennyekartAgentHierarchy() {
                 onValueChange={(v) => handleFilterChange("ward", v)}
                 disabled={!filters.panchayath_id}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="All Wards" />
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Ward" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Wards</SelectItem>
@@ -249,9 +251,9 @@ export default function PennyekartAgentHierarchy() {
                 value={filters.role || "all"}
                 onValueChange={(v) => handleFilterChange("role", v as AgentRole)}
               >
-                <SelectTrigger>
-                  <Users className="h-4 w-4 mr-2 text-muted-foreground" />
-                  <SelectValue placeholder="All Roles" />
+                <SelectTrigger className="h-9">
+                  <Users className="h-4 w-4 mr-2 text-muted-foreground flex-shrink-0" />
+                  <SelectValue placeholder="Role" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
@@ -263,9 +265,9 @@ export default function PennyekartAgentHierarchy() {
             </div>
 
             {Object.values(filters).some(v => v) && (
-              <div className="flex items-center gap-2 mt-3">
-                <span className="text-sm text-muted-foreground">Active filters:</span>
-                <Button variant="ghost" size="sm" onClick={clearFilters}>
+              <div className="flex items-center gap-2 mt-2 sm:mt-3">
+                <span className="text-xs sm:text-sm text-muted-foreground">Active filters:</span>
+                <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={clearFilters}>
                   Clear all
                 </Button>
               </div>
@@ -274,27 +276,27 @@ export default function PennyekartAgentHierarchy() {
         </Card>
 
         {/* Main Content */}
-        <div className="grid lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Hierarchy Tree */}
-          <Card className="lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Users className="h-5 w-5 text-primary" />
+          <Card className="lg:col-span-2 overflow-hidden">
+            <CardHeader className="px-3 sm:px-6 py-3 sm:py-4">
+              <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+                <Users className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
                 Agent Hierarchy
               </CardTitle>
-              <CardDescription>
-                Click on an agent to view details and manage
+              <CardDescription className="text-xs sm:text-sm">
+                Click on an agent to view details
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 sm:px-6 pb-4 max-h-[50vh] sm:max-h-[60vh] overflow-y-auto">
               {isLoading ? (
                 <div className="flex items-center justify-center py-12">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : error ? (
                 <div className="text-center py-12 text-destructive">
-                  <p>Error loading agents: {error}</p>
-                  <Button variant="outline" className="mt-4" onClick={refetch}>
+                  <p className="text-sm">Error: {error}</p>
+                  <Button variant="outline" size="sm" className="mt-4" onClick={refetch}>
                     Retry
                   </Button>
                 </div>
@@ -320,10 +322,10 @@ export default function PennyekartAgentHierarchy() {
                 onClose={() => setSelectedAgent(null)}
               />
             ) : (
-              <Card className="h-full min-h-[300px] flex items-center justify-center">
-                <div className="text-center text-muted-foreground p-6">
-                  <Users className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Select an agent to view details</p>
+              <Card className="h-full min-h-[200px] sm:min-h-[300px] flex items-center justify-center">
+                <div className="text-center text-muted-foreground p-4 sm:p-6">
+                  <Users className="h-10 w-10 sm:h-12 sm:w-12 mx-auto mb-3 sm:mb-4 opacity-50" />
+                  <p className="text-sm">Select an agent to view details</p>
                 </div>
               </Card>
             )}

@@ -71,40 +71,42 @@ export function AgentDetailsPanel({
 
   return (
     <Card className="h-full">
-      <CardHeader className="flex flex-row items-start justify-between pb-3">
+      <CardHeader className="flex flex-row items-start justify-between pb-2 sm:pb-3 px-3 sm:px-6 py-3 sm:py-4">
         <div>
-          <CardTitle className="text-lg flex items-center gap-2">
-            <User className="h-5 w-5" />
+          <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+            <User className="h-4 w-4 sm:h-5 sm:w-5" />
             Agent Details
           </CardTitle>
         </div>
-        <Button variant="ghost" size="icon" onClick={onClose}>
+        <Button variant="ghost" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={onClose}>
           <X className="h-4 w-4" />
         </Button>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-3 sm:space-y-4 px-3 sm:px-6">
         {/* Basic Info */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between">
-            <h3 className="text-xl font-semibold">{agent.name}</h3>
-            <Badge className={cn(ROLE_COLORS[agent.role])}>
+        <div className="space-y-2 sm:space-y-3">
+          <div className="flex items-start sm:items-center justify-between gap-2 flex-wrap">
+            <h3 className="text-lg sm:text-xl font-semibold">{agent.name}</h3>
+            <Badge className={cn("text-xs", ROLE_COLORS[agent.role])}>
               {ROLE_LABELS[agent.role]}
             </Badge>
           </div>
 
-          <div className="space-y-2 text-sm">
+          <div className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Phone className="h-4 w-4" />
+              <Phone className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
               <span>{agent.mobile}</span>
             </div>
             <div className="flex items-center gap-2 text-muted-foreground">
-              <Building2 className="h-4 w-4" />
-              <span>{agent.panchayath?.name || "Unknown Panchayath"}</span>
+              <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+              <span className="truncate">{agent.panchayath?.name || "Unknown"}</span>
             </div>
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <MapPin className="h-4 w-4" />
-              <span>Ward: {agent.ward}</span>
-            </div>
+            {agent.ward !== "N/A" && (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5 sm:h-4 sm:w-4 flex-shrink-0" />
+                <span>Ward: {agent.ward}</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -173,26 +175,26 @@ export function AgentDetailsPanel({
 
         {/* Actions */}
         <div className="flex flex-col gap-2">
-          <Button variant="outline" onClick={onEdit} className="w-full">
-            <Edit className="h-4 w-4 mr-2" />
+          <Button variant="outline" onClick={onEdit} className="w-full" size="sm">
+            <Edit className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
             Edit Agent
           </Button>
           
           {childRole && (
-            <Button variant="outline" onClick={onAddChild} className="w-full">
-              <UserPlus className="h-4 w-4 mr-2" />
+            <Button variant="outline" onClick={onAddChild} className="w-full" size="sm">
+              <UserPlus className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
               Add {ROLE_LABELS[childRole]}
             </Button>
           )}
 
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive" className="w-full">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Agent
+              <Button variant="destructive" className="w-full" size="sm">
+                <Trash2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-2" />
+                Delete
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-[90vw] sm:max-w-md">
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Agent?</AlertDialogTitle>
                 <AlertDialogDescription>

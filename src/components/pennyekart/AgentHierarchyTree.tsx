@@ -70,22 +70,22 @@ function PanchayathNode({ panchayathName, agents, onSelectAgent, selectedAgentId
     <div className="border rounded-lg overflow-hidden">
       <button
         onClick={() => setIsExpanded(!isExpanded)}
-        className="w-full flex items-center gap-3 p-3 bg-muted/50 hover:bg-muted transition-colors"
+        className="w-full flex items-center gap-2 sm:gap-3 p-2 sm:p-3 bg-muted/50 hover:bg-muted transition-colors"
       >
         {isExpanded ? (
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
         ) : (
-          <ChevronRight className="h-4 w-4 text-muted-foreground" />
+          <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0" />
         )}
-        <Building2 className="h-5 w-5 text-primary" />
-        <span className="font-semibold text-sm">{panchayathName}</span>
-        <Badge variant="secondary" className="ml-auto">
-          {agents.length} agents
+        <Building2 className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+        <span className="font-semibold text-xs sm:text-sm truncate">{panchayathName}</span>
+        <Badge variant="secondary" className="ml-auto text-[10px] sm:text-xs px-1.5 py-0 flex-shrink-0">
+          {agents.length}
         </Badge>
       </button>
       
       {isExpanded && (
-        <div className="p-2">
+        <div className="p-1.5 sm:p-2">
           {teamLeaders.length > 0 ? (
             teamLeaders.map(leader => (
               <AgentNode
@@ -136,10 +136,10 @@ function AgentNode({ agent, allAgents, depth, onSelectAgent, selectedAgentId }: 
   const totalCustomers = calculateTotalCustomers(agent, allAgents);
   
   return (
-    <div className="ml-4">
+    <div className="ml-2 sm:ml-4">
       <div
         className={cn(
-          "flex items-center gap-2 p-2 rounded-md cursor-pointer transition-colors group",
+          "flex items-start sm:items-center gap-1.5 sm:gap-2 p-1.5 sm:p-2 rounded-md cursor-pointer transition-colors group",
           isSelected ? "bg-primary/10 border border-primary/30" : "hover:bg-muted/50"
         )}
         onClick={() => onSelectAgent(agent)}
@@ -150,56 +150,59 @@ function AgentNode({ agent, allAgents, depth, onSelectAgent, selectedAgentId }: 
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="p-0.5 hover:bg-muted rounded"
+            className="p-0.5 hover:bg-muted rounded flex-shrink-0 mt-0.5 sm:mt-0"
           >
             {isExpanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+              <ChevronDown className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
             ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground" />
             )}
           </button>
         ) : (
-          <div className="w-5" />
+          <div className="w-4 sm:w-5 flex-shrink-0" />
         )}
         
-        <User className="h-4 w-4 text-muted-foreground" />
+        <User className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-muted-foreground flex-shrink-0 mt-0.5 sm:mt-0" />
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="font-medium text-sm truncate">{agent.name}</span>
-            <Badge className={cn("text-xs", ROLE_COLORS[agent.role])}>
+          <div className="flex items-start sm:items-center gap-1.5 sm:gap-2 flex-wrap">
+            <span className="font-medium text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">{agent.name}</span>
+            <Badge className={cn("text-[10px] sm:text-xs px-1.5 py-0", ROLE_COLORS[agent.role])}>
               {ROLE_LABELS[agent.role]}
             </Badge>
           </div>
-          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-            <span className="flex items-center gap-1">
-              <Phone className="h-3 w-3" />
-              {agent.mobile}
+          <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-muted-foreground mt-0.5">
+            <span className="flex items-center gap-0.5 sm:gap-1">
+              <Phone className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+              <span className="hidden sm:inline">{agent.mobile}</span>
+              <span className="sm:hidden">{agent.mobile.slice(-4)}</span>
             </span>
-            <span className="flex items-center gap-1">
-              <MapPin className="h-3 w-3" />
-              {agent.ward}
-            </span>
+            {agent.ward !== "N/A" && (
+              <span className="flex items-center gap-0.5 sm:gap-1">
+                <MapPin className="h-2.5 w-2.5 sm:h-3 sm:w-3" />
+                W{agent.ward}
+              </span>
+            )}
           </div>
         </div>
         
         {agent.role === "pro" && (
-          <Badge variant="secondary" className="text-xs">
-            <Users className="h-3 w-3 mr-1" />
-            {agent.customer_count} customers
+          <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0 flex-shrink-0">
+            <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+            {agent.customer_count}
           </Badge>
         )}
         
         {agent.role !== "pro" && totalCustomers > 0 && (
-          <Badge variant="outline" className="text-xs text-muted-foreground">
-            <Users className="h-3 w-3 mr-1" />
-            {totalCustomers} total
+          <Badge variant="outline" className="text-[10px] sm:text-xs text-muted-foreground px-1.5 py-0 flex-shrink-0 hidden sm:flex">
+            <Users className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5 sm:mr-1" />
+            {totalCustomers}
           </Badge>
         )}
       </div>
       
       {hasChildren && isExpanded && (
-        <div className="border-l-2 border-muted ml-2.5">
+        <div className="border-l-2 border-muted ml-1.5 sm:ml-2.5">
           {children.map(child => (
             <AgentNode
               key={child.id}

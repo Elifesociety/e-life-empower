@@ -50,13 +50,30 @@ const singleAgentSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   mobile: z.string().regex(/^[0-9]{10}$/, "Mobile must be 10 digits"),
   role: z.enum(["team_leader", "coordinator", "group_leader", "pro"] as const),
-  panchayath_id: z.string().uuid("Select a panchayath"),
-  ward: z.string().min(1, "Ward is required"),
+  panchayath_id: z.string().min(1, "Select a panchayath"),
+  ward: z.string().default(""),
   parent_agent_id: z.string().uuid().nullable().optional(),
   customer_count: z.number().int().min(0).default(0),
   // Responsibility scope
   responsible_panchayath_ids: z.array(z.string().uuid()).default([]),
   responsible_wards: z.array(z.string()).default([]),
+}).superRefine((data, ctx) => {
+  // Ward is required for non-team-leader roles
+  if (data.role !== "team_leader" && (!data.ward || data.ward.trim() === "")) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Ward is required",
+      path: ["ward"],
+    });
+  }
+  // Team leaders must have at least one responsible panchayath
+  if (data.role === "team_leader" && (!data.responsible_panchayath_ids || data.responsible_panchayath_ids.length === 0)) {
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: "Select at least one responsible panchayath",
+      path: ["responsible_panchayath_ids"],
+    });
+  }
 });
 
 const bulkAgentSchema = z.object({
@@ -295,6 +312,10 @@ export function BulkAgentFormDialog({
       // Team leaders don't have parents
       if (values.role === "team_leader") {
         values.parent_agent_id = null;
+        // Set ward to "N/A" for team leaders as they manage multiple panchayaths
+        if (!values.ward) {
+          values.ward = "N/A";
+        }
       }
 
       // Only PROs can have customer count
@@ -317,7 +338,7 @@ export function BulkAgentFormDialog({
         mobile: values.mobile,
         role: values.role,
         panchayath_id: values.panchayath_id,
-        ward: values.ward,
+        ward: values.ward || "N/A",
         parent_agent_id: values.parent_agent_id || null,
         customer_count: values.customer_count,
         responsible_panchayath_ids: responsiblePanchayathIds,
@@ -677,65 +698,30 @@ function SingleFormContent({
           />
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <FormField
-            control={form.control}
-            name="ward"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-xs sm:text-sm">Ward</FormLabel>
-                <Select onValueChange={field.onChange} value={field.value} disabled={wardOptions.length === 0}>
-                  <FormControl>
-                    <SelectTrigger className="h-9">
-                      <SelectValue placeholder={
-                        !selectedPanchayath 
-                          ? "Select panchayath first" 
-                          : wardOptions.length === 0 
-                            ? "No wards" 
-                            : "Select ward"
-                      } />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {wardOptions.map((w) => (
-                      <SelectItem key={w} value={w}>Ward {w}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormMessage className="text-xs" />
-              </FormItem>
-            )}
-          />
-
-          {needsParent && (
+        {/* Ward - hide for team leaders */}
+        {selectedRole !== "team_leader" && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
               control={form.control}
-              name="parent_agent_id"
+              name="ward"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-xs sm:text-sm">
-                    Reports To {parentRole ? `(${ROLE_LABELS[parentRole]})` : ""}
-                  </FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    value={field.value || ""}
-                  >
+                  <FormLabel className="text-xs sm:text-sm">Ward</FormLabel>
+                  <Select onValueChange={field.onChange} value={field.value} disabled={wardOptions.length === 0}>
                     <FormControl>
                       <SelectTrigger className="h-9">
                         <SelectValue placeholder={
                           !selectedPanchayath 
-                            ? "Select panchayath" 
-                            : potentialParents.length === 0 
-                              ? "None available" 
-                              : "Select"
+                            ? "Select panchayath first" 
+                            : wardOptions.length === 0 
+                              ? "No wards" 
+                              : "Select ward"
                         } />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {potentialParents.map((parent) => (
-                        <SelectItem key={parent.id} value={parent.id}>
-                          {parent.name} (W{parent.ward})
-                        </SelectItem>
+                      {wardOptions.map((w) => (
+                        <SelectItem key={w} value={w}>Ward {w}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -743,30 +729,68 @@ function SingleFormContent({
                 </FormItem>
               )}
             />
-          )}
 
-          {selectedRole === "pro" && (
-            <FormField
-              control={form.control}
-              name="customer_count"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs sm:text-sm">Customer Count</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      min={0}
-                      className="h-9"
-                      {...field}
-                      onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                    />
-                  </FormControl>
-                  <FormMessage className="text-xs" />
-                </FormItem>
-              )}
-            />
-          )}
-        </div>
+            {needsParent && (
+              <FormField
+                control={form.control}
+                name="parent_agent_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs sm:text-sm">
+                      Reports To {parentRole ? `(${ROLE_LABELS[parentRole]})` : ""}
+                    </FormLabel>
+                    <Select 
+                      onValueChange={field.onChange} 
+                      value={field.value || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder={
+                            !selectedPanchayath 
+                              ? "Select panchayath" 
+                              : potentialParents.length === 0 
+                                ? "None available" 
+                                : "Select"
+                          } />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {potentialParents.map((parent) => (
+                          <SelectItem key={parent.id} value={parent.id}>
+                            {parent.name} (W{parent.ward})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {selectedRole === "pro" && (
+              <FormField
+                control={form.control}
+                name="customer_count"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-xs sm:text-sm">Customer Count</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min={0}
+                        className="h-9"
+                        {...field}
+                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                      />
+                    </FormControl>
+                    <FormMessage className="text-xs" />
+                  </FormItem>
+                )}
+              />
+            )}
+          </div>
+        )}
       </div>
 
       {/* Responsibility Section - Only for Team Leaders and Coordinators */}
