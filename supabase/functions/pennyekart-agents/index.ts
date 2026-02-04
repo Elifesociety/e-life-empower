@@ -190,14 +190,27 @@ serve(async (req) => {
     if (req.method === "PUT") {
       const { agent, id } = body;
       
+      if (!id || !agent) {
+        return new Response(
+          JSON.stringify({ error: "Missing id or agent data" }),
+          { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      // Remove fields that shouldn't be updated
+      const { created_at, created_by, panchayath, parent_agent, children, ...updateData } = agent;
+      
       const { data, error } = await supabase
         .from("pennyekart_agents")
-        .update(agent)
+        .update(updateData)
         .eq("id", id)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Update error:", error);
+        throw error;
+      }
 
       return new Response(JSON.stringify({ data }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
