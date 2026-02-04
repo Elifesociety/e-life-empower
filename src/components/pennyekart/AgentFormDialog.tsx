@@ -240,7 +240,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] flex flex-col p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-[95vw] sm:max-w-[500px] max-h-[90vh] flex flex-col p-0 gap-0">
         <DialogHeader className="px-4 pt-4 sm:px-6 sm:pt-6 text-left shrink-0">
           <DialogTitle className="text-lg">{isEditing ? "Edit Agent" : "Add New Agent"}</DialogTitle>
           <DialogDescription className="text-sm">
@@ -248,9 +248,8 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 min-h-0 overflow-auto">
-          <div className="px-4 sm:px-6 py-4 pb-6">
-            <Form {...form}>
+        <div className="flex-1 overflow-y-auto min-h-0 px-4 sm:px-6 py-4 pb-6">
+          <Form {...form}>
               <form id="agent-form" onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
                 <FormField
                   control={form.control}
@@ -492,8 +491,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
                 )}
               </form>
             </Form>
-          </div>
-        </ScrollArea>
+        </div>
 
         <DialogFooter className="flex-col-reverse gap-2 sm:flex-row sm:gap-2 px-4 pb-4 sm:px-6 sm:pb-6 border-t pt-4 shrink-0">
           <Button 
