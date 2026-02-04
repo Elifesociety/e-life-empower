@@ -35,7 +35,7 @@ import {
   getChildRole
 } from "@/hooks/usePennyekartAgents";
 import { AgentHierarchyTree } from "@/components/pennyekart/AgentHierarchyTree";
-import { AgentFormDialog } from "@/components/pennyekart/AgentFormDialog";
+import { BulkAgentFormDialog } from "@/components/pennyekart/BulkAgentFormDialog";
 import { AgentDetailsPanel } from "@/components/pennyekart/AgentDetailsPanel";
 import { toast } from "sonner";
 
@@ -331,10 +331,12 @@ export default function PennyekartAgentHierarchy() {
         </div>
 
         {/* Form Dialog */}
-        <AgentFormDialog
+        <BulkAgentFormDialog
           open={formDialogOpen}
           onOpenChange={setFormDialogOpen}
           agent={editingAgent}
+          defaultParentId={defaultParentId}
+          defaultRole={defaultRole}
           onSuccess={refetch}
         />
       </div>
