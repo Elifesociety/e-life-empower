@@ -3,6 +3,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useAdminStats } from "@/hooks/useAdminStats";
 import { StatsCard } from "@/components/dashboard/StatsCard";
 import { RegistrationsDialog } from "@/components/dashboard/RegistrationsDialog";
+import { AccessibleDivisionsCard } from "@/components/dashboard/AccessibleDivisionsCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
@@ -114,6 +115,16 @@ export default function AdminDashboard() {
                   <span className="text-sm text-primary font-medium">
                     {divisionInfo.name}
                   </span>
+                  {adminData?.access_all_divisions && (
+                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-medium">
+                      All Divisions
+                    </span>
+                  )}
+                  {!adminData?.access_all_divisions && (adminData?.additional_division_ids?.length ?? 0) > 0 && (
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 text-xs font-medium">
+                      +{adminData?.additional_division_ids?.length} Divisions
+                    </span>
+                  )}
                 </div>
               )}
             </div>
@@ -193,6 +204,17 @@ export default function AdminDashboard() {
             </Link>
           </Button>
         </div>
+
+        {/* Accessible Divisions - only shown for admins with multi-division access */}
+        {adminData && (
+          <div className="mb-6 sm:mb-8">
+            <AccessibleDivisionsCard
+              primaryDivisionId={adminData.division_id}
+              accessAllDivisions={adminData.access_all_divisions ?? false}
+              additionalDivisionIds={adminData.additional_division_ids ?? []}
+            />
+          </div>
+        )}
 
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2 mb-6 sm:mb-8">
           {/* Recent Registrations */}

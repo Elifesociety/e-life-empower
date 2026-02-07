@@ -53,27 +53,35 @@ export function useAdminStats(): AdminStats {
     const fetchStats = async () => {
       try {
         const divisionId = adminData?.division_id;
+        const accessAllDivisions = adminData?.access_all_divisions;
+        const additionalDivisionIds = adminData?.additional_division_ids || [];
         
         if (!divisionId && !isSuperAdmin) {
           setStats(prev => ({ ...prev, isLoading: false }));
           return;
         }
 
+        // Determine all accessible division IDs
+        const canAccessAll = isSuperAdmin || accessAllDivisions;
+        const accessibleDivisionIds = canAccessAll
+          ? [] // empty means no filter (all divisions)
+          : [divisionId!, ...additionalDivisionIds];
+
         // Fetch all data in parallel instead of sequentially
         let programsQuery = supabase
           .from("programs")
-          .select("id, is_active, panchayath_id, all_panchayaths");
+          .select("id, is_active, panchayath_id, all_panchayaths, division_id");
         
-        if (!isSuperAdmin && divisionId) {
-          programsQuery = programsQuery.eq("division_id", divisionId);
+        if (!canAccessAll && accessibleDivisionIds.length > 0) {
+          programsQuery = programsQuery.in("division_id", accessibleDivisionIds);
         }
 
         let membersQuery = supabase
           .from("members")
           .select("id, cluster_id", { count: "exact" });
         
-        if (!isSuperAdmin && divisionId) {
-          membersQuery = membersQuery.eq("division_id", divisionId);
+        if (!canAccessAll && accessibleDivisionIds.length > 0) {
+          membersQuery = membersQuery.in("division_id", accessibleDivisionIds);
         }
 
         const panchayathsQuery = supabase

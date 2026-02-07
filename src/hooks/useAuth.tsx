@@ -9,6 +9,8 @@ interface AdminData {
   id: string;
   user_id: string;
   division_id: string;
+  access_all_divisions?: boolean;
+  additional_division_ids?: string[];
 }
 
 interface AuthContextType {
