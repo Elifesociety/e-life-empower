@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
-import { Building2, Globe, Loader2 } from "lucide-react";
+import { Building2, Globe, Loader2, ExternalLink } from "lucide-react";
 
 interface Division {
   id: string;
@@ -82,9 +83,10 @@ export function AccessibleDivisionsCard({
         ) : (
           <div className="grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2">
             {divisions.map((division) => (
-              <div
+              <Link
                 key={division.id}
-                className="flex items-center gap-3 p-2.5 sm:p-3 rounded-lg border"
+                to={division.color ? `/division/${division.color}` : "#"}
+                className="flex items-center gap-3 p-2.5 sm:p-3 rounded-lg border hover:bg-accent/50 hover:border-primary/30 transition-colors group"
               >
                 <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 flex-shrink-0">
                   <Building2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-primary" />
@@ -106,7 +108,8 @@ export function AccessibleDivisionsCard({
                     </p>
                   )}
                 </div>
-              </div>
+                <ExternalLink className="h-3.5 w-3.5 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
+              </Link>
             ))}
           </div>
         )}
