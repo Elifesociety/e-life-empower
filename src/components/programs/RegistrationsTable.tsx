@@ -24,7 +24,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter } from "lucide-react";
+import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter, X } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 import { RegistrationVerification } from "./RegistrationVerification";
 import { exportRegistrationsToXlsx } from "@/lib/exportXlsx";
@@ -56,7 +57,8 @@ export function RegistrationsTable({
   const [isExporting, setIsExporting] = useState(false);
   const [panchayathFilter, setPanchayathFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [percentageRange, setPercentageRange] = useState("all");
+  const [minPercent, setMinPercent] = useState<string>("");
+  const [maxPercent, setMaxPercent] = useState<string>("");
 
   const sortedQuestions = [...questions].sort((a, b) => a.sort_order - b.sort_order);
 
@@ -86,12 +88,15 @@ export function RegistrationsTable({
           if (statusFilter === "verified" && status !== "verified") return false;
         }
 
-        // Percentage range filter
-        if (percentageRange !== "all" && status === "verified") {
+        // Percentage range filter (manual inputs)
+        const hasMinFilter = minPercent !== "" && !isNaN(Number(minPercent));
+        const hasMaxFilter = maxPercent !== "" && !isNaN(Number(maxPercent));
+        
+        if ((hasMinFilter || hasMaxFilter) && status === "verified") {
           const pct = (r as any).percentage || 0;
-          const [min, max] = percentageRange.split("-").map(Number);
-          if (pct < min || pct > max) return false;
-        } else if (percentageRange !== "all" && status !== "verified") {
+          if (hasMinFilter && pct < Number(minPercent)) return false;
+          if (hasMaxFilter && pct > Number(maxPercent)) return false;
+        } else if ((hasMinFilter || hasMaxFilter) && status !== "verified") {
           return false; // Hide unverified when filtering by percentage
         }
       }
@@ -113,7 +118,7 @@ export function RegistrationsTable({
     }
 
     return filtered;
-  }, [registrations, panchayathFilter, statusFilter, percentageRange, verificationEnabled]);
+  }, [registrations, panchayathFilter, statusFilter, minPercent, maxPercent, verificationEnabled]);
 
   // Calculate ranks for verified registrations
   const rankedRegistrations = useMemo(() => {
@@ -264,18 +269,37 @@ export function RegistrationsTable({
                       <SelectItem value="pending">Pending</SelectItem>
                     </SelectContent>
                   </Select>
-                  <Select value={percentageRange} onValueChange={setPercentageRange}>
-                    <SelectTrigger className="w-32 h-8 text-xs">
-                      <SelectValue placeholder="Score Range" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Scores</SelectItem>
-                      <SelectItem value="80-100">80-100%</SelectItem>
-                      <SelectItem value="60-79">60-79%</SelectItem>
-                      <SelectItem value="40-59">40-59%</SelectItem>
-                      <SelectItem value="0-39">0-39%</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1">
+                    <Input
+                      type="number"
+                      placeholder="Min %"
+                      value={minPercent}
+                      onChange={(e) => setMinPercent(e.target.value)}
+                      className="w-16 h-8 text-xs"
+                      min={0}
+                      max={100}
+                    />
+                    <span className="text-xs text-muted-foreground">-</span>
+                    <Input
+                      type="number"
+                      placeholder="Max %"
+                      value={maxPercent}
+                      onChange={(e) => setMaxPercent(e.target.value)}
+                      className="w-16 h-8 text-xs"
+                      min={0}
+                      max={100}
+                    />
+                    {(minPercent || maxPercent) && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => { setMinPercent(""); setMaxPercent(""); }}
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
                 </>
               )}
               <span className="text-xs text-muted-foreground ml-auto">
