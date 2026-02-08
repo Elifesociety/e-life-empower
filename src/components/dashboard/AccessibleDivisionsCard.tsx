@@ -85,7 +85,7 @@ export function AccessibleDivisionsCard({
             {divisions.map((division) => (
               <Link
                 key={division.id}
-                to={division.color ? `/division/${division.color}` : "#"}
+                to={`/admin/division/${division.id}`}
                 className="flex items-center gap-3 p-2.5 sm:p-3 rounded-lg border hover:bg-accent/50 hover:border-primary/30 transition-colors group"
               >
                 <div className="p-1.5 sm:p-2 rounded-full bg-primary/10 flex-shrink-0">
