@@ -56,6 +56,7 @@ export function RegistrationsTable({
   const [isExporting, setIsExporting] = useState(false);
   const [panchayathFilter, setPanchayathFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [percentageRange, setPercentageRange] = useState("all");
 
   const sortedQuestions = [...questions].sort((a, b) => a.sort_order - b.sort_order);
 
@@ -70,21 +71,64 @@ export function RegistrationsTable({
     return Array.from(set).sort();
   }, [registrations]);
 
-  // Filter registrations
+  // Filter and rank registrations
   const filteredRegistrations = useMemo(() => {
-    return registrations.filter((r) => {
+    // First filter
+    const filtered = registrations.filter((r) => {
       const answers = r.answers as Record<string, any>;
       const pName = answers._fixed?.panchayath_name || "";
       if (panchayathFilter !== "all" && pName !== panchayathFilter) return false;
 
-      if (statusFilter !== "all" && verificationEnabled) {
+      if (verificationEnabled) {
         const status = (r as any).verification_status;
-        if (statusFilter === "pending" && status === "verified") return false;
-        if (statusFilter === "verified" && status !== "verified") return false;
+        if (statusFilter !== "all") {
+          if (statusFilter === "pending" && status === "verified") return false;
+          if (statusFilter === "verified" && status !== "verified") return false;
+        }
+
+        // Percentage range filter
+        if (percentageRange !== "all" && status === "verified") {
+          const pct = (r as any).percentage || 0;
+          const [min, max] = percentageRange.split("-").map(Number);
+          if (pct < min || pct > max) return false;
+        } else if (percentageRange !== "all" && status !== "verified") {
+          return false; // Hide unverified when filtering by percentage
+        }
       }
       return true;
     });
-  }, [registrations, panchayathFilter, statusFilter, verificationEnabled]);
+
+    // Sort by percentage descending for ranking (verified first)
+    if (verificationEnabled) {
+      filtered.sort((a, b) => {
+        const aVerified = (a as any).verification_status === "verified";
+        const bVerified = (b as any).verification_status === "verified";
+        if (aVerified && !bVerified) return -1;
+        if (!aVerified && bVerified) return 1;
+        if (aVerified && bVerified) {
+          return ((b as any).percentage || 0) - ((a as any).percentage || 0);
+        }
+        return 0;
+      });
+    }
+
+    return filtered;
+  }, [registrations, panchayathFilter, statusFilter, percentageRange, verificationEnabled]);
+
+  // Calculate ranks for verified registrations
+  const rankedRegistrations = useMemo(() => {
+    if (!verificationEnabled) return new Map<string, number>();
+    
+    const verifiedSorted = [...registrations]
+      .filter((r) => (r as any).verification_status === "verified")
+      .sort((a, b) => ((b as any).percentage || 0) - ((a as any).percentage || 0));
+    
+    const rankMap = new Map<string, number>();
+    verifiedSorted.forEach((r, idx) => {
+      rankMap.set(r.id, idx + 1);
+    });
+    return rankMap;
+  }, [registrations, verificationEnabled]);
 
   const handleExport = () => {
     setIsExporting(true);
@@ -209,16 +253,30 @@ export function RegistrationsTable({
                 </SelectContent>
               </Select>
               {verificationEnabled && (
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-36 h-8 text-xs">
-                    <SelectValue placeholder="Status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Status</SelectItem>
-                    <SelectItem value="verified">Verified</SelectItem>
-                    <SelectItem value="pending">Pending</SelectItem>
-                  </SelectContent>
-                </Select>
+                <>
+                  <Select value={statusFilter} onValueChange={setStatusFilter}>
+                    <SelectTrigger className="w-36 h-8 text-xs">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Status</SelectItem>
+                      <SelectItem value="verified">Verified</SelectItem>
+                      <SelectItem value="pending">Pending</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <Select value={percentageRange} onValueChange={setPercentageRange}>
+                    <SelectTrigger className="w-32 h-8 text-xs">
+                      <SelectValue placeholder="Score Range" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Scores</SelectItem>
+                      <SelectItem value="80-100">80-100%</SelectItem>
+                      <SelectItem value="60-79">60-79%</SelectItem>
+                      <SelectItem value="40-59">40-59%</SelectItem>
+                      <SelectItem value="0-39">0-39%</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
               )}
               <span className="text-xs text-muted-foreground ml-auto">
                 {filteredRegistrations.length} of {registrations.length}
@@ -247,7 +305,10 @@ export function RegistrationsTable({
                     <TableHead className="hidden md:table-cell">Mobile</TableHead>
                     <TableHead className="hidden lg:table-cell">Panchayath</TableHead>
                     {verificationEnabled && (
-                      <TableHead className="text-center">Status</TableHead>
+                      <>
+                        <TableHead className="text-center w-16">Rank</TableHead>
+                        <TableHead className="text-center">Status</TableHead>
+                      </>
                     )}
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -256,6 +317,7 @@ export function RegistrationsTable({
                   {filteredRegistrations.map((registration, index) => {
                     const verification = verificationEnabled ? getVerificationStatus(registration) : null;
                     const StatusIcon = verification?.icon;
+                    const rank = rankedRegistrations.get(registration.id);
 
                     return (
                       <TableRow key={registration.id}>
@@ -273,15 +335,29 @@ export function RegistrationsTable({
                           {getFixedFieldDisplay(registration, "panchayath_name")}
                         </TableCell>
                         {verificationEnabled && verification && StatusIcon && (
-                          <TableCell className="text-center">
-                            <Badge 
-                              variant={verification.variant}
-                              className={verification.color}
-                            >
-                              <StatusIcon className="h-3 w-3 mr-1" />
-                              {verification.label}
-                            </Badge>
-                          </TableCell>
+                          <>
+                            <TableCell className="text-center">
+                              {rank ? (
+                                <Badge 
+                                  variant="outline" 
+                                  className={rank <= 3 ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400 font-bold" : ""}
+                                >
+                                  #{rank}
+                                </Badge>
+                              ) : (
+                                <span className="text-muted-foreground text-xs">-</span>
+                              )}
+                            </TableCell>
+                            <TableCell className="text-center">
+                              <Badge 
+                                variant={verification.variant}
+                                className={verification.color}
+                              >
+                                <StatusIcon className="h-3 w-3 mr-1" />
+                                {verification.label}
+                              </Badge>
+                            </TableCell>
+                          </>
                         )}
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-1">
