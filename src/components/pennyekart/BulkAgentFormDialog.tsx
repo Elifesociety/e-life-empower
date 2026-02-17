@@ -66,6 +66,15 @@ const singleAgentSchema = z.object({
       path: ["ward"],
     });
   }
+  // Parent agent is required for non-team-leader roles
+  if (data.role !== "team_leader" && !data.parent_agent_id) {
+    const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Please select a ${parentRoleLabel}`,
+      path: ["parent_agent_id"],
+    });
+  }
   // Team leaders must have at least one responsible panchayath
   if (data.role === "team_leader" && (!data.responsible_panchayath_ids || data.responsible_panchayath_ids.length === 0)) {
     ctx.addIssue({
@@ -88,6 +97,15 @@ const bulkAgentSchema = z.object({
     ward: z.string().min(1, "Ward required"),
     customer_count: z.number().int().min(0).default(0),
   })).min(1, "Add at least one agent"),
+}).superRefine((data, ctx) => {
+  if (data.role !== "team_leader" && !data.parent_agent_id) {
+    const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Please select a ${parentRoleLabel}`,
+      path: ["parent_agent_id"],
+    });
+  }
 });
 
 type SingleAgentFormValues = z.infer<typeof singleAgentSchema>;
