@@ -219,11 +219,14 @@ function AgentNode({ agent, allAgents, depth, onSelectAgent, selectedAgentId }: 
   );
 }
 
-function calculateTotalCustomers(agent: PennyekartAgent, allAgents: PennyekartAgent[]): number {
+function calculateTotalCustomers(agent: PennyekartAgent, allAgents: PennyekartAgent[], visited: Set<string> = new Set()): number {
+  if (visited.has(agent.id)) return 0;
+  visited.add(agent.id);
+  
   if (agent.role === "pro") {
     return agent.customer_count;
   }
   
   const children = allAgents.filter(a => a.parent_agent_id === agent.id);
-  return children.reduce((total, child) => total + calculateTotalCustomers(child, allAgents), 0);
+  return children.reduce((total, child) => total + calculateTotalCustomers(child, allAgents, visited), 0);
 }
