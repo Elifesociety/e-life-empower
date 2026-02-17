@@ -107,21 +107,19 @@ export function usePennyekartAgents(filters?: AgentFilters) {
 function buildHierarchyTree(agents: PennyekartAgent[]): PennyekartAgent[] {
   const agentMap = new Map<string, PennyekartAgent>();
   
-  // Create map and initialize children arrays
   agents.forEach(agent => {
     agentMap.set(agent.id, { ...agent, children: [] });
   });
   
   const rootAgents: PennyekartAgent[] = [];
   
-  // Build tree structure
   agentMap.forEach(agent => {
-    if (agent.parent_agent_id && agentMap.has(agent.parent_agent_id)) {
+    // Skip self-references to prevent circular loops
+    if (agent.parent_agent_id && agent.parent_agent_id !== agent.id && agentMap.has(agent.parent_agent_id)) {
       const parent = agentMap.get(agent.parent_agent_id)!;
       parent.children = parent.children || [];
       parent.children.push(agent);
-    } else if (!agent.parent_agent_id || !agentMap.has(agent.parent_agent_id)) {
-      // Root level agents (Team Leaders or orphans due to filtering)
+    } else {
       rootAgents.push(agent);
     }
   });
