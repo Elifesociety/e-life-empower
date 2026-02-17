@@ -57,6 +57,15 @@ const agentFormSchema = z.object({
   parent_agent_id: z.string().uuid().nullable().optional(),
   customer_count: z.number().int().min(0).default(0),
   responsible_panchayath_ids: z.array(z.string()).default([]),
+}).superRefine((data, ctx) => {
+  if (data.role !== "team_leader" && !data.parent_agent_id) {
+    const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
+    ctx.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: `Please select a ${parentRoleLabel}`,
+      path: ["parent_agent_id"],
+    });
+  }
 });
 
 type AgentFormValues = z.infer<typeof agentFormSchema>;
