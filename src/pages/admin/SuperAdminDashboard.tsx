@@ -217,7 +217,7 @@ export default function SuperAdminDashboard() {
           </Card>
 
           {/* Divisions Overview */}
-          <Card>
+          <Card id="divisions-overview">
             <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pb-3 sm:pb-6">
               <div>
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
