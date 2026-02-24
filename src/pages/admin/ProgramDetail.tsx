@@ -49,6 +49,7 @@ import { format } from "date-fns";
 
 export default function ProgramDetail() {
   const { id } = useParams<{ id: string }>();
+  const { adminToken } = useAuth();
   const { program, isLoading, error, refetch } = useProgram(id);
   const { registrations, isLoading: registrationsLoading, refetch: refetchRegistrations } =
     useProgramRegistrations(id);
