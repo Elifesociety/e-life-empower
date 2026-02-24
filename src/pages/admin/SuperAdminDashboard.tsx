@@ -251,7 +251,11 @@ export default function SuperAdminDashboard() {
                     <TableBody>
                       {stats.divisions.slice(0, 5).map((div) => (
                         <TableRow key={div.id}>
-                          <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-4">{div.name}</TableCell>
+                          <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-4">
+                            <Link to={`/admin/division/${div.id}`} className="hover:underline text-primary">
+                              {div.name}
+                            </Link>
+                          </TableCell>
                           <TableCell className="text-right text-xs sm:text-sm py-2 sm:py-4">{div.programCount}</TableCell>
                           <TableCell className="text-right text-xs sm:text-sm py-2 sm:py-4 hidden sm:table-cell">{div.memberCount}</TableCell>
                           <TableCell className="py-2 sm:py-4">
