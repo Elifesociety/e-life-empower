@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { useAuth } from "@/hooks/useAuth";
 import { useSuperAdminStats } from "@/hooks/useSuperAdminStats";
@@ -26,20 +27,39 @@ import {
   UserCheck,
   UserX,
   TrendingUp,
-  Clock
+  Clock,
+  Plus
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
+import { supabase } from "@/integrations/supabase/client";
+import { DivisionFormDialog } from "@/components/admin/DivisionFormDialog";
 
 export default function SuperAdminDashboard() {
   const { isSuperAdmin, signOut, user } = useAuth();
   const stats = useSuperAdminStats();
   const { toast } = useToast();
 
+  const [divisionDialogOpen, setDivisionDialogOpen] = useState(false);
+
   // Redirect non-super-admins
   if (!isSuperAdmin) {
     return <Navigate to="/unauthorized" replace />;
   }
+
+  const handleCreateDivision = async (data: { name: string; name_ml: string; description: string; color: string; icon: string; is_active: boolean }) => {
+    const { error } = await supabase.from("divisions").insert({
+      name: data.name,
+      name_ml: data.name_ml || null,
+      description: data.description || null,
+      color: data.color || null,
+      icon: data.icon || null,
+      is_active: data.is_active,
+    });
+    if (error) throw error;
+    toast({ title: "Division Created", description: `${data.name} has been added.` });
+    stats.refetch();
+  };
 
   const handleToggleAdmin = async (adminId: string, currentStatus: boolean, adminName: string) => {
     try {
@@ -228,9 +248,15 @@ export default function SuperAdminDashboard() {
                   Division performance overview
                 </CardDescription>
               </div>
-              <Button asChild variant="outline" size="sm" className="w-full sm:w-auto">
-                <Link to="/admin/admins">View All</Link>
-              </Button>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button variant="default" size="sm" className="flex-1 sm:flex-none" onClick={() => setDivisionDialogOpen(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  Add
+                </Button>
+                <Button asChild variant="outline" size="sm" className="flex-1 sm:flex-none">
+                  <Link to="/admin/admins">View All</Link>
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="px-3 sm:px-6">
               {stats.divisions.length === 0 ? (
@@ -328,6 +354,12 @@ export default function SuperAdminDashboard() {
           </div>
         )}
       </div>
+
+      <DivisionFormDialog
+        open={divisionDialogOpen}
+        onOpenChange={setDivisionDialogOpen}
+        onSubmit={handleCreateDivision}
+      />
     </Layout>
   );
 }
