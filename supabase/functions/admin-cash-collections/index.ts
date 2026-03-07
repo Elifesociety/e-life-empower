@@ -112,10 +112,11 @@ Deno.serve(async (req) => {
         .select("id, answers, program_id, programs(name, division_id)")
         .limit(100);
 
-      // Filter registrations by mobile match in answers
+      // Filter registrations by mobile match in answers (check both top-level and _fixed)
       const matchedRegs = (registrations || []).filter((reg) => {
-        const answers = reg.answers as Record<string, string>;
-        const phone = answers?.phone || answers?.mobile || answers?.contact || "";
+        const answers = reg.answers as Record<string, any>;
+        const fixed = answers?._fixed as Record<string, string> | undefined;
+        const phone = fixed?.mobile || fixed?.phone || answers?.phone || answers?.mobile || answers?.contact || "";
         return phone.includes(mobile);
       }).slice(0, 20);
 
@@ -136,15 +137,16 @@ Deno.serve(async (req) => {
 
       // Add registrations
       matchedRegs.forEach((r: any) => {
-        const answers = r.answers as Record<string, string>;
+        const answers = r.answers as Record<string, any>;
+        const fixed = answers?._fixed as Record<string, string> | undefined;
         results.push({
           type: "registration",
           id: r.id,
-          name: answers?.full_name || answers?.name || "Unknown",
-          mobile: answers?.phone || answers?.mobile || answers?.contact || "",
+          name: fixed?.name || answers?.full_name || answers?.name || "Unknown",
+          mobile: fixed?.mobile || fixed?.phone || answers?.phone || answers?.mobile || answers?.contact || "",
           division_id: r.programs?.division_id || null,
-          panchayath_id: null,
-          panchayath_name: answers?.panchayath || null,
+          panchayath_id: fixed?.panchayath_id || null,
+          panchayath_name: fixed?.panchayath_name || answers?.panchayath || null,
           program_name: r.programs?.name || null,
         });
       });
