@@ -36,6 +36,7 @@ interface AdminFormDialogProps {
     password: string;
     divisionId: string;
     isReadOnly: boolean;
+    cashCollectionEnabled: boolean;
   }) => Promise<void>;
   mode: "create" | "edit";
   initialData?: {
@@ -43,6 +44,7 @@ interface AdminFormDialogProps {
     phone: string;
     divisionId: string;
     isReadOnly: boolean;
+    cashCollectionEnabled: boolean;
   };
 }
 
