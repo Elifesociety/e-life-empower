@@ -194,6 +194,20 @@ export function AdminFormDialog({
                 onCheckedChange={(checked) => setIsReadOnly(!checked)}
               />
             </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="cashCollection">Cash Collection</Label>
+                <p className="text-xs text-muted-foreground">
+                  {cashCollectionEnabled ? "Enabled — Can verify collections & view reports" : "Disabled — No access to cash collections"}
+                </p>
+              </div>
+              <Switch
+                id="cashCollection"
+                checked={cashCollectionEnabled}
+                onCheckedChange={setCashCollectionEnabled}
+              />
+            </div>
           </div>
 
           <DialogFooter className="gap-2 sm:gap-0">
