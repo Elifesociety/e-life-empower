@@ -2,28 +2,71 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-token, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
   "Access-Control-Allow-Methods": "GET, POST, PUT, OPTIONS",
 };
 
-function validateToken(req: Request) {
+async function validateAuth(req: Request, supabase: any) {
+  // Try admin token first
   const adminToken = req.headers.get("x-admin-token");
-  if (!adminToken) return null;
-
-  try {
-    const [payload] = adminToken.split(".");
-    const decoded = JSON.parse(atob(payload));
-    if (!decoded.exp || decoded.exp <= Date.now()) return null;
-    if (!decoded.admin_id || !decoded.division_id) return null;
-    return {
-      adminId: decoded.admin_id,
-      divisionId: decoded.division_id,
-      adminName: decoded.full_name || "Admin",
-      isReadOnly: decoded.is_read_only || false,
-    };
-  } catch {
-    return null;
+  if (adminToken) {
+    try {
+      const [payload] = adminToken.split(".");
+      const decoded = JSON.parse(atob(payload));
+      if (!decoded.exp || decoded.exp <= Date.now()) return null;
+      if (!decoded.admin_id || !decoded.division_id) return null;
+      return {
+        adminId: decoded.admin_id,
+        divisionId: decoded.division_id,
+        adminName: decoded.full_name || "Admin",
+        isReadOnly: decoded.is_read_only || false,
+        isSuperAdmin: false,
+      };
+    } catch {
+      // fall through to JWT check
+    }
   }
+
+  // Try Supabase JWT for super admins
+  const authHeader = req.headers.get("authorization");
+  if (authHeader?.startsWith("Bearer ")) {
+    try {
+      const token = authHeader.replace("Bearer ", "");
+      const { data: userData, error } = await supabase.auth.getUser(token);
+      if (error || !userData?.user) return null;
+
+      const userId = userData.user.id;
+
+      // Check if user is super_admin
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "super_admin")
+        .maybeSingle();
+
+      if (!roleData) return null;
+
+      // Get profile name
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", userId)
+        .maybeSingle();
+
+      return {
+        adminId: userId,
+        divisionId: null, // super admin can access any division
+        adminName: profile?.full_name || userData.user.email || "Super Admin",
+        isReadOnly: false,
+        isSuperAdmin: true,
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  return null;
 }
 
 Deno.serve(async (req) => {
@@ -32,17 +75,17 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const admin = validateToken(req);
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    const admin = await validateAuth(req, supabase);
     if (!admin) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     const url = new URL(req.url);
     const action = url.searchParams.get("action");

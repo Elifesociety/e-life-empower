@@ -92,13 +92,16 @@ export default function CashCollections() {
   const invokeFunction = useCallback(
     async (params: Record<string, string>, method: "GET" | "POST" | "PUT" | "DELETE" = "GET", body?: any) => {
       const queryStr = new URLSearchParams(params).toString();
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (adminToken) {
+        headers["x-admin-token"] = adminToken;
+      }
       const { data, error } = await supabase.functions.invoke("admin-cash-collections?" + queryStr, {
         method,
         body: body ? JSON.stringify(body) : undefined,
-        headers: {
-          "x-admin-token": adminToken || "",
-          "Content-Type": "application/json",
-        },
+        headers,
       });
       if (error) throw error;
       return data;
