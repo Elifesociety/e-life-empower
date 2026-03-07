@@ -27,6 +27,7 @@ import {
   XCircle,
   AlertCircle,
   ShieldAlert,
+  IndianRupee,
 } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 
