@@ -106,19 +106,12 @@ Deno.serve(async (req) => {
         .ilike("phone", `%${mobile}%`)
         .limit(20);
 
-      // Search program registrations by phone in answers
-      const { data: registrations } = await supabase
+      // Search program registrations by phone in answers (server-side JSONB filtering)
+      const { data: matchedRegs } = await supabase
         .from("program_registrations")
         .select("id, answers, program_id, programs(name, division_id)")
-        .limit(100);
-
-      // Filter registrations by mobile match in answers (check both top-level and _fixed)
-      const matchedRegs = (registrations || []).filter((reg) => {
-        const answers = reg.answers as Record<string, any>;
-        const fixed = answers?._fixed as Record<string, string> | undefined;
-        const phone = fixed?.mobile || fixed?.phone || answers?.phone || answers?.mobile || answers?.contact || "";
-        return phone.includes(mobile);
-      }).slice(0, 20);
+        .or(`answers->_fixed->>mobile.ilike.%${mobile}%,answers->_fixed->>phone.ilike.%${mobile}%,answers->>phone.ilike.%${mobile}%,answers->>mobile.ilike.%${mobile}%,answers->>contact.ilike.%${mobile}%`)
+        .limit(20);
 
       const results: any[] = [];
 
