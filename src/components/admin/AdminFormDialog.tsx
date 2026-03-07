@@ -36,6 +36,7 @@ interface AdminFormDialogProps {
     password: string;
     divisionId: string;
     isReadOnly: boolean;
+    cashCollectionEnabled: boolean;
   }) => Promise<void>;
   mode: "create" | "edit";
   initialData?: {
@@ -43,6 +44,7 @@ interface AdminFormDialogProps {
     phone: string;
     divisionId: string;
     isReadOnly: boolean;
+    cashCollectionEnabled: boolean;
   };
 }
 
@@ -59,6 +61,7 @@ export function AdminFormDialog({
   const [password, setPassword] = useState("");
   const [divisionId, setDivisionId] = useState(initialData?.divisionId || "");
   const [isReadOnly, setIsReadOnly] = useState(initialData?.isReadOnly ?? false);
+  const [cashCollectionEnabled, setCashCollectionEnabled] = useState(initialData?.cashCollectionEnabled ?? false);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -68,6 +71,7 @@ export function AdminFormDialog({
     setPassword("");
     setDivisionId("");
     setIsReadOnly(false);
+    setCashCollectionEnabled(false);
     setError("");
   };
 
@@ -78,6 +82,7 @@ export function AdminFormDialog({
       setPhone(initialData.phone);
       setDivisionId(initialData.divisionId);
       setIsReadOnly(initialData.isReadOnly ?? false);
+      setCashCollectionEnabled(initialData.cashCollectionEnabled ?? false);
       setPassword("");
       setError("");
     }
@@ -91,7 +96,7 @@ export function AdminFormDialog({
     setIsSubmitting(true);
 
     try {
-      await onSubmit({ fullName, phone, password, divisionId, isReadOnly });
+      await onSubmit({ fullName, phone, password, divisionId, isReadOnly, cashCollectionEnabled });
       handleOpenChange(false);
     } catch (err: any) {
       setError(err.message || `Failed to ${mode} admin`);
@@ -187,6 +192,20 @@ export function AdminFormDialog({
                 id="readOnly"
                 checked={!isReadOnly}
                 onCheckedChange={(checked) => setIsReadOnly(!checked)}
+              />
+            </div>
+
+            <div className="flex items-center justify-between rounded-lg border p-3">
+              <div className="space-y-0.5">
+                <Label htmlFor="cashCollection">Cash Collection</Label>
+                <p className="text-xs text-muted-foreground">
+                  {cashCollectionEnabled ? "Enabled — Can verify collections & view reports" : "Disabled — No access to cash collections"}
+                </p>
+              </div>
+              <Switch
+                id="cashCollection"
+                checked={cashCollectionEnabled}
+                onCheckedChange={setCashCollectionEnabled}
               />
             </div>
           </div>

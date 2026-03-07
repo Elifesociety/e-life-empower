@@ -26,6 +26,7 @@ interface Admin {
   division_id: string;
   is_active: boolean;
   is_read_only?: boolean;
+  cash_collection_enabled?: boolean;
   created_at: string;
   phone?: string;
   full_name?: string;
@@ -92,7 +93,7 @@ export default function AdminsManagement() {
       .join("");
   };
 
-  const handleCreate = async (data: { fullName: string; phone: string; password: string; divisionId: string; isReadOnly: boolean }) => {
+  const handleCreate = async (data: { fullName: string; phone: string; password: string; divisionId: string; isReadOnly: boolean; cashCollectionEnabled: boolean }) => {
     if (!data.phone || data.phone.length < 10) throw new Error("Please enter a valid phone number");
     if (!data.password || data.password.length < 6) throw new Error("Password must be at least 6 characters");
 
@@ -108,6 +109,7 @@ export default function AdminsManagement() {
       password_hash: passwordHash,
       full_name: data.fullName,
       is_read_only: data.isReadOnly,
+      cash_collection_enabled: data.cashCollectionEnabled,
     } as any);
 
     if (error) throw error;
@@ -115,7 +117,7 @@ export default function AdminsManagement() {
     fetchAdmins();
   };
 
-  const handleEdit = async (data: { fullName: string; phone: string; password: string; divisionId: string; isReadOnly: boolean }) => {
+  const handleEdit = async (data: { fullName: string; phone: string; password: string; divisionId: string; isReadOnly: boolean; cashCollectionEnabled: boolean }) => {
     if (!editingAdmin) return;
     const phone = data.phone.replace(/\s+/g, "").trim();
 
@@ -124,7 +126,7 @@ export default function AdminsManagement() {
       if (existing) throw new Error("An admin with this phone number already exists");
     }
 
-    const updateData: any = { full_name: data.fullName, phone, division_id: data.divisionId, is_read_only: data.isReadOnly };
+    const updateData: any = { full_name: data.fullName, phone, division_id: data.divisionId, is_read_only: data.isReadOnly, cash_collection_enabled: data.cashCollectionEnabled };
     if (data.password) {
       if (data.password.length < 6) throw new Error("Password must be at least 6 characters");
       updateData.password_hash = await hashPassword(data.password);
@@ -237,6 +239,7 @@ export default function AdminsManagement() {
             phone: editingAdmin.phone || "",
             divisionId: editingAdmin.division_id,
             isReadOnly: editingAdmin.is_read_only ?? false,
+            cashCollectionEnabled: editingAdmin.cash_collection_enabled ?? false,
           } : undefined}
         />
 
