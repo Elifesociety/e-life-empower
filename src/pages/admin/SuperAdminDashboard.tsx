@@ -264,18 +264,18 @@ export default function SuperAdminDashboard() {
                   No divisions found
                 </p>
               ) : (
-                <div className="overflow-x-auto -mx-3 sm:mx-0">
+                <div className="overflow-x-auto -mx-3 sm:mx-0 max-h-[400px] overflow-y-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead className="text-xs sm:text-sm">Division</TableHead>
-                        <TableHead className="text-right text-xs sm:text-sm">Prog.</TableHead>
-                        <TableHead className="text-right text-xs sm:text-sm hidden sm:table-cell">Members</TableHead>
-                        <TableHead className="text-xs sm:text-sm">Status</TableHead>
+                        <TableHead className="text-xs sm:text-sm sticky top-0 bg-card z-10">Division</TableHead>
+                        <TableHead className="text-right text-xs sm:text-sm sticky top-0 bg-card z-10">Prog.</TableHead>
+                        <TableHead className="text-right text-xs sm:text-sm hidden sm:table-cell sticky top-0 bg-card z-10">Members</TableHead>
+                        <TableHead className="text-xs sm:text-sm sticky top-0 bg-card z-10">Status</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {stats.divisions.slice(0, 5).map((div) => (
+                      {stats.divisions.map((div) => (
                         <TableRow key={div.id}>
                           <TableCell className="font-medium text-xs sm:text-sm py-2 sm:py-4">
                             <Link to={`/admin/division/${div.id}`} className="hover:underline text-primary">
