@@ -27,6 +27,7 @@ import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
 import PennyekartAgentHierarchy from "./pages/admin/PennyekartAgentHierarchy";
 import DivisionAdminDashboard from "./pages/admin/DivisionAdminDashboard";
 import CashCollections from "./pages/admin/CashCollections";
+import SuperAdminCashCollections from "./pages/admin/SuperAdminCashCollections";
 
 const queryClient = new QueryClient();
 
@@ -163,6 +164,16 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["admin", "super_admin"]}>
                   <CashCollections />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Super Admin Cash Collections - All Divisions */}
+            <Route
+              path="/super-admin/cash-collections"
+              element={
+                <ProtectedRoute requiredRoles={["super_admin"]}>
+                  <SuperAdminCashCollections />
                 </ProtectedRoute>
               }
             />
