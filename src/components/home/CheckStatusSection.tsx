@@ -1,0 +1,244 @@
+import { useState } from "react";
+import { Search, Phone, CheckCircle2, XCircle, Loader2, IndianRupee, User, MapPin, Building2, Users } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { supabase } from "@/integrations/supabase/client";
+
+interface CollectionResult {
+  id: string;
+  person_name: string;
+  mobile: string;
+  amount: number;
+  status: string;
+  receipt_number: string | null;
+  created_at: string;
+  panchayath_name: string | null;
+  division?: { name: string } | null;
+}
+
+interface AgentResult {
+  id: string;
+  name: string;
+  mobile: string;
+  role: string;
+  ward: string;
+  panchayath?: { name: string } | null;
+}
+
+const ROLE_LABELS: Record<string, string> = {
+  team_leader: "Team Leader",
+  coordinator: "Coordinator",
+  group_leader: "Group Leader",
+  pro: "PRO",
+};
+
+const STATUS_CONFIG: Record<string, { label: string; color: string; icon: typeof CheckCircle2 }> = {
+  pending: { label: "Pending", color: "bg-yellow-100 text-yellow-800", icon: XCircle },
+  verified: { label: "Verified", color: "bg-blue-100 text-blue-800", icon: CheckCircle2 },
+  submitted: { label: "Submitted to Office", color: "bg-green-100 text-green-800", icon: CheckCircle2 },
+};
+
+export function CheckStatusSection() {
+  const [mobile, setMobile] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [searched, setSearched] = useState(false);
+  const [collections, setCollections] = useState<CollectionResult[]>([]);
+  const [agentInfo, setAgentInfo] = useState<AgentResult | null>(null);
+
+  const handleSearch = async () => {
+    const cleaned = mobile.replace(/\D/g, "");
+    if (cleaned.length < 10) return;
+
+    setIsSearching(true);
+    setSearched(false);
+
+    try {
+      // Search cash collections by mobile across all divisions
+      const { data: collData } = await supabase
+        .from("cash_collections")
+        .select("id, person_name, mobile, amount, status, receipt_number, created_at, panchayath_name, division_id")
+        .eq("mobile", cleaned)
+        .order("created_at", { ascending: false });
+
+      // If we got collections, fetch division names
+      let collectionsWithDivision: CollectionResult[] = [];
+      if (collData && collData.length > 0) {
+        const divisionIds = [...new Set(collData.map(c => c.division_id))];
+        const { data: divisions } = await supabase
+          .from("divisions")
+          .select("id, name")
+          .in("id", divisionIds);
+
+        const divMap = new Map(divisions?.map(d => [d.id, d.name]) || []);
+        collectionsWithDivision = collData.map(c => ({
+          ...c,
+          division: divMap.has(c.division_id) ? { name: divMap.get(c.division_id)! } : null,
+        }));
+      }
+
+      setCollections(collectionsWithDivision);
+
+      // Search pennyekart agents by mobile
+      const { data: agentData } = await supabase
+        .from("pennyekart_agents")
+        .select("id, name, mobile, role, ward, panchayath:panchayaths(name)")
+        .eq("mobile", cleaned)
+        .eq("is_active", true)
+        .limit(1);
+
+      setAgentInfo(agentData && agentData.length > 0 ? (agentData[0] as unknown as AgentResult) : null);
+    } catch (err) {
+      console.error("Search error:", err);
+    } finally {
+      setIsSearching(false);
+      setSearched(true);
+    }
+  };
+
+  const hasResults = collections.length > 0 || agentInfo;
+
+  return (
+    <section className="py-12 lg:py-16 bg-muted/30">
+      <div className="container mx-auto px-4 max-w-2xl">
+        <div className="text-center mb-8">
+          <h2 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">
+            Check Your Payment Status
+          </h2>
+          <p className="text-muted-foreground text-sm lg:text-base">
+            Enter your mobile number to check your cash collection status and agent details
+          </p>
+        </div>
+
+        {/* Search Input */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex gap-2">
+              <div className="relative flex-1">
+                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  type="tel"
+                  placeholder="Enter mobile number..."
+                  value={mobile}
+                  onChange={(e) => setMobile(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                  className="pl-10"
+                  maxLength={15}
+                />
+              </div>
+              <Button
+                onClick={handleSearch}
+                disabled={isSearching || mobile.replace(/\D/g, "").length < 10}
+              >
+                {isSearching ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Search className="h-4 w-4" />
+                )}
+                <span className="ml-1.5 hidden sm:inline">Check</span>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Results */}
+        {searched && (
+          <div className="space-y-4 animate-in fade-in-0 slide-in-from-bottom-4 duration-300">
+            {!hasResults ? (
+              <Card>
+                <CardContent className="py-8 text-center text-muted-foreground">
+                  <XCircle className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p className="font-medium">No records found</p>
+                  <p className="text-sm">No payment records or agent details found for this mobile number</p>
+                </CardContent>
+              </Card>
+            ) : (
+              <>
+                {/* Cash Collections */}
+                {collections.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <IndianRupee className="h-4 w-4 text-primary" />
+                        Payment Records ({collections.length})
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {collections.map((c) => {
+                        const statusCfg = STATUS_CONFIG[c.status] || STATUS_CONFIG.pending;
+                        return (
+                          <div
+                            key={c.id}
+                            className="flex items-start justify-between gap-3 p-3 rounded-lg border bg-card"
+                          >
+                            <div className="min-w-0 flex-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="font-medium text-sm">{c.person_name}</span>
+                                <Badge className={`text-[10px] px-1.5 py-0 ${statusCfg.color}`}>
+                                  {statusCfg.label}
+                                </Badge>
+                              </div>
+                              <div className="text-xs text-muted-foreground mt-1 space-y-0.5">
+                                {c.receipt_number && <p>Receipt: {c.receipt_number}</p>}
+                                {c.division?.name && <p>Division: {c.division.name}</p>}
+                                {c.panchayath_name && <p>Panchayath: {c.panchayath_name}</p>}
+                                <p>{new Date(c.created_at).toLocaleDateString("en-IN")}</p>
+                              </div>
+                            </div>
+                            <span className="font-bold text-sm whitespace-nowrap">
+                              ₹{Number(c.amount).toLocaleString("en-IN")}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Agent Info */}
+                {agentInfo && (
+                  <Card>
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Users className="h-4 w-4 text-primary" />
+                        Pennyekart Agent
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="flex items-center gap-3 p-3 rounded-lg border bg-card">
+                        <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <User className="h-5 w-5 text-primary" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm">{agentInfo.name}</p>
+                          <div className="flex items-center gap-2 flex-wrap mt-1">
+                            <Badge variant="secondary" className="text-[10px]">
+                              {ROLE_LABELS[agentInfo.role] || agentInfo.role}
+                            </Badge>
+                            {agentInfo.panchayath?.name && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                <Building2 className="h-3 w-3" />
+                                {agentInfo.panchayath.name}
+                              </span>
+                            )}
+                            {agentInfo.ward !== "N/A" && (
+                              <span className="text-xs text-muted-foreground flex items-center gap-0.5">
+                                <MapPin className="h-3 w-3" />
+                                Ward {agentInfo.ward}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
