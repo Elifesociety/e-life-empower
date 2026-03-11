@@ -207,7 +207,7 @@ export default function CashCollections() {
       const data = await invokeFunction({}, "POST", {
         person_name: personName,
         mobile,
-        division_id: selectedPerson?.division_id || divisionId,
+        division_id: divisionId,
         panchayath_id: selectedPerson?.panchayath_id,
         panchayath_name: selectedPerson?.panchayath_name || newPerson.panchayath_name,
         member_id: selectedPerson?.type === "member" ? selectedPerson.id : null,
