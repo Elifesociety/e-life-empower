@@ -12,6 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { DirectReportsWorkHistory } from "./DirectReportsWorkHistory";
 
 interface AgentInfo {
   id: string;
@@ -397,6 +398,9 @@ export function AgentWorkLog({ agent }: AgentWorkLogProps) {
           )}
         </CardContent>
       </Card>
+
+      {/* Direct Reports Work History */}
+      <DirectReportsWorkHistory agentId={agent.id} agentRole={agent.role} />
     </div>
   );
 }
