@@ -230,6 +230,8 @@ Deno.serve(async (req) => {
       const body = await req.json();
       const { person_name, mobile, division_id, panchayath_id, panchayath_name, member_id, amount, notes } = body;
 
+      console.log("POST body division_id:", division_id, "admin.divisionId:", admin.divisionId, "final:", division_id || admin.divisionId);
+
       if (!person_name || !mobile || !amount) {
         return new Response(JSON.stringify({ error: "person_name, mobile, and amount are required" }), {
           status: 400,
@@ -237,12 +239,17 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Always use the explicitly provided division_id from the request body
+      // This ensures the collection is recorded under the division the admin is currently viewing,
+      // not their primary division from the admin token
+      const targetDivisionId = division_id || admin.divisionId;
+
       const { data, error } = await supabase
         .from("cash_collections")
         .insert({
           person_name,
           mobile,
-          division_id: division_id || admin.divisionId,
+          division_id: targetDivisionId,
           panchayath_id: panchayath_id || null,
           panchayath_name: panchayath_name || null,
           member_id: member_id || null,
