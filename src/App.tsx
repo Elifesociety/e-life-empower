@@ -28,6 +28,7 @@ import PennyekartAgentHierarchy from "./pages/admin/PennyekartAgentHierarchy";
 import DivisionAdminDashboard from "./pages/admin/DivisionAdminDashboard";
 import CashCollections from "./pages/admin/CashCollections";
 import SuperAdminCashCollections from "./pages/admin/SuperAdminCashCollections";
+import OldPaymentsUpload from "./pages/admin/OldPaymentsUpload";
 
 const queryClient = new QueryClient();
 
