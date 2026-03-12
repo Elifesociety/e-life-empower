@@ -58,6 +58,7 @@ export function CheckStatusSection() {
   const [isSearching, setIsSearching] = useState(false);
   const [searched, setSearched] = useState(false);
   const [collections, setCollections] = useState<CollectionResult[]>([]);
+  const [oldPayments, setOldPayments] = useState<OldPaymentResult[]>([]);
   const [agentInfo, setAgentInfo] = useState<AgentResult | null>(null);
 
   const handleSearch = async () => {
