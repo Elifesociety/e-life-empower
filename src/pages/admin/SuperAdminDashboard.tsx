@@ -29,7 +29,8 @@ import {
   TrendingUp,
   Clock,
   Plus,
-  IndianRupee
+  IndianRupee,
+  FileSpreadsheet
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
