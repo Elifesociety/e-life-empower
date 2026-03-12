@@ -334,6 +334,48 @@ export type Database = {
           },
         ]
       }
+      old_payments: {
+        Row: {
+          approved_by: string | null
+          approved_date: string | null
+          batch_id: string | null
+          category: string | null
+          created_at: string
+          fee_paid: number | null
+          id: string
+          mobile: string
+          name: string
+          raw_data: Json | null
+          uploaded_by: string | null
+        }
+        Insert: {
+          approved_by?: string | null
+          approved_date?: string | null
+          batch_id?: string | null
+          category?: string | null
+          created_at?: string
+          fee_paid?: number | null
+          id?: string
+          mobile?: string
+          name?: string
+          raw_data?: Json | null
+          uploaded_by?: string | null
+        }
+        Update: {
+          approved_by?: string | null
+          approved_date?: string | null
+          batch_id?: string | null
+          category?: string | null
+          created_at?: string
+          fee_paid?: number | null
+          id?: string
+          mobile?: string
+          name?: string
+          raw_data?: Json | null
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       panchayaths: {
         Row: {
           created_at: string | null
