@@ -1,4 +1,4 @@
-import * as XLSX from "xlsx";
+// xlsx imported dynamically below
 import { PennyekartAgent, ROLE_LABELS } from "@/hooks/usePennyekartAgents";
 
 interface PanchayathInfo {
