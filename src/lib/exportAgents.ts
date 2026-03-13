@@ -22,7 +22,8 @@ function buildRows(agents: PennyekartAgent[], panchayaths: PanchayathInfo[]) {
   }));
 }
 
-export function exportAgentsToXlsx(agents: PennyekartAgent[], panchayaths: PanchayathInfo[]) {
+export async function exportAgentsToXlsx(agents: PennyekartAgent[], panchayaths: PanchayathInfo[]) {
+  const XLSX = await import("xlsx");
   const rows = buildRows(agents, panchayaths);
   const ws = XLSX.utils.json_to_sheet(rows);
 
