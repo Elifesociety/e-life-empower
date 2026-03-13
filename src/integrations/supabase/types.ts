@@ -409,6 +409,30 @@ export type Database = {
         }
         Relationships: []
       }
+      payout_commission_rates: {
+        Row: {
+          id: string
+          percentage: number
+          role: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: string
+          percentage?: number
+          role: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: string
+          percentage?: number
+          role?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       pennyekart_agents: {
         Row: {
           created_at: string | null
@@ -474,6 +498,216 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      pennyekart_categories: {
+        Row: {
+          category_type: string | null
+          icon: string | null
+          id: string
+          image_url: string | null
+          is_active: boolean
+          item_count: string | null
+          margin_percentage: number
+          name: string
+          sort_order: number
+          synced_at: string
+        }
+        Insert: {
+          category_type?: string | null
+          icon?: string | null
+          id: string
+          image_url?: string | null
+          is_active?: boolean
+          item_count?: string | null
+          margin_percentage?: number
+          name: string
+          sort_order?: number
+          synced_at?: string
+        }
+        Update: {
+          category_type?: string | null
+          icon?: string | null
+          id?: string
+          image_url?: string | null
+          is_active?: boolean
+          item_count?: string | null
+          margin_percentage?: number
+          name?: string
+          sort_order?: number
+          synced_at?: string
+        }
+        Relationships: []
+      }
+      pennyekart_orders: {
+        Row: {
+          collected_amount: number
+          cost_amount: number
+          customer_name: string | null
+          customer_phone: string | null
+          delivery: string | null
+          delivery_address: string | null
+          district: string | null
+          godown: string | null
+          godown_type: string | null
+          id: string
+          items: Json | null
+          net_profit: number
+          panchayath_name: string | null
+          payment_method: string | null
+          profit_amount: number
+          raw_data: Json | null
+          self_pickup: string | null
+          source_created_at: string | null
+          status: string | null
+          synced_at: string
+          total_amount: number
+          uploaded_at: string | null
+          ward: string | null
+        }
+        Insert: {
+          collected_amount?: number
+          cost_amount?: number
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery?: string | null
+          delivery_address?: string | null
+          district?: string | null
+          godown?: string | null
+          godown_type?: string | null
+          id: string
+          items?: Json | null
+          net_profit?: number
+          panchayath_name?: string | null
+          payment_method?: string | null
+          profit_amount?: number
+          raw_data?: Json | null
+          self_pickup?: string | null
+          source_created_at?: string | null
+          status?: string | null
+          synced_at?: string
+          total_amount?: number
+          uploaded_at?: string | null
+          ward?: string | null
+        }
+        Update: {
+          collected_amount?: number
+          cost_amount?: number
+          customer_name?: string | null
+          customer_phone?: string | null
+          delivery?: string | null
+          delivery_address?: string | null
+          district?: string | null
+          godown?: string | null
+          godown_type?: string | null
+          id?: string
+          items?: Json | null
+          net_profit?: number
+          panchayath_name?: string | null
+          payment_method?: string | null
+          profit_amount?: number
+          raw_data?: Json | null
+          self_pickup?: string | null
+          source_created_at?: string | null
+          status?: string | null
+          synced_at?: string
+          total_amount?: number
+          uploaded_at?: string | null
+          ward?: string | null
+        }
+        Relationships: []
+      }
+      pennyekart_product_variants: {
+        Row: {
+          id: string
+          is_active: boolean
+          mrp: number
+          price: number
+          product_id: string
+          stock: number
+          synced_at: string
+          variant_label: string | null
+        }
+        Insert: {
+          id: string
+          is_active?: boolean
+          mrp?: number
+          price?: number
+          product_id: string
+          stock?: number
+          synced_at?: string
+          variant_label?: string | null
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          mrp?: number
+          price?: number
+          product_id?: string
+          stock?: number
+          synced_at?: string
+          variant_label?: string | null
+        }
+        Relationships: []
+      }
+      pennyekart_products: {
+        Row: {
+          category: string
+          coming_soon: boolean
+          discount_rate: number
+          featured_discount_type: string | null
+          featured_discount_value: number
+          id: string
+          is_active: boolean
+          margin_percentage: number | null
+          mrp: number
+          name: string
+          price: number
+          purchase_rate: number
+          section: string | null
+          source_created_at: string | null
+          stock: number
+          synced_at: string
+          wallet_points: number
+        }
+        Insert: {
+          category?: string
+          coming_soon?: boolean
+          discount_rate?: number
+          featured_discount_type?: string | null
+          featured_discount_value?: number
+          id: string
+          is_active?: boolean
+          margin_percentage?: number | null
+          mrp?: number
+          name: string
+          price?: number
+          purchase_rate?: number
+          section?: string | null
+          source_created_at?: string | null
+          stock?: number
+          synced_at?: string
+          wallet_points?: number
+        }
+        Update: {
+          category?: string
+          coming_soon?: boolean
+          discount_rate?: number
+          featured_discount_type?: string | null
+          featured_discount_value?: number
+          id?: string
+          is_active?: boolean
+          margin_percentage?: number | null
+          mrp?: number
+          name?: string
+          price?: number
+          purchase_rate?: number
+          section?: string | null
+          source_created_at?: string | null
+          stock?: number
+          synced_at?: string
+          wallet_points?: number
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
