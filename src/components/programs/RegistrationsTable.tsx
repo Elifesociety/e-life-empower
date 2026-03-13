@@ -24,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter, X, Trophy, Save } from "lucide-react";
+import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter, X, Trophy, Save, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 import { RegistrationVerification } from "./RegistrationVerification";
