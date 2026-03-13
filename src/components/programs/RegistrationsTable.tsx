@@ -204,12 +204,24 @@ export function RegistrationsTable({
     return currentValue !== dbValue;
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setIsExporting(true);
     try {
-      exportRegistrationsToXlsx(filteredRegistrations, questions, programName);
+      await exportRegistrationsToXlsx(filteredRegistrations, questions, programName);
+    } catch (err: any) {
+      console.error("XLSX export error:", err);
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportPdf = () => {
+    try {
+      exportRegistrationsToPdf(filteredRegistrations, questions, programName);
+    } catch (err: any) {
+      console.error("PDF export error:", err);
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
     }
   };
 
