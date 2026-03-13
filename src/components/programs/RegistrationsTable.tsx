@@ -28,7 +28,7 @@ import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter, X, Tr
 import { Input } from "@/components/ui/input";
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 import { RegistrationVerification } from "./RegistrationVerification";
-import { exportRegistrationsToXlsx } from "@/lib/exportXlsx";
+import { exportRegistrationsToXlsx, exportRegistrationsToPdf } from "@/lib/exportXlsx";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
