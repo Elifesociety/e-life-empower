@@ -24,11 +24,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter, X, Trophy, Save } from "lucide-react";
+import { Download, Users, Eye, Loader2, Star, CheckCircle2, Clock, Filter, X, Trophy, Save, FileText } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 import { RegistrationVerification } from "./RegistrationVerification";
-import { exportRegistrationsToXlsx } from "@/lib/exportXlsx";
+import { exportRegistrationsToXlsx, exportRegistrationsToPdf } from "@/lib/exportXlsx";
 import { format } from "date-fns";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -204,12 +204,24 @@ export function RegistrationsTable({
     return currentValue !== dbValue;
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
     setIsExporting(true);
     try {
-      exportRegistrationsToXlsx(filteredRegistrations, questions, programName);
+      await exportRegistrationsToXlsx(filteredRegistrations, questions, programName);
+    } catch (err: any) {
+      console.error("XLSX export error:", err);
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
     } finally {
       setIsExporting(false);
+    }
+  };
+
+  const handleExportPdf = () => {
+    try {
+      exportRegistrationsToPdf(filteredRegistrations, questions, programName);
+    } catch (err: any) {
+      console.error("PDF export error:", err);
+      toast({ title: "Export failed", description: err.message, variant: "destructive" });
     }
   };
 
@@ -290,24 +302,31 @@ export function RegistrationsTable({
                 }
               </CardDescription>
             </div>
-            <Button 
-              onClick={handleExport} 
-              disabled={filteredRegistrations.length === 0 || isExporting}
-              size="sm"
-              className="w-full sm:w-auto"
-            >
-              {isExporting ? (
-                <>
+            <div className="flex gap-2 w-full sm:w-auto">
+              <Button 
+                onClick={handleExport} 
+                disabled={filteredRegistrations.length === 0 || isExporting}
+                size="sm"
+                className="flex-1 sm:flex-none"
+              >
+                {isExporting ? (
                   <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                  Exporting...
-                </>
-              ) : (
-                <>
+                ) : (
                   <Download className="h-4 w-4 mr-2" />
-                  Export XLSX
-                </>
-              )}
-            </Button>
+                )}
+                XLSX
+              </Button>
+              <Button 
+                onClick={handleExportPdf} 
+                disabled={filteredRegistrations.length === 0}
+                size="sm"
+                variant="outline"
+                className="flex-1 sm:flex-none"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                PDF
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
