@@ -236,6 +236,16 @@ const App = () => (
               }
             />
 
+            {/* Departments - Super Admin only */}
+            <Route
+              path="/super-admin/departments"
+              element={
+                <ProtectedRoute requiredRoles={["super_admin"]}>
+                  <DepartmentsManagement />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
