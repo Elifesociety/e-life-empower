@@ -27,6 +27,62 @@ Deno.serve(async (req) => {
     const body = await req.json();
     const action = body.action as string;
 
+    // ---- Admin actions: require super_admin (validated via Authorization header)
+    if (action === "admin_upsert_member" || action === "admin_remove_member") {
+      const authHeader = req.headers.get("Authorization") || "";
+      const jwt = authHeader.replace("Bearer ", "");
+      if (!jwt) return json({ error: "Unauthorized" }, 401);
+      const { data: userData } = await supabase.auth.getUser(jwt);
+      const uid = userData?.user?.id;
+      if (!uid) return json({ error: "Unauthorized" }, 401);
+      const { data: roles } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", uid);
+      const isSuper = roles?.some((r: any) => r.role === "super_admin");
+      if (!isSuper) return json({ error: "Forbidden" }, 403);
+
+      if (action === "admin_upsert_member") {
+        const department_id = String(body.department_id || "");
+        const agent_id = String(body.agent_id || "");
+        const pin = String(body.pin || "").trim();
+        const member_role = String(body.member_role || "staff");
+        if (!department_id || !agent_id) return json({ error: "Missing fields" }, 400);
+
+        const { data: existing } = await supabase
+          .from("department_members")
+          .select("id, pin_hash")
+          .eq("department_id", department_id)
+          .eq("agent_id", agent_id)
+          .maybeSingle();
+
+        let pin_hash = existing?.pin_hash;
+        if (pin) pin_hash = await hashPin(pin);
+        if (!pin_hash) return json({ error: "PIN required for new member" }, 400);
+
+        if (existing) {
+          const { error } = await supabase
+            .from("department_members")
+            .update({ pin_hash, member_role, is_active: true })
+            .eq("id", existing.id);
+          if (error) return json({ error: error.message }, 500);
+        } else {
+          const { error } = await supabase
+            .from("department_members")
+            .insert({ department_id, agent_id, pin_hash, member_role });
+          if (error) return json({ error: error.message }, 500);
+        }
+        return json({ success: true });
+      }
+
+      if (action === "admin_remove_member") {
+        const id = String(body.id || "");
+        const { error } = await supabase.from("department_members").delete().eq("id", id);
+        if (error) return json({ error: error.message }, 500);
+        return json({ success: true });
+      }
+    }
+
     // ---- Login: returns matching department memberships if mobile+pin valid
     if (action === "login") {
       const mobile = String(body.mobile || "").replace(/\D/g, "");
