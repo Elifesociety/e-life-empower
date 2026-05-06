@@ -325,6 +325,125 @@ export type Database = {
           },
         ]
       }
+      department_members: {
+        Row: {
+          agent_id: string
+          created_at: string
+          department_id: string
+          id: string
+          is_active: boolean
+          member_role: string
+          pin_hash: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          department_id: string
+          id?: string
+          is_active?: boolean
+          member_role?: string
+          pin_hash: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          department_id?: string
+          id?: string
+          is_active?: boolean
+          member_role?: string
+          pin_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_members_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      department_work_logs: {
+        Row: {
+          created_at: string
+          department_id: string
+          id: string
+          member_id: string
+          updated_at: string
+          work_date: string
+          work_details: string
+        }
+        Insert: {
+          created_at?: string
+          department_id: string
+          id?: string
+          member_id: string
+          updated_at?: string
+          work_date?: string
+          work_details?: string
+        }
+        Update: {
+          created_at?: string
+          department_id?: string
+          id?: string
+          member_id?: string
+          updated_at?: string
+          work_date?: string
+          work_details?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "department_work_logs_department_id_fkey"
+            columns: ["department_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "department_work_logs_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "department_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      departments: {
+        Row: {
+          color: string | null
+          created_at: string
+          description: string | null
+          icon: string | null
+          id: string
+          is_active: boolean
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          description?: string | null
+          icon?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       divisions: {
         Row: {
           color: string | null
