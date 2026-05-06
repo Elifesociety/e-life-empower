@@ -1,0 +1,155 @@
+// Edge function: department member login + work log CRUD
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
+const SERVICE_ROLE = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+async function hashPin(pin: string): Promise<string> {
+  const data = new TextEncoder().encode(`elife-dept-${pin}`);
+  const hash = await crypto.subtle.digest("SHA-256", data);
+  return Array.from(new Uint8Array(hash))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+}
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
+
+  const supabase = createClient(SUPABASE_URL, SERVICE_ROLE);
+
+  try {
+    const body = await req.json();
+    const action = body.action as string;
+
+    // ---- Login: returns matching department memberships if mobile+pin valid
+    if (action === "login") {
+      const mobile = String(body.mobile || "").replace(/\D/g, "");
+      const pin = String(body.pin || "").trim();
+      if (mobile.length < 10 || pin.length < 4) {
+        return json({ error: "Invalid mobile or PIN" }, 400);
+      }
+      const { data: agents } = await supabase
+        .from("pennyekart_agents")
+        .select("id, name, mobile, role")
+        .eq("mobile", mobile)
+        .eq("is_active", true);
+      if (!agents || agents.length === 0) return json({ error: "Agent not found" }, 404);
+
+      const agentIds = agents.map((a) => a.id);
+      const { data: members } = await supabase
+        .from("department_members")
+        .select("id, department_id, agent_id, member_role, pin_hash, is_active, departments(id, name, color, icon)")
+        .in("agent_id", agentIds)
+        .eq("is_active", true);
+
+      if (!members || members.length === 0) return json({ error: "Not a department member" }, 403);
+
+      const pinHash = await hashPin(pin);
+      const valid = members.filter((m: any) => m.pin_hash === pinHash);
+      if (valid.length === 0) return json({ error: "Invalid PIN" }, 401);
+
+      // Issue session token (simple): mobile + pin hash, validated on each call
+      return json({
+        success: true,
+        agent: agents[0],
+        memberships: valid.map((m: any) => ({
+          member_id: m.id,
+          department_id: m.department_id,
+          department: m.departments,
+          member_role: m.member_role,
+        })),
+        token: `${mobile}:${pinHash}`,
+      });
+    }
+
+    // For mutating actions, validate token
+    const token = String(body.token || "");
+    const [tMobile, tHash] = token.split(":");
+    if (!tMobile || !tHash) return json({ error: "Unauthorized" }, 401);
+
+    const { data: tokenAgents } = await supabase
+      .from("pennyekart_agents")
+      .select("id")
+      .eq("mobile", tMobile)
+      .eq("is_active", true);
+    if (!tokenAgents || tokenAgents.length === 0) return json({ error: "Unauthorized" }, 401);
+    const agentIds = tokenAgents.map((a) => a.id);
+
+    const { data: myMembers } = await supabase
+      .from("department_members")
+      .select("id, department_id, agent_id")
+      .in("agent_id", agentIds)
+      .eq("pin_hash", tHash)
+      .eq("is_active", true);
+    if (!myMembers || myMembers.length === 0) return json({ error: "Unauthorized" }, 401);
+
+    const myMemberIds = new Set(myMembers.map((m) => m.id));
+    const myDeptIds = new Set(myMembers.map((m) => m.department_id));
+
+    if (action === "create_log") {
+      const memberId = String(body.member_id || "");
+      const work_details = String(body.work_details || "").trim();
+      const work_date = String(body.work_date || new Date().toISOString().slice(0, 10));
+      if (!myMemberIds.has(memberId)) return json({ error: "Forbidden" }, 403);
+      if (!work_details) return json({ error: "Work details required" }, 400);
+      const member = myMembers.find((m) => m.id === memberId)!;
+      const { data, error } = await supabase
+        .from("department_work_logs")
+        .insert({ member_id: memberId, department_id: member.department_id, work_date, work_details })
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, log: data });
+    }
+
+    if (action === "update_log") {
+      const id = String(body.id || "");
+      const work_details = String(body.work_details || "").trim();
+      const { data: existing } = await supabase
+        .from("department_work_logs")
+        .select("id, member_id, department_id")
+        .eq("id", id)
+        .single();
+      if (!existing) return json({ error: "Not found" }, 404);
+      // same-department staff can update
+      if (!myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const { error } = await supabase
+        .from("department_work_logs")
+        .update({ work_details })
+        .eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
+    if (action === "delete_log") {
+      const id = String(body.id || "");
+      const { data: existing } = await supabase
+        .from("department_work_logs")
+        .select("id, department_id")
+        .eq("id", id)
+        .single();
+      if (!existing) return json({ error: "Not found" }, 404);
+      if (!myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const { error } = await supabase.from("department_work_logs").delete().eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
+    return json({ error: "Unknown action" }, 400);
+  } catch (e: any) {
+    return json({ error: e.message || "Server error" }, 500);
+  }
+});
+
+function json(b: unknown, status = 200) {
+  return new Response(JSON.stringify(b), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
