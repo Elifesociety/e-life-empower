@@ -334,8 +334,7 @@ export default function PennyekartAgentHierarchy() {
           <TabsList className="h-auto flex-wrap gap-y-1 w-full sm:h-10 sm:flex-nowrap">
             <TabsTrigger value="hierarchy" className="gap-1.5 flex-1 sm:flex-initial">
               <Users className="h-4 w-4" />
-              <span className="hidden sm:inline">Hierarchy</span>
-              <span className="sm:hidden">Hierarchy</span>
+              Hierarchy
             </TabsTrigger>
             <TabsTrigger value="top-team" className="gap-1.5 flex-1 sm:flex-initial">
               <Trophy className="h-4 w-4 text-rose-500" />
@@ -349,13 +348,11 @@ export default function PennyekartAgentHierarchy() {
             </TabsTrigger>
             <TabsTrigger value="worklogs" className="gap-1.5 flex-1 sm:flex-initial">
               <FileText className="h-4 w-4" />
-              <span className="hidden sm:inline">Work Logs</span>
-              <span className="sm:hidden">Work Logs</span>
+              Work Logs
             </TabsTrigger>
             <TabsTrigger value="complaints" className="gap-1.5 flex-1 sm:flex-initial">
               <MessageSquareWarning className="h-4 w-4" />
-              <span className="hidden sm:inline">Complaints</span>
-              <span className="sm:hidden">Complaints</span>
+              Complaints
             </TabsTrigger>
           </TabsList>
 
