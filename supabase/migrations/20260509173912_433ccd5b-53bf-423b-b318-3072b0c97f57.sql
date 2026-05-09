@@ -1,0 +1,1 @@
+REVOKE SELECT (pin_hash) ON public.department_members FROM anon, authenticated;
