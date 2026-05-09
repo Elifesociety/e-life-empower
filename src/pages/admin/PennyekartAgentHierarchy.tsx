@@ -331,24 +331,26 @@ export default function PennyekartAgentHierarchy() {
 
         {/* Tabs: Hierarchy & Ranks */}
         <Tabs defaultValue="hierarchy" className="space-y-4">
-          <TabsList>
-            <TabsTrigger value="hierarchy" className="gap-1.5">
+          <TabsList className="h-auto flex-wrap gap-y-1 w-full sm:h-10 sm:flex-nowrap">
+            <TabsTrigger value="hierarchy" className="gap-1.5 flex-1 sm:flex-initial">
               <Users className="h-4 w-4" />
               Hierarchy
             </TabsTrigger>
-            <TabsTrigger value="top-team" className="gap-1.5">
+            <TabsTrigger value="top-team" className="gap-1.5 flex-1 sm:flex-initial">
               <Trophy className="h-4 w-4 text-rose-500" />
-              Top Level Team
+              <span className="hidden sm:inline">Top Level Team</span>
+              <span className="sm:hidden">Top Team</span>
             </TabsTrigger>
-            <TabsTrigger value="ranks" className="gap-1.5">
+            <TabsTrigger value="ranks" className="gap-1.5 flex-1 sm:flex-initial">
               <Trophy className="h-4 w-4" />
-              Agent Ranks
+              <span className="hidden sm:inline">Agent Ranks</span>
+              <span className="sm:hidden">Ranks</span>
             </TabsTrigger>
-            <TabsTrigger value="worklogs" className="gap-1.5">
+            <TabsTrigger value="worklogs" className="gap-1.5 flex-1 sm:flex-initial">
               <FileText className="h-4 w-4" />
               Work Logs
             </TabsTrigger>
-            <TabsTrigger value="complaints" className="gap-1.5">
+            <TabsTrigger value="complaints" className="gap-1.5 flex-1 sm:flex-initial">
               <MessageSquareWarning className="h-4 w-4" />
               Complaints
             </TabsTrigger>
