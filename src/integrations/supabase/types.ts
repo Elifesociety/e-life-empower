@@ -366,6 +366,84 @@ export type Database = {
           },
         ]
       }
+      department_plans: {
+        Row: {
+          created_at: string
+          created_by_member_id: string | null
+          department_id: string
+          description: string | null
+          id: string
+          status: string
+          target_date: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by_member_id?: string | null
+          department_id: string
+          description?: string | null
+          id?: string
+          status?: string
+          target_date?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by_member_id?: string | null
+          department_id?: string
+          description?: string | null
+          id?: string
+          status?: string
+          target_date?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      department_todos: {
+        Row: {
+          completed_at: string | null
+          completed_by_member_id: string | null
+          created_at: string
+          created_by_member_id: string | null
+          department_id: string
+          description: string | null
+          due_date: string | null
+          id: string
+          is_completed: boolean
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          completed_at?: string | null
+          completed_by_member_id?: string | null
+          created_at?: string
+          created_by_member_id?: string | null
+          department_id: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          completed_at?: string | null
+          completed_by_member_id?: string | null
+          created_at?: string
+          created_by_member_id?: string | null
+          department_id?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          is_completed?: boolean
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       department_work_logs: {
         Row: {
           created_at: string

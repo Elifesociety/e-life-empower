@@ -197,6 +197,89 @@ Deno.serve(async (req) => {
       return json({ success: true });
     }
 
+    // ---- Plans ----
+    const firstMember = myMembers[0];
+    if (action === "create_plan") {
+      const department_id = String(body.department_id || "");
+      if (!myDeptIds.has(department_id)) return json({ error: "Forbidden" }, 403);
+      const title = String(body.title || "").trim();
+      if (!title) return json({ error: "Title required" }, 400);
+      const member = myMembers.find((m) => m.department_id === department_id) || firstMember;
+      const { data, error } = await supabase.from("department_plans").insert({
+        department_id, title,
+        description: body.description || null,
+        target_date: body.target_date || null,
+        status: body.status || "planning",
+        created_by_member_id: member.id,
+      }).select().single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, plan: data });
+    }
+    if (action === "update_plan") {
+      const id = String(body.id || "");
+      const { data: existing } = await supabase.from("department_plans").select("id, department_id").eq("id", id).single();
+      if (!existing || !myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const patch: any = { updated_at: new Date().toISOString() };
+      if (body.title !== undefined) patch.title = String(body.title).trim();
+      if (body.description !== undefined) patch.description = body.description || null;
+      if (body.target_date !== undefined) patch.target_date = body.target_date || null;
+      if (body.status !== undefined) patch.status = body.status;
+      const { error } = await supabase.from("department_plans").update(patch).eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+    if (action === "delete_plan") {
+      const id = String(body.id || "");
+      const { data: existing } = await supabase.from("department_plans").select("id, department_id").eq("id", id).single();
+      if (!existing || !myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const { error } = await supabase.from("department_plans").delete().eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
+    // ---- Todos ----
+    if (action === "create_todo") {
+      const department_id = String(body.department_id || "");
+      if (!myDeptIds.has(department_id)) return json({ error: "Forbidden" }, 403);
+      const title = String(body.title || "").trim();
+      if (!title) return json({ error: "Title required" }, 400);
+      const member = myMembers.find((m) => m.department_id === department_id) || firstMember;
+      const { data, error } = await supabase.from("department_todos").insert({
+        department_id, title,
+        description: body.description || null,
+        due_date: body.due_date || null,
+        created_by_member_id: member.id,
+      }).select().single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, todo: data });
+    }
+    if (action === "update_todo") {
+      const id = String(body.id || "");
+      const { data: existing } = await supabase.from("department_todos").select("id, department_id").eq("id", id).single();
+      if (!existing || !myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const patch: any = { updated_at: new Date().toISOString() };
+      if (body.title !== undefined) patch.title = String(body.title).trim();
+      if (body.description !== undefined) patch.description = body.description || null;
+      if (body.due_date !== undefined) patch.due_date = body.due_date || null;
+      if (body.is_completed !== undefined) {
+        patch.is_completed = !!body.is_completed;
+        patch.completed_at = body.is_completed ? new Date().toISOString() : null;
+        const member = myMembers.find((m) => m.department_id === existing.department_id) || firstMember;
+        patch.completed_by_member_id = body.is_completed ? member.id : null;
+      }
+      const { error } = await supabase.from("department_todos").update(patch).eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+    if (action === "delete_todo") {
+      const id = String(body.id || "");
+      const { data: existing } = await supabase.from("department_todos").select("id, department_id").eq("id", id).single();
+      if (!existing || !myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const { error } = await supabase.from("department_todos").delete().eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
     return json({ error: "Unknown action" }, 400);
   } catch (e: any) {
     return json({ error: e.message || "Server error" }, 500);
