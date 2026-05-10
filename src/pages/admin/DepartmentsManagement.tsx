@@ -122,71 +122,105 @@ export default function DepartmentsManagement() {
           <h1 className="text-xl sm:text-2xl font-bold flex items-center gap-2"><Building2 className="h-5 w-5" /> Departments</h1>
         </div>
 
-        <div className="flex justify-end mb-4">
-          <Button onClick={() => setDeptDialog({ open: true, data: { is_active: true } })}>
-            <Plus className="h-4 w-4 mr-1" /> New Department
-          </Button>
-        </div>
+        <Tabs defaultValue="manage" className="w-full">
+          <TabsList className="grid grid-cols-4 w-full mb-4">
+            <TabsTrigger value="manage"><Building2 className="h-3.5 w-3.5 mr-1" /> Manage</TabsTrigger>
+            <TabsTrigger value="logs"><FileText className="h-3.5 w-3.5 mr-1" /> Logs</TabsTrigger>
+            <TabsTrigger value="plans"><Target className="h-3.5 w-3.5 mr-1" /> Plans</TabsTrigger>
+            <TabsTrigger value="todos"><ListTodo className="h-3.5 w-3.5 mr-1" /> Todos</TabsTrigger>
+          </TabsList>
 
-        {loading ? (
-          <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
-        ) : departments.length === 0 ? (
-          <Card><CardContent className="py-10 text-center text-muted-foreground">No departments yet</CardContent></Card>
-        ) : (
-          <div className="space-y-4">
-            {departments.map((d) => {
-              const deptMembers = members.filter((m) => m.department_id === d.id);
-              return (
-                <Card key={d.id}>
-                  <CardHeader className="pb-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div>
-                        <CardTitle className="text-base flex items-center gap-2">
-                          {d.name}
-                          {!d.is_active && <Badge variant="secondary">Inactive</Badge>}
-                        </CardTitle>
-                        {d.description && <CardDescription className="text-xs">{d.description}</CardDescription>}
-                      </div>
-                      <div className="flex gap-1">
-                        <Button size="icon" variant="ghost" onClick={() => setDeptDialog({ open: true, data: d })}><Pencil className="h-4 w-4" /></Button>
-                        <Button size="icon" variant="ghost" onClick={() => deleteDept(d.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm font-medium flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Members ({deptMembers.length})</span>
-                      <Button size="sm" variant="outline" onClick={() => setMemberDialog({ open: true, deptId: d.id, role: "staff" })}>
-                        <UserPlus className="h-3.5 w-3.5 mr-1" /> Add
-                      </Button>
-                    </div>
-                    {deptMembers.length === 0 ? (
-                      <p className="text-xs text-muted-foreground">No members</p>
-                    ) : (
-                      <div className="space-y-1.5">
-                        {deptMembers.map((m) => {
-                          const a = agentMap.get(m.agent_id);
-                          return (
-                            <div key={m.id} className="flex items-center justify-between p-2 rounded border text-sm">
-                              <div className="min-w-0">
-                                <p className="font-medium truncate">{a?.name || "Unknown"} <span className="text-xs text-muted-foreground">({a?.mobile})</span></p>
-                                <p className="text-xs text-muted-foreground">{a?.role.replace(/_/g, " ")} • {m.member_role}</p>
-                              </div>
-                              <div className="flex gap-1">
-                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setMemberDialog({ open: true, deptId: d.id, memberId: m.id, agentId: m.agent_id, role: m.member_role })}><Pencil className="h-3.5 w-3.5" /></Button>
-                                <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeMember(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
-        )}
+          <TabsContent value="manage">
+            <div className="flex justify-end mb-4">
+              <Button onClick={() => setDeptDialog({ open: true, data: { is_active: true } })}>
+                <Plus className="h-4 w-4 mr-1" /> New Department
+              </Button>
+            </div>
+            {loading ? (
+              <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+            ) : departments.length === 0 ? (
+              <Card><CardContent className="py-10 text-center text-muted-foreground">No departments yet</CardContent></Card>
+            ) : (
+              <div className="space-y-4">
+                {departments.map((d) => {
+                  const deptMembers = members.filter((m) => m.department_id === d.id);
+                  return (
+                    <Card key={d.id}>
+                      <CardHeader className="pb-3">
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <CardTitle className="text-base flex items-center gap-2">
+                              {d.name}
+                              {!d.is_active && <Badge variant="secondary">Inactive</Badge>}
+                            </CardTitle>
+                            {d.description && <CardDescription className="text-xs">{d.description}</CardDescription>}
+                          </div>
+                          <div className="flex gap-1">
+                            <Button size="icon" variant="ghost" onClick={() => setDeptDialog({ open: true, data: d })}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" onClick={() => deleteDept(d.id)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
+                          </div>
+                        </div>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-sm font-medium flex items-center gap-1.5"><Users className="h-3.5 w-3.5" /> Members ({deptMembers.length})</span>
+                          <Button size="sm" variant="outline" onClick={() => setMemberDialog({ open: true, deptId: d.id, role: "staff" })}>
+                            <UserPlus className="h-3.5 w-3.5 mr-1" /> Add
+                          </Button>
+                        </div>
+                        {deptMembers.length === 0 ? (
+                          <p className="text-xs text-muted-foreground">No members</p>
+                        ) : (
+                          <div className="space-y-1.5">
+                            {deptMembers.map((m) => {
+                              const a = agentMap.get(m.agent_id);
+                              return (
+                                <div key={m.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                                  <div className="min-w-0">
+                                    <p className="font-medium truncate">{a?.name || "Unknown"} <span className="text-xs text-muted-foreground">({a?.mobile})</span></p>
+                                    <p className="text-xs text-muted-foreground">{a?.role.replace(/_/g, " ")} • {m.member_role}</p>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setMemberDialog({ open: true, deptId: d.id, memberId: m.id, agentId: m.agent_id, role: m.member_role })}><Pencil className="h-3.5 w-3.5" /></Button>
+                                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => removeMember(m.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  );
+                })}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="logs">
+            <ActivityList
+              type="logs" items={logs} departments={departments} members={members} agentMap={agentMap}
+              filterDept={filterDept} setFilterDept={setFilterDept}
+              onDelete={async (id) => { if (!confirm("Delete this log?")) return; const { error } = await supabase.from("department_work_logs").delete().eq("id", id); if (error) toast({ title: "Error", description: error.message, variant: "destructive" }); else load(); }}
+            />
+          </TabsContent>
+
+          <TabsContent value="plans">
+            <ActivityList
+              type="plans" items={plans} departments={departments} members={members} agentMap={agentMap}
+              filterDept={filterDept} setFilterDept={setFilterDept}
+              onDelete={async (id) => { if (!confirm("Delete this plan?")) return; const { error } = await supabase.from("department_plans").delete().eq("id", id); if (error) toast({ title: "Error", description: error.message, variant: "destructive" }); else load(); }}
+            />
+          </TabsContent>
+
+          <TabsContent value="todos">
+            <ActivityList
+              type="todos" items={todos} departments={departments} members={members} agentMap={agentMap}
+              filterDept={filterDept} setFilterDept={setFilterDept}
+              onDelete={async (id) => { if (!confirm("Delete this todo?")) return; const { error } = await supabase.from("department_todos").delete().eq("id", id); if (error) toast({ title: "Error", description: error.message, variant: "destructive" }); else load(); }}
+            />
+          </TabsContent>
+        </Tabs>
 
         {/* Department Dialog */}
         <Dialog open={deptDialog.open} onOpenChange={(open) => setDeptDialog({ open, data: open ? deptDialog.data : undefined })}>
