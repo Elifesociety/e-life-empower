@@ -10,9 +10,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { ArrowLeft, Plus, Trash2, Pencil, UserPlus, Loader2, Users, Building2 } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Pencil, UserPlus, Loader2, Users, Building2, FileText, Target, ListTodo } from "lucide-react";
 
 type Department = { id: string; name: string; description: string | null; color: string | null; icon: string | null; is_active: boolean };
 type Agent = { id: string; name: string; mobile: string; role: string };
