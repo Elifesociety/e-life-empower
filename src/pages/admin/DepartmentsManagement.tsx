@@ -282,7 +282,15 @@ export default function DepartmentsManagement() {
   );
 }
 
-function ActivityList({ type, items, departments, members, agentMap, filterDept, setFilterDept, onDelete }: {
+const PLAN_STATUSES = ["planning", "in_progress", "completed", "on_hold"] as const;
+const STATUS_STYLE: Record<string, string> = {
+  planning: "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300",
+  in_progress: "bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-300",
+  completed: "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300",
+  on_hold: "bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-300",
+};
+
+function ActivityList({ type, items, departments, members, agentMap, filterDept, setFilterDept, onDelete, onChangeStatus }: {
   type: "logs" | "plans" | "todos";
   items: any[];
   departments: Department[];
@@ -291,23 +299,45 @@ function ActivityList({ type, items, departments, members, agentMap, filterDept,
   filterDept: string;
   setFilterDept: (v: string) => void;
   onDelete: (id: string) => void;
+  onChangeStatus?: (id: string, status: string) => void;
 }) {
-  const filtered = items.filter((i) => filterDept === "all" || i.department_id === filterDept);
+  const [filterDate, setFilterDate] = useState<string>("");
+  const [showDate, setShowDate] = useState(false);
+  const filtered = items.filter((i) => {
+    if (filterDept !== "all" && i.department_id !== filterDept) return false;
+    if (type === "logs" && filterDate && i.work_date !== filterDate) return false;
+    return true;
+  });
   const deptMap = new Map(departments.map((d) => [d.id, d]));
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const empty = type === "logs" ? "No work logs" : type === "plans" ? "No plans" : "No todos";
 
+  // Fallback palette for departments without a configured color
+  const palette = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
+  const colorFor = (d?: Department) => d?.color || palette[(deptMap.size && d ? [...deptMap.keys()].indexOf(d.id) : 0) % palette.length];
+
   return (
     <div>
-      <div className="flex items-center gap-2 mb-3">
+      <div className="flex items-center gap-2 mb-3 flex-wrap">
         <Label className="text-sm">Department:</Label>
         <Select value={filterDept} onValueChange={setFilterDept}>
-          <SelectTrigger className="h-9 flex-1 max-w-xs"><SelectValue /></SelectTrigger>
+          <SelectTrigger className="h-9 flex-1 min-w-[140px] max-w-xs"><SelectValue /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All departments</SelectItem>
             {departments.map((d) => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}
           </SelectContent>
         </Select>
+        {type === "logs" && (
+          <>
+            <Button size="sm" variant={showDate ? "default" : "outline"} onClick={() => { setShowDate(!showDate); if (showDate) setFilterDate(""); }}>
+              <CalendarIcon className="h-3.5 w-3.5 mr-1" /> History
+            </Button>
+            {showDate && (
+              <Input type="date" className="h-9 w-auto" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+            )}
+            {filterDate && <Button size="sm" variant="ghost" onClick={() => setFilterDate("")}>Clear</Button>}
+          </>
+        )}
       </div>
       {filtered.length === 0 ? (
         <Card><CardContent className="py-8 text-center text-muted-foreground text-sm">{empty}</CardContent></Card>
@@ -315,17 +345,37 @@ function ActivityList({ type, items, departments, members, agentMap, filterDept,
         <div className="space-y-2">
           {filtered.map((item) => {
             const d = deptMap.get(item.department_id);
+            const color = colorFor(d);
             const member = type === "logs" ? memberMap.get(item.member_id) : null;
             const a = member ? agentMap.get(member.agent_id) : null;
+            const cycleStatus = () => {
+              if (!onChangeStatus) return;
+              const idx = PLAN_STATUSES.indexOf(item.status);
+              const next = PLAN_STATUSES[(idx + 1) % PLAN_STATUSES.length];
+              onChangeStatus(item.id, next);
+            };
             return (
-              <Card key={item.id}>
+              <Card
+                key={item.id}
+                className="overflow-hidden border-l-4 shadow-sm transition-colors"
+                style={{ borderLeftColor: color, backgroundColor: `${color}10` }}
+              >
                 <CardContent className="pt-3 pb-3">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <Badge variant="outline" className="text-[10px]" style={d?.color ? { borderColor: d.color, color: d.color } : undefined}>{d?.name || "—"}</Badge>
+                        <Badge className="text-[10px] border" style={{ backgroundColor: `${color}25`, color, borderColor: `${color}55` }}>{d?.name || "—"}</Badge>
                         {type === "logs" && <span className="text-xs text-muted-foreground">{new Date(item.work_date).toLocaleDateString("en-IN")}</span>}
-                        {type === "plans" && <Badge variant="secondary" className="text-[10px] capitalize">{String(item.status).replace("_", " ")}</Badge>}
+                        {type === "plans" && (
+                          <button
+                            type="button"
+                            onClick={cycleStatus}
+                            className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium hover:opacity-80 transition ${STATUS_STYLE[item.status] || ""}`}
+                            title="Click to change status"
+                          >
+                            {String(item.status).replace("_", " ")}
+                          </button>
+                        )}
                         {type === "plans" && item.target_date && <span className="text-xs text-muted-foreground">🎯 {new Date(item.target_date).toLocaleDateString("en-IN")}</span>}
                         {type === "todos" && <Badge variant={item.is_completed ? "default" : "secondary"} className="text-[10px]">{item.is_completed ? "Done" : "Pending"}</Badge>}
                         {type === "todos" && item.due_date && <span className="text-xs text-muted-foreground">📅 {new Date(item.due_date).toLocaleDateString("en-IN")}</span>}
