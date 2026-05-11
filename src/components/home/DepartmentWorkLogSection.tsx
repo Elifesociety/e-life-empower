@@ -148,6 +148,12 @@ export function DepartmentWorkLogSection() {
     });
     if (ok) { toast({ title: "Saved" }); setPlanDialog({ open: false }); loadAll(); }
   };
+  const cyclePlanStatus = async (plan: Plan) => {
+    if (!canEditDept(plan.department_id)) return;
+    const idx = PLAN_STATUSES.indexOf(plan.status as any);
+    const next = PLAN_STATUSES[(idx + 1) % PLAN_STATUSES.length];
+    if (await callFn({ action: "update_plan", id: plan.id, status: next })) loadAll();
+  };
   const deletePlan = async (id: string) => {
     if (!confirm("Delete this plan?")) return;
     if (await callFn({ action: "delete_plan", id })) loadAll();
