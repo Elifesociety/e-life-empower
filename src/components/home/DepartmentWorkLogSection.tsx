@@ -312,13 +312,21 @@ export function DepartmentWorkLogSection() {
               ) : visiblePlans.map((plan) => {
                 const canEdit = canEditDept(plan.department_id);
                 return (
-                  <Card key={plan.id}>
+                  <Card key={plan.id} className="border-l-4 overflow-hidden" style={cardStyle(plan.department_id)}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <DeptBadge deptId={plan.department_id} />
-                            <Badge variant="secondary" className="text-[10px] capitalize">{plan.status.replace("_", " ")}</Badge>
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => cyclePlanStatus(plan)}
+                              className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium transition ${canEdit ? "hover:opacity-80 cursor-pointer" : "cursor-default"} ${STATUS_STYLE[plan.status] || ""}`}
+                              title={canEdit ? "Click to change status" : ""}
+                            >
+                              {plan.status.replace("_", " ")}
+                            </button>
                             {plan.target_date && <span className="text-xs text-muted-foreground">🎯 {new Date(plan.target_date).toLocaleDateString("en-IN")}</span>}
                           </div>
                           <p className="font-semibold text-sm">{plan.title}</p>
