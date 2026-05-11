@@ -209,6 +209,7 @@ export default function DepartmentsManagement() {
             <ActivityList
               type="plans" items={plans} departments={departments} members={members} agentMap={agentMap}
               filterDept={filterDept} setFilterDept={setFilterDept}
+              onChangeStatus={async (id, status) => { const { error } = await supabase.from("department_plans").update({ status }).eq("id", id); if (error) toast({ title: "Error", description: error.message, variant: "destructive" }); else { toast({ title: `Status: ${status.replace("_", " ")}` }); load(); } }}
               onDelete={async (id) => { if (!confirm("Delete this plan?")) return; const { error } = await supabase.from("department_plans").delete().eq("id", id); if (error) toast({ title: "Error", description: error.message, variant: "destructive" }); else load(); }}
             />
           </TabsContent>
