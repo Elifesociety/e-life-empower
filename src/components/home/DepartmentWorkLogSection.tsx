@@ -221,15 +221,22 @@ export function DepartmentWorkLogSection() {
         </div>
 
         {/* Filter */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Label className="text-sm">Department:</Label>
           <Select value={filterDept} onValueChange={setFilterDept}>
-            <SelectTrigger className="h-9 flex-1 max-w-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 flex-1 min-w-[140px] max-w-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All departments</SelectItem>
               {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
             </SelectContent>
           </Select>
+          <Button size="sm" variant={showDate ? "default" : "outline"} onClick={() => { setShowDate(!showDate); if (showDate) setFilterDate(""); }}>
+            <CalendarIcon className="h-3.5 w-3.5 mr-1" /> History
+          </Button>
+          {showDate && (
+            <Input type="date" className="h-9 w-auto" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+          )}
+          {filterDate && <Button size="sm" variant="ghost" onClick={() => setFilterDate("")}>Clear</Button>}
         </div>
 
         <Tabs defaultValue="logs">
