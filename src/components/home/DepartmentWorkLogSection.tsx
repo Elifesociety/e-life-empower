@@ -11,7 +11,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon } from "lucide-react";
+
+const STATUS_STYLE: Record<string, string> = {
+  planning: "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300",
+  in_progress: "bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-300",
+  completed: "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300",
+  on_hold: "bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-300",
+};
+const PALETTE = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
 
 type Dept = { id: string; name: string; description: string | null; color: string | null };
 type Member = { id: string; agent_id: string; department_id: string; member_role: string };
@@ -36,6 +44,8 @@ export function DepartmentWorkLogSection() {
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(true);
   const [filterDept, setFilterDept] = useState<string>("all");
+  const [filterDate, setFilterDate] = useState<string>("");
+  const [showDate, setShowDate] = useState(false);
 
   const [session, setSession] = useState<Session | null>(() => {
     try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch { return null; }
@@ -138,6 +148,12 @@ export function DepartmentWorkLogSection() {
     });
     if (ok) { toast({ title: "Saved" }); setPlanDialog({ open: false }); loadAll(); }
   };
+  const cyclePlanStatus = async (plan: Plan) => {
+    if (!canEditDept(plan.department_id)) return;
+    const idx = PLAN_STATUSES.indexOf(plan.status as any);
+    const next = PLAN_STATUSES[(idx + 1) % PLAN_STATUSES.length];
+    if (await callFn({ action: "update_plan", id: plan.id, status: next })) loadAll();
+  };
   const deletePlan = async (id: string) => {
     if (!confirm("Delete this plan?")) return;
     if (await callFn({ action: "delete_plan", id })) loadAll();
@@ -163,21 +179,25 @@ export function DepartmentWorkLogSection() {
   };
 
   const filterMatch = (deptId: string) => filterDept === "all" || deptId === filterDept;
-  const visibleLogs = logs.filter((l) => filterMatch(l.department_id));
+  const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && (!filterDate || l.work_date === filterDate));
   const visiblePlans = plans.filter((p) => filterMatch(p.department_id));
   const visibleTodos = todos.filter((t) => filterMatch(t.department_id));
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const deptMap = new Map(departments.map((d) => [d.id, d]));
+  const deptIds = [...deptMap.keys()];
   const today = new Date().toISOString().slice(0, 10);
+  const colorFor = (deptId: string) => deptMap.get(deptId)?.color || PALETTE[Math.max(0, deptIds.indexOf(deptId)) % PALETTE.length];
 
   const DeptBadge = ({ deptId }: { deptId: string }) => {
     const d = deptMap.get(deptId);
+    const c = colorFor(deptId);
     return (
-      <Badge variant="outline" className="text-[10px]" style={d?.color ? { borderColor: d.color, color: d.color } : undefined}>
+      <Badge className="text-[10px] border" style={{ backgroundColor: `${c}25`, color: c, borderColor: `${c}55` }}>
         {d?.name || "Department"}
       </Badge>
     );
   };
+  const cardStyle = (deptId: string) => ({ borderLeftColor: colorFor(deptId), backgroundColor: `${colorFor(deptId)}10` });
 
   return (
     <section className="py-12 lg:py-16 bg-background">
@@ -201,15 +221,22 @@ export function DepartmentWorkLogSection() {
         </div>
 
         {/* Filter */}
-        <div className="flex items-center gap-2 mb-3">
+        <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Label className="text-sm">Department:</Label>
           <Select value={filterDept} onValueChange={setFilterDept}>
-            <SelectTrigger className="h-9 flex-1 max-w-xs"><SelectValue /></SelectTrigger>
+            <SelectTrigger className="h-9 flex-1 min-w-[140px] max-w-xs"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All departments</SelectItem>
               {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
             </SelectContent>
           </Select>
+          <Button size="sm" variant={showDate ? "default" : "outline"} onClick={() => { setShowDate(!showDate); if (showDate) setFilterDate(""); }}>
+            <CalendarIcon className="h-3.5 w-3.5 mr-1" /> History
+          </Button>
+          {showDate && (
+            <Input type="date" className="h-9 w-auto" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
+          )}
+          {filterDate && <Button size="sm" variant="ghost" onClick={() => setFilterDate("")}>Clear</Button>}
         </div>
 
         <Tabs defaultValue="logs">
@@ -241,7 +268,7 @@ export function DepartmentWorkLogSection() {
                 const a = m ? agents.get(m.agent_id) : null;
                 const canEdit = canEditDept(log.department_id);
                 return (
-                  <Card key={log.id}>
+                  <Card key={log.id} className="border-l-4 overflow-hidden" style={cardStyle(log.department_id)}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-2">
                         <div className="min-w-0">
@@ -285,13 +312,21 @@ export function DepartmentWorkLogSection() {
               ) : visiblePlans.map((plan) => {
                 const canEdit = canEditDept(plan.department_id);
                 return (
-                  <Card key={plan.id}>
+                  <Card key={plan.id} className="border-l-4 overflow-hidden" style={cardStyle(plan.department_id)}>
                     <CardContent className="pt-4">
                       <div className="flex items-start justify-between gap-2 mb-1">
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <DeptBadge deptId={plan.department_id} />
-                            <Badge variant="secondary" className="text-[10px] capitalize">{plan.status.replace("_", " ")}</Badge>
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => cyclePlanStatus(plan)}
+                              className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium transition ${canEdit ? "hover:opacity-80 cursor-pointer" : "cursor-default"} ${STATUS_STYLE[plan.status] || ""}`}
+                              title={canEdit ? "Click to change status" : ""}
+                            >
+                              {plan.status.replace("_", " ")}
+                            </button>
                             {plan.target_date && <span className="text-xs text-muted-foreground">🎯 {new Date(plan.target_date).toLocaleDateString("en-IN")}</span>}
                           </div>
                           <p className="font-semibold text-sm">{plan.title}</p>
@@ -330,7 +365,7 @@ export function DepartmentWorkLogSection() {
               ) : visibleTodos.map((todo) => {
                 const canEdit = canEditDept(todo.department_id);
                 return (
-                  <Card key={todo.id} className={todo.is_completed ? "opacity-60" : ""}>
+                  <Card key={todo.id} className={`border-l-4 overflow-hidden ${todo.is_completed ? "opacity-60" : ""}`} style={cardStyle(todo.department_id)}>
                     <CardContent className="pt-4">
                       <div className="flex items-start gap-3">
                         <Checkbox checked={todo.is_completed} disabled={!canEdit} onCheckedChange={() => toggleTodo(todo)} className="mt-0.5" />
