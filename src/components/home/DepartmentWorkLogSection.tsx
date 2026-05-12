@@ -113,7 +113,9 @@ export function DepartmentWorkLogSection() {
   };
 
   const myDeptIds = new Set(session?.memberships.map((m) => m.department_id) || []);
+  const myMemberIds = new Set(session?.memberships.map((m) => m.member_id) || []);
   const canEditDept = (deptId: string) => !!session && myDeptIds.has(deptId);
+  const canEditItem = (creatorId: string | null | undefined) => !!creatorId && myMemberIds.has(creatorId);
 
   const callFn = async (body: any) => {
     const { data, error } = await supabase.functions.invoke("department-worklog", { body: { ...body, token: session?.token } });
