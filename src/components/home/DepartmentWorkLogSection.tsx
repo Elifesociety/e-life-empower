@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
+import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon, Eye, EyeOff } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
   planning: "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300",
