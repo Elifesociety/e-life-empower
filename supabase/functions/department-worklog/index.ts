@@ -253,18 +253,21 @@ Deno.serve(async (req) => {
         description: body.description || null,
         due_date: body.due_date || null,
         created_by_member_id: member.id,
+        is_public: body.is_public !== false,
       }).select().single();
       if (error) return json({ error: error.message }, 500);
       return json({ success: true, todo: data });
     }
     if (action === "update_todo") {
       const id = String(body.id || "");
-      const { data: existing } = await supabase.from("department_todos").select("id, department_id").eq("id", id).single();
-      if (!existing || !myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const { data: existing } = await supabase.from("department_todos").select("id, department_id, created_by_member_id").eq("id", id).single();
+      if (!existing) return json({ error: "Not found" }, 404);
+      if (!existing.created_by_member_id || !myMemberIds.has(existing.created_by_member_id)) return json({ error: "Only the creator can edit" }, 403);
       const patch: any = { updated_at: new Date().toISOString() };
       if (body.title !== undefined) patch.title = String(body.title).trim();
       if (body.description !== undefined) patch.description = body.description || null;
       if (body.due_date !== undefined) patch.due_date = body.due_date || null;
+      if (body.is_public !== undefined) patch.is_public = !!body.is_public;
       if (body.is_completed !== undefined) {
         patch.is_completed = !!body.is_completed;
         patch.completed_at = body.is_completed ? new Date().toISOString() : null;
@@ -277,8 +280,9 @@ Deno.serve(async (req) => {
     }
     if (action === "delete_todo") {
       const id = String(body.id || "");
-      const { data: existing } = await supabase.from("department_todos").select("id, department_id").eq("id", id).single();
-      if (!existing || !myDeptIds.has(existing.department_id)) return json({ error: "Forbidden" }, 403);
+      const { data: existing } = await supabase.from("department_todos").select("id, department_id, created_by_member_id").eq("id", id).single();
+      if (!existing) return json({ error: "Not found" }, 404);
+      if (!existing.created_by_member_id || !myMemberIds.has(existing.created_by_member_id)) return json({ error: "Only the creator can delete" }, 403);
       const { error } = await supabase.from("department_todos").delete().eq("id", id);
       if (error) return json({ error: error.message }, 500);
       return json({ success: true });
