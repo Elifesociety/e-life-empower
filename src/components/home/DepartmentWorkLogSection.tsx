@@ -474,6 +474,7 @@ export function DepartmentWorkLogSection() {
             <div><Label>Title *</Label><Input value={todoDialog.title || ""} onChange={(e) => setTodoDialog({ ...todoDialog, title: e.target.value })} /></div>
             <div><Label>Description</Label><Textarea rows={3} value={todoDialog.description || ""} onChange={(e) => setTodoDialog({ ...todoDialog, description: e.target.value })} /></div>
             <div><Label>Due date</Label><Input type="date" value={todoDialog.due_date || ""} onChange={(e) => setTodoDialog({ ...todoDialog, due_date: e.target.value })} /></div>
+            <div className="flex items-center justify-between rounded border p-2"><Label className="text-sm flex items-center gap-2">{todoDialog.is_public !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} Visible to public</Label><Switch checked={todoDialog.is_public !== false} onCheckedChange={(c) => setTodoDialog({ ...todoDialog, is_public: c })} /></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setTodoDialog({ open: false })}>Cancel</Button><Button onClick={saveTodo}>Save</Button></DialogFooter>
         </DialogContent>
