@@ -318,7 +318,7 @@ export function DepartmentWorkLogSection() {
                 <CardHeader className="pb-3"><CardTitle className="text-base">Add a plan</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
                   {session.memberships.map((m) => (
-                    <Button key={m.member_id} size="sm" onClick={() => setPlanDialog({ open: true, deptId: m.department_id, status: "planning" })}>
+                    <Button key={m.member_id} size="sm" onClick={() => setPlanDialog({ open: true, deptId: m.department_id, status: "planning", is_public: true })}>
                       <Plus className="h-3.5 w-3.5 mr-1" /> {m.department.name}
                     </Button>
                   ))}
