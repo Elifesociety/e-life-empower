@@ -283,7 +283,7 @@ export function DepartmentWorkLogSection() {
               ) : visibleLogs.map((log) => {
                 const m = memberMap.get(log.member_id);
                 const a = m ? agents.get(m.agent_id) : null;
-                const canEdit = canEditDept(log.department_id);
+                const canEdit = canEditItem(log.created_by_member_id || log.member_id);
                 return (
                   <Card key={log.id} className="border-l-4 overflow-hidden" style={cardStyle(log.department_id)}>
                     <CardContent className="pt-4">
@@ -292,12 +292,14 @@ export function DepartmentWorkLogSection() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <DeptBadge deptId={log.department_id} />
                             <span className="text-xs text-muted-foreground">{new Date(log.work_date).toLocaleDateString("en-IN")}</span>
+                            {!log.is_public && <Badge variant="outline" className="text-[10px]"><EyeOff className="h-3 w-3 mr-1" />Private</Badge>}
                           </div>
                           <p className="text-sm font-medium mt-1">{a?.name || "Member"}</p>
                         </div>
                         {canEdit && (
-                          <div className="flex gap-1">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setLogDialog({ open: true, id: log.id, memberId: log.member_id, details: log.work_details, date: log.work_date })}><Pencil className="h-3.5 w-3.5" /></Button>
+                          <div className="flex gap-1 items-center">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title={log.is_public ? "Make private" : "Make public"} onClick={() => toggleLogPublic(log)}>{log.is_public ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}</Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setLogDialog({ open: true, id: log.id, memberId: log.member_id, details: log.work_details, date: log.work_date, is_public: log.is_public })}><Pencil className="h-3.5 w-3.5" /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteLog(log.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                           </div>
                         )}
