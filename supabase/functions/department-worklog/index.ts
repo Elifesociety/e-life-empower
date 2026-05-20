@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       // Issue session token (simple): mobile + pin hash, validated on each call
       return json({
         success: true,
-        agent: agents[0],
+        agent: { ...agents[0], is_scode: agents.some((a: any) => a.role === "scode") },
         memberships: valid.map((m: any) => ({
           member_id: m.id,
           department_id: m.department_id,
