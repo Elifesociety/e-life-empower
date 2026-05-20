@@ -12,10 +12,11 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon, Eye, EyeOff } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon, Eye, EyeOff, ClipboardList, Search, UserCheck } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
   planning: "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300",
+  pending: "bg-slate-500/15 text-slate-700 border-slate-500/40 dark:text-slate-300",
   in_progress: "bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-300",
   completed: "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300",
   on_hold: "bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-300",
@@ -28,12 +29,14 @@ type Agent = { id: string; name: string; mobile: string; is_scode?: boolean };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
+type Task = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; assigned_agent_id: string; status: string; completed_at: string | null; created_at: string; created_by_member_id: string | null };
 
 interface Membership { member_id: string; department_id: string; member_role: string; department: Dept }
 interface Session { token: string; agent: Agent; memberships: Membership[] }
 
 const SESSION_KEY = "elife_dept_session";
 const PLAN_STATUSES = ["planning", "in_progress", "completed", "on_hold"] as const;
+const TASK_STATUSES = ["pending", "in_progress", "completed"] as const;
 
 export function DepartmentWorkLogSection() {
   const { toast } = useToast();
@@ -43,6 +46,8 @@ export function DepartmentWorkLogSection() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [taskAgents, setTaskAgents] = useState<Map<string, Agent>>(new Map());
   const [loading, setLoading] = useState(true);
   const [filterDept, setFilterDept] = useState<string>("all");
   const [filterDate, setFilterDate] = useState<string>("");
@@ -59,27 +64,41 @@ export function DepartmentWorkLogSection() {
   const [logDialog, setLogDialog] = useState<{ open: boolean; id?: string; memberId?: string; deptId?: string; details?: string; date?: string; is_public?: boolean }>({ open: false });
   const [planDialog, setPlanDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; target_date?: string; status?: string; is_public?: boolean }>({ open: false });
   const [todoDialog, setTodoDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; due_date?: string; is_public?: boolean }>({ open: false });
+  const [taskDialog, setTaskDialog] = useState<{
+    open: boolean; id?: string; deptId?: string; title?: string; description?: string;
+    due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string;
+  }>({ open: false });
+  const [agentSearch, setAgentSearch] = useState("");
+  const [agentResults, setAgentResults] = useState<Agent[]>([]);
+  const [searching, setSearching] = useState(false);
 
   const loadAll = async () => {
     setLoading(true);
-    const [d, m, l, p, t] = await Promise.all([
+    const [d, m, l, p, t, tk] = await Promise.all([
       supabase.from("departments").select("*").eq("is_active", true).order("name"),
       supabase.from("department_members").select("id, agent_id, department_id, member_role").eq("is_active", true),
       supabase.from("department_work_logs").select("*").order("work_date", { ascending: false }).order("created_at", { ascending: false }).limit(200),
       supabase.from("department_plans").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("department_todos").select("*").order("is_completed").order("created_at", { ascending: false }).limit(200),
+      supabase.from("department_tasks").select("*").order("created_at", { ascending: false }).limit(200),
     ]);
     const depts = (d.data as Dept[]) || [];
     const mem = (m.data as Member[]) || [];
+    const tkData = (tk.data as Task[]) || [];
     setDepartments(depts);
     setMembers(mem);
     setLogs((l.data as Log[]) || []);
     setPlans((p.data as Plan[]) || []);
     setTodos((t.data as Todo[]) || []);
-    if (mem.length > 0) {
-      const ids = [...new Set(mem.map((x) => x.agent_id))];
-      const { data: ag } = await supabase.from("pennyekart_agents").select("id, name, mobile").in("id", ids);
-      setAgents(new Map((ag || []).map((a: any) => [a.id, a as Agent])));
+    setTasks(tkData);
+    const memberAgentIds = mem.map((x) => x.agent_id);
+    const taskAgentIds = tkData.map((x) => x.assigned_agent_id);
+    const allIds = [...new Set([...memberAgentIds, ...taskAgentIds])];
+    if (allIds.length > 0) {
+      const { data: ag } = await supabase.from("pennyekart_agents").select("id, name, mobile").in("id", allIds);
+      const map = new Map((ag || []).map((a: any) => [a.id, a as Agent]));
+      setAgents(new Map([...map].filter(([id]) => memberAgentIds.includes(id))));
+      setTaskAgents(map);
     }
     setLoading(false);
   };
@@ -196,12 +215,58 @@ export function DepartmentWorkLogSection() {
     if (await callFn({ action: "update_todo", id: todo.id, is_public: !todo.is_public })) loadAll();
   };
 
+  // ---- Tasks ----
+  const searchAgents = async (term: string) => {
+    setAgentSearch(term);
+    const cleaned = term.replace(/\D/g, "");
+    if (cleaned.length < 3) { setAgentResults([]); return; }
+    setSearching(true);
+    try {
+      const { data } = await supabase.functions.invoke("department-worklog", {
+        body: { action: "search_agent_by_mobile", mobile: cleaned, token: session?.token },
+      });
+      setAgentResults(((data as any)?.agents as Agent[]) || []);
+    } finally { setSearching(false); }
+  };
+  const saveTask = async () => {
+    const title = (taskDialog.title || "").trim();
+    if (!title) return toast({ title: "Enter title", variant: "destructive" });
+    if (!taskDialog.id && !taskDialog.deptId) return toast({ title: "Select a department", variant: "destructive" });
+    if (!taskDialog.id && !taskDialog.assigned_agent_id) return toast({ title: "Select an assignee", variant: "destructive" });
+    const ok = await callFn({
+      action: taskDialog.id ? "update_task" : "create_task",
+      id: taskDialog.id, department_id: taskDialog.deptId,
+      title, description: taskDialog.description || null,
+      due_date: taskDialog.due_date || null,
+      assigned_agent_id: taskDialog.assigned_agent_id,
+      status: taskDialog.status || "pending",
+    });
+    if (ok) { toast({ title: "Saved" }); setTaskDialog({ open: false }); setAgentSearch(""); setAgentResults([]); loadAll(); }
+  };
+  const cycleTaskStatus = async (task: Task) => {
+    const idx = TASK_STATUSES.indexOf(task.status as any);
+    const next = TASK_STATUSES[(idx + 1) % TASK_STATUSES.length];
+    if (await callFn({ action: "update_task", id: task.id, status: next })) loadAll();
+  };
+  const deleteTask = async (id: string) => {
+    if (!confirm("Delete this task?")) return;
+    if (await callFn({ action: "delete_task", id })) loadAll();
+  };
+  const canEditTask = (task: Task) => canEditItem(task.created_by_member_id);
+  const canUpdateTaskStatus = (task: Task) => {
+    if (canEditTask(task)) return true;
+    if (!session) return false;
+    // Assigned agent (matched by mobile through session agent id pool)
+    return session.agent.id === task.assigned_agent_id;
+  };
+
   const filterMatch = (deptId: string) => filterDept === "all" || deptId === filterDept;
   const isVisible = (item: { is_public: boolean; created_by_member_id: string | null }) =>
     item.is_public || canEditItem(item.created_by_member_id);
   const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l) && (!filterDate || l.work_date === filterDate));
   const visiblePlans = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
   const visibleTodos = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
+  const visibleTasks = tasks.filter((t) => filterMatch(t.department_id));
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const deptMap = new Map(departments.map((d) => [d.id, d]));
   const deptIds = [...deptMap.keys()];
@@ -261,10 +326,11 @@ export function DepartmentWorkLogSection() {
         </div>
 
         <Tabs defaultValue="logs">
-          <TabsList className="grid grid-cols-3 w-full">
+          <TabsList className="grid grid-cols-4 w-full">
             <TabsTrigger value="logs"><FileText className="h-3.5 w-3.5 mr-1" /> Logs</TabsTrigger>
             <TabsTrigger value="plans"><Target className="h-3.5 w-3.5 mr-1" /> Planning</TabsTrigger>
             <TabsTrigger value="todos"><ListTodo className="h-3.5 w-3.5 mr-1" /> Todos</TabsTrigger>
+            <TabsTrigger value="tasks"><ClipboardList className="h-3.5 w-3.5 mr-1" /> Tasks</TabsTrigger>
           </TabsList>
 
           {/* LOGS */}
@@ -428,8 +494,145 @@ export function DepartmentWorkLogSection() {
                 );
               })}
           </TabsContent>
+
+          {/* TASKS */}
+          <TabsContent value="tasks" className="space-y-3">
+            {session && isScode && (
+              <Card className="border-primary/30">
+                <CardHeader className="pb-3"><CardTitle className="text-base">Allocate a task to an agent</CardTitle></CardHeader>
+                <CardContent>
+                  <Button size="sm" onClick={() => { setAgentSearch(""); setAgentResults([]); setTaskDialog({ open: true, status: "pending" }); }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> New task
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {session && !isScode && (
+              <p className="text-xs text-muted-foreground text-center">Only S-Code members can create tasks. You can update status on tasks assigned to you.</p>
+            )}
+            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+              : visibleTasks.length === 0 ? (
+                <Card><CardContent className="py-10 text-center text-muted-foreground"><ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />No tasks yet</CardContent></Card>
+              ) : visibleTasks.map((task) => {
+                const assignee = taskAgents.get(task.assigned_agent_id);
+                const canEdit = canEditTask(task);
+                const canStatus = canUpdateTaskStatus(task);
+                return (
+                  <Card key={task.id} className="border-l-4 overflow-hidden" style={cardStyle(task.department_id)}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <DeptBadge deptId={task.department_id} />
+                            <button
+                              type="button"
+                              disabled={!canStatus}
+                              onClick={() => cycleTaskStatus(task)}
+                              className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium transition ${canStatus ? "hover:opacity-80 cursor-pointer" : "cursor-default"} ${STATUS_STYLE[task.status] || ""}`}
+                              title={canStatus ? "Click to change status" : ""}
+                            >
+                              {task.status.replace("_", " ")}
+                            </button>
+                            {task.due_date && <span className="text-xs text-muted-foreground">📅 {new Date(task.due_date).toLocaleDateString("en-IN")}</span>}
+                          </div>
+                          <p className="font-semibold text-sm">{task.title}</p>
+                          {task.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{task.description}</p>}
+                          {assignee && (
+                            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                              <UserCheck className="h-3.5 w-3.5" /> {assignee.name} · {assignee.mobile}
+                            </p>
+                          )}
+                        </div>
+                        {canEdit && (
+                          <div className="flex gap-1 items-center">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
+                              const a = taskAgents.get(task.assigned_agent_id);
+                              setAgentSearch(a?.mobile || ""); setAgentResults(a ? [a] : []);
+                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status });
+                            }}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Task dialog */}
+      <Dialog open={taskDialog.open} onOpenChange={(open) => { if (!open) { setAgentSearch(""); setAgentResults([]); } setTaskDialog({ open }); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{taskDialog.id ? "Edit" : "Allocate"} Task</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {!taskDialog.id && (
+              <div>
+                <Label>Department</Label>
+                <Select value={taskDialog.deptId || ""} onValueChange={(v) => setTaskDialog({ ...taskDialog, deptId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div><Label>Title *</Label><Input value={taskDialog.title || ""} onChange={(e) => setTaskDialog({ ...taskDialog, title: e.target.value })} /></div>
+            <div><Label>Description</Label><Textarea rows={3} value={taskDialog.description || ""} onChange={(e) => setTaskDialog({ ...taskDialog, description: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Due date</Label><Input type="date" value={taskDialog.due_date || ""} onChange={(e) => setTaskDialog({ ...taskDialog, due_date: e.target.value })} /></div>
+              <div>
+                <Label>Status</Label>
+                <Select value={taskDialog.status || "pending"} onValueChange={(v) => setTaskDialog({ ...taskDialog, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TASK_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Assign to (search by mobile)</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-8"
+                  placeholder="Type at least 3 digits..."
+                  value={agentSearch}
+                  onChange={(e) => searchAgents(e.target.value)}
+                />
+              </div>
+              {taskDialog.assigned_agent_id && taskDialog.assigned_agent_label && (
+                <div className="mt-2 text-xs flex items-center gap-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/30">
+                  <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="font-medium">{taskDialog.assigned_agent_label}</span>
+                  <Button size="sm" variant="ghost" className="ml-auto h-6 px-2" onClick={() => setTaskDialog({ ...taskDialog, assigned_agent_id: undefined, assigned_agent_label: undefined })}>Change</Button>
+                </div>
+              )}
+              {!taskDialog.assigned_agent_id && (
+                <div className="mt-2 max-h-48 overflow-y-auto border rounded">
+                  {searching ? <div className="p-3 text-xs text-center text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" />Searching...</div>
+                    : agentResults.length === 0 ? <div className="p-3 text-xs text-center text-muted-foreground">No matches</div>
+                    : agentResults.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => setTaskDialog({ ...taskDialog, assigned_agent_id: a.id, assigned_agent_label: `${a.name} · ${a.mobile}` })}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b last:border-b-0"
+                      >
+                        <div className="font-medium">{a.name}</div>
+                        <div className="text-xs text-muted-foreground">{a.mobile} · {(a as any).role || ""}</div>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTaskDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveTask}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Login dialog */}
       <Dialog open={loginOpen} onOpenChange={setLoginOpen}>

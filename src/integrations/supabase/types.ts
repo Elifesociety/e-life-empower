@@ -405,6 +405,48 @@ export type Database = {
         }
         Relationships: []
       }
+      department_tasks: {
+        Row: {
+          assigned_agent_id: string
+          completed_at: string | null
+          created_at: string
+          created_by_member_id: string | null
+          department_id: string
+          description: string | null
+          due_date: string | null
+          id: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_agent_id: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_member_id?: string | null
+          department_id: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_agent_id?: string
+          completed_at?: string | null
+          created_at?: string
+          created_by_member_id?: string | null
+          department_id?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       department_todos: {
         Row: {
           completed_at: string | null
