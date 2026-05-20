@@ -480,6 +480,20 @@ export function DepartmentWorkLogSection() {
         <DialogContent>
           <DialogHeader><DialogTitle>{planDialog.id ? "Edit" : "Add"} Plan</DialogTitle></DialogHeader>
           <div className="space-y-3">
+          <div className="space-y-3">
+            {!planDialog.id && (
+              <div>
+                <Label>Department</Label>
+                <Select value={planDialog.deptId || ""} onValueChange={(v) => setPlanDialog({ ...planDialog, deptId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>
+                    {(isScode ? departments : departments.filter((d) => myDeptIds.has(d.id))).map((d) => (
+                      <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <div><Label>Title *</Label><Input value={planDialog.title || ""} onChange={(e) => setPlanDialog({ ...planDialog, title: e.target.value })} /></div>
             <div><Label>Description</Label><Textarea rows={3} value={planDialog.description || ""} onChange={(e) => setPlanDialog({ ...planDialog, description: e.target.value })} /></div>
             <div className="grid grid-cols-2 gap-2">
