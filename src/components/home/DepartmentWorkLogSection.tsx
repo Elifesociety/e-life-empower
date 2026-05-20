@@ -494,8 +494,145 @@ export function DepartmentWorkLogSection() {
                 );
               })}
           </TabsContent>
+
+          {/* TASKS */}
+          <TabsContent value="tasks" className="space-y-3">
+            {session && isScode && (
+              <Card className="border-primary/30">
+                <CardHeader className="pb-3"><CardTitle className="text-base">Allocate a task to an agent</CardTitle></CardHeader>
+                <CardContent>
+                  <Button size="sm" onClick={() => { setAgentSearch(""); setAgentResults([]); setTaskDialog({ open: true, status: "pending" }); }}>
+                    <Plus className="h-3.5 w-3.5 mr-1" /> New task
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+            {session && !isScode && (
+              <p className="text-xs text-muted-foreground text-center">Only S-Code members can create tasks. You can update status on tasks assigned to you.</p>
+            )}
+            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
+              : visibleTasks.length === 0 ? (
+                <Card><CardContent className="py-10 text-center text-muted-foreground"><ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />No tasks yet</CardContent></Card>
+              ) : visibleTasks.map((task) => {
+                const assignee = taskAgents.get(task.assigned_agent_id);
+                const canEdit = canEditTask(task);
+                const canStatus = canUpdateTaskStatus(task);
+                return (
+                  <Card key={task.id} className="border-l-4 overflow-hidden" style={cardStyle(task.department_id)}>
+                    <CardContent className="pt-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap mb-1">
+                            <DeptBadge deptId={task.department_id} />
+                            <button
+                              type="button"
+                              disabled={!canStatus}
+                              onClick={() => cycleTaskStatus(task)}
+                              className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium transition ${canStatus ? "hover:opacity-80 cursor-pointer" : "cursor-default"} ${STATUS_STYLE[task.status] || ""}`}
+                              title={canStatus ? "Click to change status" : ""}
+                            >
+                              {task.status.replace("_", " ")}
+                            </button>
+                            {task.due_date && <span className="text-xs text-muted-foreground">📅 {new Date(task.due_date).toLocaleDateString("en-IN")}</span>}
+                          </div>
+                          <p className="font-semibold text-sm">{task.title}</p>
+                          {task.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{task.description}</p>}
+                          {assignee && (
+                            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                              <UserCheck className="h-3.5 w-3.5" /> {assignee.name} · {assignee.mobile}
+                            </p>
+                          )}
+                        </div>
+                        {canEdit && (
+                          <div className="flex gap-1 items-center">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
+                              const a = taskAgents.get(task.assigned_agent_id);
+                              setAgentSearch(a?.mobile || ""); setAgentResults(a ? [a] : []);
+                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status });
+                            }}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
+                          </div>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+          </TabsContent>
         </Tabs>
       </div>
+
+      {/* Task dialog */}
+      <Dialog open={taskDialog.open} onOpenChange={(open) => { if (!open) { setAgentSearch(""); setAgentResults([]); } setTaskDialog({ open }); }}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
+          <DialogHeader><DialogTitle>{taskDialog.id ? "Edit" : "Allocate"} Task</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {!taskDialog.id && (
+              <div>
+                <Label>Department</Label>
+                <Select value={taskDialog.deptId || ""} onValueChange={(v) => setTaskDialog({ ...taskDialog, deptId: v })}>
+                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
+                  <SelectContent>
+                    {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
+            <div><Label>Title *</Label><Input value={taskDialog.title || ""} onChange={(e) => setTaskDialog({ ...taskDialog, title: e.target.value })} /></div>
+            <div><Label>Description</Label><Textarea rows={3} value={taskDialog.description || ""} onChange={(e) => setTaskDialog({ ...taskDialog, description: e.target.value })} /></div>
+            <div className="grid grid-cols-2 gap-2">
+              <div><Label>Due date</Label><Input type="date" value={taskDialog.due_date || ""} onChange={(e) => setTaskDialog({ ...taskDialog, due_date: e.target.value })} /></div>
+              <div>
+                <Label>Status</Label>
+                <Select value={taskDialog.status || "pending"} onValueChange={(v) => setTaskDialog({ ...taskDialog, status: v })}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>{TASK_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+                </Select>
+              </div>
+            </div>
+            <div>
+              <Label>Assign to (search by mobile)</Label>
+              <div className="relative">
+                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+                <Input
+                  className="pl-8"
+                  placeholder="Type at least 3 digits..."
+                  value={agentSearch}
+                  onChange={(e) => searchAgents(e.target.value)}
+                />
+              </div>
+              {taskDialog.assigned_agent_id && taskDialog.assigned_agent_label && (
+                <div className="mt-2 text-xs flex items-center gap-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/30">
+                  <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="font-medium">{taskDialog.assigned_agent_label}</span>
+                  <Button size="sm" variant="ghost" className="ml-auto h-6 px-2" onClick={() => setTaskDialog({ ...taskDialog, assigned_agent_id: undefined, assigned_agent_label: undefined })}>Change</Button>
+                </div>
+              )}
+              {!taskDialog.assigned_agent_id && (
+                <div className="mt-2 max-h-48 overflow-y-auto border rounded">
+                  {searching ? <div className="p-3 text-xs text-center text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" />Searching...</div>
+                    : agentResults.length === 0 ? <div className="p-3 text-xs text-center text-muted-foreground">No matches</div>
+                    : agentResults.map((a) => (
+                      <button
+                        key={a.id}
+                        type="button"
+                        onClick={() => setTaskDialog({ ...taskDialog, assigned_agent_id: a.id, assigned_agent_label: `${a.name} · ${a.mobile}` })}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b last:border-b-0"
+                      >
+                        <div className="font-medium">{a.name}</div>
+                        <div className="text-xs text-muted-foreground">{a.mobile} · {(a as any).role || ""}</div>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTaskDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveTask}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Login dialog */}
       <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
