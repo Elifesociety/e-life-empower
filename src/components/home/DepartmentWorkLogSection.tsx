@@ -130,9 +130,11 @@ export function DepartmentWorkLogSection() {
   const saveLog = async () => {
     const details = (logDialog.details || "").trim();
     if (!details) return toast({ title: "Enter work details", variant: "destructive" });
+    if (!logDialog.id && !logDialog.memberId && !logDialog.deptId) return toast({ title: "Select a department", variant: "destructive" });
     const ok = await callFn({
       action: logDialog.id ? "update_log" : "create_log",
-      id: logDialog.id, member_id: logDialog.memberId, work_details: details, work_date: logDialog.date,
+      id: logDialog.id, member_id: logDialog.memberId, department_id: logDialog.deptId,
+      work_details: details, work_date: logDialog.date,
       is_public: logDialog.is_public !== false,
     });
     if (ok) { toast({ title: "Saved" }); setLogDialog({ open: false }); loadAll(); }
