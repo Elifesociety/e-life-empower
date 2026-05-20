@@ -269,12 +269,16 @@ export function DepartmentWorkLogSection() {
 
           {/* LOGS */}
           <TabsContent value="logs" className="space-y-3">
-            {session && session.memberships.length > 0 && (
+            {session && (session.memberships.length > 0 || isScode) && (
               <Card className="border-primary/30">
                 <CardHeader className="pb-3"><CardTitle className="text-base">Post a work log</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                  {session.memberships.map((m) => (
-                    <Button key={m.member_id} size="sm" onClick={() => setLogDialog({ open: true, memberId: m.member_id, date: today, details: "", is_public: true })}>
+                  {isScode ? (
+                    <Button size="sm" onClick={() => setLogDialog({ open: true, date: today, details: "", is_public: true })}>
+                      <Plus className="h-3.5 w-3.5 mr-1" /> Add log (any department)
+                    </Button>
+                  ) : session.memberships.map((m) => (
+                    <Button key={m.member_id} size="sm" onClick={() => setLogDialog({ open: true, memberId: m.member_id, deptId: m.department_id, date: today, details: "", is_public: true })}>
                       <Plus className="h-3.5 w-3.5 mr-1" /> {m.department.name}
                     </Button>
                   ))}
