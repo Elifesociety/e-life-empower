@@ -74,24 +74,31 @@ export function DepartmentWorkLogSection() {
 
   const loadAll = async () => {
     setLoading(true);
-    const [d, m, l, p, t] = await Promise.all([
+    const [d, m, l, p, t, tk] = await Promise.all([
       supabase.from("departments").select("*").eq("is_active", true).order("name"),
       supabase.from("department_members").select("id, agent_id, department_id, member_role").eq("is_active", true),
       supabase.from("department_work_logs").select("*").order("work_date", { ascending: false }).order("created_at", { ascending: false }).limit(200),
       supabase.from("department_plans").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("department_todos").select("*").order("is_completed").order("created_at", { ascending: false }).limit(200),
+      supabase.from("department_tasks").select("*").order("created_at", { ascending: false }).limit(200),
     ]);
     const depts = (d.data as Dept[]) || [];
     const mem = (m.data as Member[]) || [];
+    const tkData = (tk.data as Task[]) || [];
     setDepartments(depts);
     setMembers(mem);
     setLogs((l.data as Log[]) || []);
     setPlans((p.data as Plan[]) || []);
     setTodos((t.data as Todo[]) || []);
-    if (mem.length > 0) {
-      const ids = [...new Set(mem.map((x) => x.agent_id))];
-      const { data: ag } = await supabase.from("pennyekart_agents").select("id, name, mobile").in("id", ids);
-      setAgents(new Map((ag || []).map((a: any) => [a.id, a as Agent])));
+    setTasks(tkData);
+    const memberAgentIds = mem.map((x) => x.agent_id);
+    const taskAgentIds = tkData.map((x) => x.assigned_agent_id);
+    const allIds = [...new Set([...memberAgentIds, ...taskAgentIds])];
+    if (allIds.length > 0) {
+      const { data: ag } = await supabase.from("pennyekart_agents").select("id, name, mobile").in("id", allIds);
+      const map = new Map((ag || []).map((a: any) => [a.id, a as Agent]));
+      setAgents(new Map([...map].filter(([id]) => memberAgentIds.includes(id))));
+      setTaskAgents(map);
     }
     setLoading(false);
   };
