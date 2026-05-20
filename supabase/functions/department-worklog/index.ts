@@ -131,11 +131,12 @@ Deno.serve(async (req) => {
 
     const { data: tokenAgents } = await supabase
       .from("pennyekart_agents")
-      .select("id")
+      .select("id, role")
       .eq("mobile", tMobile)
       .eq("is_active", true);
     if (!tokenAgents || tokenAgents.length === 0) return json({ error: "Unauthorized" }, 401);
     const agentIds = tokenAgents.map((a) => a.id);
+    const isScode = tokenAgents.some((a: any) => a.role === "scode");
 
     const { data: myMembers } = await supabase
       .from("department_members")
@@ -147,6 +148,8 @@ Deno.serve(async (req) => {
 
     const myMemberIds = new Set(myMembers.map((m) => m.id));
     const myDeptIds = new Set(myMembers.map((m) => m.department_id));
+    const canEditAny = (creatorId: string | null | undefined) =>
+      isScode || (!!creatorId && myMemberIds.has(creatorId));
 
     if (action === "create_log") {
       const memberId = String(body.member_id || "");
