@@ -64,6 +64,13 @@ export function DepartmentWorkLogSection() {
   const [logDialog, setLogDialog] = useState<{ open: boolean; id?: string; memberId?: string; deptId?: string; details?: string; date?: string; is_public?: boolean }>({ open: false });
   const [planDialog, setPlanDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; target_date?: string; status?: string; is_public?: boolean }>({ open: false });
   const [todoDialog, setTodoDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; due_date?: string; is_public?: boolean }>({ open: false });
+  const [taskDialog, setTaskDialog] = useState<{
+    open: boolean; id?: string; deptId?: string; title?: string; description?: string;
+    due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string;
+  }>({ open: false });
+  const [agentSearch, setAgentSearch] = useState("");
+  const [agentResults, setAgentResults] = useState<Agent[]>([]);
+  const [searching, setSearching] = useState(false);
 
   const loadAll = async () => {
     setLoading(true);
