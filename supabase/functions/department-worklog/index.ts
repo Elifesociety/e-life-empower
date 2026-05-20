@@ -152,15 +152,29 @@ Deno.serve(async (req) => {
       isScode || (!!creatorId && myMemberIds.has(creatorId));
 
     if (action === "create_log") {
-      const memberId = String(body.member_id || "");
+      let memberId = String(body.member_id || "");
+      const department_id = String(body.department_id || "");
       const work_details = String(body.work_details || "").trim();
       const work_date = String(body.work_date || new Date().toISOString().slice(0, 10));
-      if (!myMemberIds.has(memberId)) return json({ error: "Forbidden" }, 403);
       if (!work_details) return json({ error: "Work details required" }, 400);
-      const member = myMembers.find((m) => m.id === memberId)!;
+      let deptId = department_id;
+      // Resolve member_id: prefer explicit; for scode allow any dept (pick membership or first)
+      if (memberId && myMemberIds.has(memberId)) {
+        const m = myMembers.find((m) => m.id === memberId)!;
+        deptId = deptId || m.department_id;
+      } else if (isScode && deptId) {
+        const m = myMembers.find((m) => m.department_id === deptId) || myMembers[0];
+        memberId = m.id;
+      } else if (deptId) {
+        const m = myMembers.find((m) => m.department_id === deptId);
+        if (!m) return json({ error: "Forbidden" }, 403);
+        memberId = m.id;
+      } else {
+        return json({ error: "Department required" }, 400);
+      }
       const { data, error } = await supabase
         .from("department_work_logs")
-        .insert({ member_id: memberId, department_id: member.department_id, work_date, work_details, created_by_member_id: memberId, is_public: body.is_public !== false })
+        .insert({ member_id: memberId, department_id: deptId, work_date, work_details, created_by_member_id: memberId, is_public: body.is_public !== false })
         .select()
         .single();
       if (error) return json({ error: error.message }, 500);
