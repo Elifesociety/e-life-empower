@@ -230,6 +230,7 @@ export function DepartmentWorkLogSection() {
             {session ? (
               <>
                 <Badge variant="secondary" className="text-xs">Logged in: {session.agent.name}</Badge>
+                {isScode && <Badge className="text-xs bg-amber-500/15 text-amber-700 border border-amber-500/40">S-Code · manages all</Badge>}
                 <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="h-4 w-4 mr-1.5" /> Logout</Button>
               </>
             ) : (
