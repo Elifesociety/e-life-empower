@@ -658,11 +658,39 @@ export function DepartmentWorkLogSection() {
                     ))}
                 </div>
               )}
+            <div>
+              <Label>Remarks / Feedback</Label>
+              <Textarea rows={2} placeholder="Optional remarks" value={taskDialog.remarks || ""} onChange={(e) => setTaskDialog({ ...taskDialog, remarks: e.target.value })} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTaskDialog({ open: false })}>Cancel</Button>
             <Button onClick={saveTask}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remarks / complete dialog */}
+      <Dialog open={remarksDialog.open} onOpenChange={(open) => { if (!open) setRemarksDialog({ open: false }); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{remarksDialog.status === "completed" ? "Complete Task" : "Update Remarks"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {remarksDialog.task && <p className="text-sm font-medium">{remarksDialog.task.title}</p>}
+            <div>
+              <Label>Status</Label>
+              <Select value={remarksDialog.status || "pending"} onValueChange={(v) => setRemarksDialog({ ...remarksDialog, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{TASK_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Remarks</Label>
+              <Textarea rows={4} placeholder="Add remarks, completion notes or feedback..." value={remarksDialog.remarks || ""} onChange={(e) => setRemarksDialog({ ...remarksDialog, remarks: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemarksDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveRemarks}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
