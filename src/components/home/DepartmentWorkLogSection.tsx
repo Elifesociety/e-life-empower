@@ -241,8 +241,19 @@ export function DepartmentWorkLogSection() {
       due_date: taskDialog.due_date || null,
       assigned_agent_id: taskDialog.assigned_agent_id,
       status: taskDialog.status || "pending",
+      remarks: taskDialog.remarks ?? null,
     });
     if (ok) { toast({ title: "Saved" }); setTaskDialog({ open: false }); setAgentSearch(""); setAgentResults([]); loadAll(); }
+  };
+  const saveRemarks = async () => {
+    if (!remarksDialog.task) return;
+    const ok = await callFn({
+      action: "update_task",
+      id: remarksDialog.task.id,
+      status: remarksDialog.status || remarksDialog.task.status,
+      remarks: remarksDialog.remarks || null,
+    });
+    if (ok) { toast({ title: "Updated" }); setRemarksDialog({ open: false }); loadAll(); }
   };
   const cycleTaskStatus = async (task: Task) => {
     const idx = TASK_STATUSES.indexOf(task.status as any);
