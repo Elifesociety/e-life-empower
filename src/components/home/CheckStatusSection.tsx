@@ -359,6 +359,63 @@ export function CheckStatusSection() {
                   </Card>
                 )}
 
+                {/* Assigned Tasks */}
+                {agentInfo && assignedTasks.length > 0 && (
+                  <Card className="relative overflow-hidden border-0 shadow-lg">
+                    <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500 via-purple-500 to-indigo-500" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
+                    <div className="relative">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-base flex items-center gap-2 text-white">
+                          <Sparkles className="h-4 w-4" />
+                          Your Assigned Tasks ({assignedTasks.length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        {assignedTasks.map((t) => {
+                          const statusColor =
+                            t.status === "completed"
+                              ? "bg-emerald-100 text-emerald-800"
+                              : t.status === "in_progress"
+                              ? "bg-amber-100 text-amber-800"
+                              : "bg-slate-100 text-slate-800";
+                          return (
+                            <div
+                              key={t.id}
+                              className="p-3 rounded-lg bg-white/95 backdrop-blur-sm border border-white/40 shadow-sm"
+                              style={t.department_color ? { borderLeft: `4px solid ${t.department_color}` } : undefined}
+                            >
+                              <div className="flex items-start justify-between gap-2 flex-wrap">
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <ClipboardList className="h-3.5 w-3.5 text-purple-600" />
+                                    <span className="font-semibold text-sm">{t.title}</span>
+                                    <Badge className={`text-[10px] px-1.5 py-0 ${statusColor}`}>
+                                      {t.status.replace("_", " ")}
+                                    </Badge>
+                                  </div>
+                                  {t.description && (
+                                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{t.description}</p>
+                                  )}
+                                  <div className="text-[11px] text-muted-foreground mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
+                                    {t.department_name && <span>Dept: {t.department_name}</span>}
+                                    {t.due_date && <span>Due: {new Date(t.due_date).toLocaleDateString("en-IN")}</span>}
+                                  </div>
+                                  {t.remarks && (
+                                    <p className="text-xs mt-2 p-2 rounded bg-muted/60 text-foreground">
+                                      <span className="font-medium">Remarks: </span>{t.remarks}
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </CardContent>
+                    </div>
+                  </Card>
+                )}
+
                 {/* Agent Info + Work Log */}
                 {agentInfo && (
                   <AgentWorkLog agent={agentInfo} />
