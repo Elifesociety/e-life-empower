@@ -658,6 +658,7 @@ export function DepartmentWorkLogSection() {
                     ))}
                 </div>
               )}
+            </div>
             <div>
               <Label>Remarks / Feedback</Label>
               <Textarea rows={2} placeholder="Optional remarks" value={taskDialog.remarks || ""} onChange={(e) => setTaskDialog({ ...taskDialog, remarks: e.target.value })} />
