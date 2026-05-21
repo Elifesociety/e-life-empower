@@ -117,19 +117,37 @@ export function CheckStatusSection() {
       setAgentInfo(agentRes.data && agentRes.data.length > 0 ? (agentRes.data[0] as unknown as AgentResult) : null);
       setOldPayments((oldPayRes.data as unknown as OldPaymentResult[]) || []);
 
-      // Fetch wallet balance if agent found
+      // Fetch wallet balance + assigned tasks if agent found
       if (agentRes.data && agentRes.data.length > 0) {
         const agentId = agentRes.data[0].id;
-        const { data: walletData } = await supabase
-          .from("agent_wallet_transactions")
-          .select("amount")
-          .eq("agent_id", agentId);
-        if (walletData) {
-          const balance = walletData.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+        const [walletRes, tasksRes] = await Promise.all([
+          supabase.from("agent_wallet_transactions").select("amount").eq("agent_id", agentId),
+          supabase
+            .from("department_tasks")
+            .select("id, title, description, due_date, status, remarks, created_at, department_id")
+            .eq("assigned_agent_id", agentId)
+            .order("created_at", { ascending: false }),
+        ]);
+        if (walletRes.data) {
+          const balance = walletRes.data.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
           setWalletBalance(balance);
+        }
+        const tRows = tasksRes.data || [];
+        if (tRows.length > 0) {
+          const deptIds = [...new Set(tRows.map((t: any) => t.department_id))];
+          const { data: depts } = await supabase.from("departments").select("id, name, color").in("id", deptIds);
+          const dMap = new Map((depts || []).map((d: any) => [d.id, d]));
+          setAssignedTasks(tRows.map((t: any) => ({
+            ...t,
+            department_name: dMap.get(t.department_id)?.name ?? null,
+            department_color: dMap.get(t.department_id)?.color ?? null,
+          })));
+        } else {
+          setAssignedTasks([]);
         }
       } else {
         setWalletBalance(null);
+        setAssignedTasks([]);
       }
     } catch (err) {
       console.error("Search error:", err);
