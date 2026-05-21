@@ -29,7 +29,7 @@ type Agent = { id: string; name: string; mobile: string; is_scode?: boolean };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
-type Task = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; assigned_agent_id: string; status: string; completed_at: string | null; created_at: string; created_by_member_id: string | null };
+type Task = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; assigned_agent_id: string; status: string; remarks: string | null; completed_at: string | null; created_at: string; created_by_member_id: string | null };
 
 interface Membership { member_id: string; department_id: string; member_role: string; department: Dept }
 interface Session { token: string; agent: Agent; memberships: Membership[] }
@@ -66,8 +66,9 @@ export function DepartmentWorkLogSection() {
   const [todoDialog, setTodoDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; due_date?: string; is_public?: boolean }>({ open: false });
   const [taskDialog, setTaskDialog] = useState<{
     open: boolean; id?: string; deptId?: string; title?: string; description?: string;
-    due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string;
+    due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string; remarks?: string;
   }>({ open: false });
+  const [remarksDialog, setRemarksDialog] = useState<{ open: boolean; task?: Task; remarks?: string; status?: string }>({ open: false });
   const [agentSearch, setAgentSearch] = useState("");
   const [agentResults, setAgentResults] = useState<Agent[]>([]);
   const [searching, setSearching] = useState(false);
@@ -240,8 +241,19 @@ export function DepartmentWorkLogSection() {
       due_date: taskDialog.due_date || null,
       assigned_agent_id: taskDialog.assigned_agent_id,
       status: taskDialog.status || "pending",
+      remarks: taskDialog.remarks ?? null,
     });
     if (ok) { toast({ title: "Saved" }); setTaskDialog({ open: false }); setAgentSearch(""); setAgentResults([]); loadAll(); }
+  };
+  const saveRemarks = async () => {
+    if (!remarksDialog.task) return;
+    const ok = await callFn({
+      action: "update_task",
+      id: remarksDialog.task.id,
+      status: remarksDialog.status || remarksDialog.task.status,
+      remarks: remarksDialog.remarks || null,
+    });
+    if (ok) { toast({ title: "Updated" }); setRemarksDialog({ open: false }); loadAll(); }
   };
   const cycleTaskStatus = async (task: Task) => {
     const idx = TASK_STATUSES.indexOf(task.status as any);
@@ -537,10 +549,31 @@ export function DepartmentWorkLogSection() {
                           </div>
                           <p className="font-semibold text-sm">{task.title}</p>
                           {task.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{task.description}</p>}
+                          {task.remarks && (
+                            <div className="mt-2 p-2 rounded bg-muted/50 border text-xs">
+                              <div className="font-medium text-muted-foreground mb-0.5">Remarks</div>
+                              <p className="whitespace-pre-wrap">{task.remarks}</p>
+                            </div>
+                          )}
                           {assignee && (
                             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5" /> {assignee.name} · {assignee.mobile}
                             </p>
+                          )}
+                          {task.completed_at && (
+                            <p className="text-xs text-emerald-600 mt-1">✓ Completed {new Date(task.completed_at).toLocaleString("en-IN")}</p>
+                          )}
+                          {canStatus && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {task.status !== "completed" && (
+                                <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => setRemarksDialog({ open: true, task, remarks: task.remarks || "", status: "completed" })}>
+                                  ✓ Mark Complete
+                                </Button>
+                              )}
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRemarksDialog({ open: true, task, remarks: task.remarks || "", status: task.status })}>
+                                <Pencil className="h-3 w-3 mr-1" /> {task.remarks ? "Edit" : "Add"} Remarks
+                              </Button>
+                            </div>
                           )}
                         </div>
                         {canEdit && (
@@ -548,7 +581,7 @@ export function DepartmentWorkLogSection() {
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
                               const a = taskAgents.get(task.assigned_agent_id);
                               setAgentSearch(a?.mobile || ""); setAgentResults(a ? [a] : []);
-                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status });
+                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status, remarks: task.remarks || "" });
                             }}><Pencil className="h-3.5 w-3.5" /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                           </div>
@@ -626,10 +659,39 @@ export function DepartmentWorkLogSection() {
                 </div>
               )}
             </div>
+            <div>
+              <Label>Remarks / Feedback</Label>
+              <Textarea rows={2} placeholder="Optional remarks" value={taskDialog.remarks || ""} onChange={(e) => setTaskDialog({ ...taskDialog, remarks: e.target.value })} />
+            </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setTaskDialog({ open: false })}>Cancel</Button>
             <Button onClick={saveTask}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Remarks / complete dialog */}
+      <Dialog open={remarksDialog.open} onOpenChange={(open) => { if (!open) setRemarksDialog({ open: false }); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>{remarksDialog.status === "completed" ? "Complete Task" : "Update Remarks"}</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            {remarksDialog.task && <p className="text-sm font-medium">{remarksDialog.task.title}</p>}
+            <div>
+              <Label>Status</Label>
+              <Select value={remarksDialog.status || "pending"} onValueChange={(v) => setRemarksDialog({ ...remarksDialog, status: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>{TASK_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Remarks</Label>
+              <Textarea rows={4} placeholder="Add remarks, completion notes or feedback..." value={remarksDialog.remarks || ""} onChange={(e) => setRemarksDialog({ ...remarksDialog, remarks: e.target.value })} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRemarksDialog({ open: false })}>Cancel</Button>
+            <Button onClick={saveRemarks}>Save</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

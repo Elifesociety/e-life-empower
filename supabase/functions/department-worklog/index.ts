@@ -346,18 +346,19 @@ Deno.serve(async (req) => {
         .select("id, created_by_member_id, assigned_agent_id, status")
         .eq("id", id).single();
       if (!existing) return json({ error: "Not found" }, 404);
-      // Status-only update allowed by assigned agent or scode/creator
+      // Status/remarks update allowed by assigned agent; full edit by scode/creator
       const isAssignee = agentIds.includes(existing.assigned_agent_id);
-      const statusOnly = body.status !== undefined &&
+      const statusRemarksOnly = (body.status !== undefined || body.remarks !== undefined) &&
         body.title === undefined && body.description === undefined &&
         body.due_date === undefined && body.assigned_agent_id === undefined;
-      const allowed = canEditAny(existing.created_by_member_id) || (statusOnly && isAssignee);
+      const allowed = canEditAny(existing.created_by_member_id) || (statusRemarksOnly && isAssignee);
       if (!allowed) return json({ error: "Forbidden" }, 403);
       const patch: any = { updated_at: new Date().toISOString() };
       if (body.title !== undefined) patch.title = String(body.title).trim();
       if (body.description !== undefined) patch.description = body.description || null;
       if (body.due_date !== undefined) patch.due_date = body.due_date || null;
       if (body.assigned_agent_id !== undefined) patch.assigned_agent_id = body.assigned_agent_id;
+      if (body.remarks !== undefined) patch.remarks = body.remarks || null;
       if (body.status !== undefined) {
         patch.status = body.status;
         patch.completed_at = body.status === "completed" ? new Date().toISOString() : null;
