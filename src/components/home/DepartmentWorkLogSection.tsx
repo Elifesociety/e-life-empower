@@ -549,10 +549,31 @@ export function DepartmentWorkLogSection() {
                           </div>
                           <p className="font-semibold text-sm">{task.title}</p>
                           {task.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{task.description}</p>}
+                          {task.remarks && (
+                            <div className="mt-2 p-2 rounded bg-muted/50 border text-xs">
+                              <div className="font-medium text-muted-foreground mb-0.5">Remarks</div>
+                              <p className="whitespace-pre-wrap">{task.remarks}</p>
+                            </div>
+                          )}
                           {assignee && (
                             <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
                               <UserCheck className="h-3.5 w-3.5" /> {assignee.name} · {assignee.mobile}
                             </p>
+                          )}
+                          {task.completed_at && (
+                            <p className="text-xs text-emerald-600 mt-1">✓ Completed {new Date(task.completed_at).toLocaleString("en-IN")}</p>
+                          )}
+                          {canStatus && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {task.status !== "completed" && (
+                                <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => setRemarksDialog({ open: true, task, remarks: task.remarks || "", status: "completed" })}>
+                                  ✓ Mark Complete
+                                </Button>
+                              )}
+                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRemarksDialog({ open: true, task, remarks: task.remarks || "", status: task.status })}>
+                                <Pencil className="h-3 w-3 mr-1" /> {task.remarks ? "Edit" : "Add"} Remarks
+                              </Button>
+                            </div>
                           )}
                         </div>
                         {canEdit && (
@@ -560,7 +581,7 @@ export function DepartmentWorkLogSection() {
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
                               const a = taskAgents.get(task.assigned_agent_id);
                               setAgentSearch(a?.mobile || ""); setAgentResults(a ? [a] : []);
-                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status });
+                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status, remarks: task.remarks || "" });
                             }}><Pencil className="h-3.5 w-3.5" /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                           </div>
