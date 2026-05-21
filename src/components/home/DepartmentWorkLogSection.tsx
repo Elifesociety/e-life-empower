@@ -29,7 +29,7 @@ type Agent = { id: string; name: string; mobile: string; is_scode?: boolean };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
-type Task = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; assigned_agent_id: string; status: string; completed_at: string | null; created_at: string; created_by_member_id: string | null };
+type Task = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; assigned_agent_id: string; status: string; remarks: string | null; completed_at: string | null; created_at: string; created_by_member_id: string | null };
 
 interface Membership { member_id: string; department_id: string; member_role: string; department: Dept }
 interface Session { token: string; agent: Agent; memberships: Membership[] }
