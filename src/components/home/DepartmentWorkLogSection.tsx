@@ -72,6 +72,8 @@ export function DepartmentWorkLogSection() {
     due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string; remarks?: string;
   }>({ open: false });
   const [remarksDialog, setRemarksDialog] = useState<{ open: boolean; task?: Task; remarks?: string; status?: string }>({ open: false });
+  const [taskView, setTaskView] = useState<"pending" | "completed">("pending");
+  const [taskHistoryDate, setTaskHistoryDate] = useState<string>("");
   const [agentSearch, setAgentSearch] = useState("");
   const [agentResults, setAgentResults] = useState<Agent[]>([]);
   const [searching, setSearching] = useState(false);
@@ -287,6 +289,12 @@ export function DepartmentWorkLogSection() {
   const visiblePlans = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
   const visibleTodos = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
   const visibleTasks = tasks.filter((t) => filterMatch(t.department_id));
+  const displayedTasks = visibleTasks.filter((t) => {
+    if (taskView === "pending") return t.status !== "completed";
+    if (t.status !== "completed") return false;
+    if (!taskHistoryDate) return true;
+    return (t.completed_at || "").slice(0, 10) === taskHistoryDate;
+  });
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const deptMap = new Map(departments.map((d) => [d.id, d]));
   const deptIds = [...deptMap.keys()];
@@ -545,10 +553,27 @@ export function DepartmentWorkLogSection() {
             {session && !isScode && (
               <p className="text-xs text-muted-foreground text-center">Only S-Code members can create tasks. You can update status on tasks assigned to you.</p>
             )}
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant={taskView === "pending" ? "default" : "outline"} onClick={() => { setTaskView("pending"); setTaskHistoryDate(""); }}>
+                <ClipboardList className="h-3.5 w-3.5 mr-1" /> Pending
+              </Button>
+              <Button size="sm" variant={taskView === "completed" ? "default" : "outline"} onClick={() => setTaskView("completed")}>
+                ✓ Completed
+              </Button>
+              {taskView === "completed" && (
+                <div className="flex items-center gap-1 ml-auto">
+                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Input type="date" className="h-8 w-[150px]" value={taskHistoryDate} onChange={(e) => setTaskHistoryDate(e.target.value)} />
+                  {taskHistoryDate && <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setTaskHistoryDate("")}>Clear</Button>}
+                </div>
+              )}
+            </div>
+
             {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
-              : visibleTasks.length === 0 ? (
-                <Card><CardContent className="py-10 text-center text-muted-foreground"><ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />No tasks yet</CardContent></Card>
-              ) : visibleTasks.map((task) => {
+              : displayedTasks.length === 0 ? (
+                <Card><CardContent className="py-10 text-center text-muted-foreground"><ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />{taskView === "completed" ? "No completed tasks" : "No pending tasks"}</CardContent></Card>
+              ) : displayedTasks.map((task) => {
                 const assignee = taskAgents.get(task.assigned_agent_id);
                 const canEdit = canEditTask(task);
                 const canStatus = canUpdateTaskStatus(task);
