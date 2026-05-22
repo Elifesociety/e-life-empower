@@ -417,6 +417,20 @@ export function DepartmentWorkLogSection() {
                 </CardContent>
               </Card>
             )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant={todoView === "pending" ? "default" : "outline"} onClick={() => setTodoView("pending")}>
+                <ListTodo className="h-3.5 w-3.5 mr-1" /> Pending ({visibleTodosAll.filter((t) => !t.is_completed).length})
+              </Button>
+              <Button size="sm" variant={todoView === "completed" ? "default" : "outline"} onClick={() => setTodoView("completed")}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Completed ({visibleTodosAll.filter((t) => t.is_completed).length})
+              </Button>
+              {todoView === "completed" && (
+                <>
+                  <Input type="date" className="h-9 w-auto" value={todoHistoryDate} onChange={(e) => setTodoHistoryDate(e.target.value)} placeholder="History date" />
+                  {todoHistoryDate && <Button size="sm" variant="ghost" onClick={() => setTodoHistoryDate("")}>Clear</Button>}
+                </>
+              )}
+            </div>
             {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
               : visibleTodos.length === 0 ? (
                 <Card><CardContent className="py-10 text-center text-muted-foreground"><ListTodo className="h-10 w-10 mx-auto mb-2 opacity-40" />No todos yet</CardContent></Card>
