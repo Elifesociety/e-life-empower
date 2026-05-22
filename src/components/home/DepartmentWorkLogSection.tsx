@@ -289,6 +289,12 @@ export function DepartmentWorkLogSection() {
   const visiblePlans = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
   const visibleTodos = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
   const visibleTasks = tasks.filter((t) => filterMatch(t.department_id));
+  const displayedTasks = visibleTasks.filter((t) => {
+    if (taskView === "pending") return t.status !== "completed";
+    if (t.status !== "completed") return false;
+    if (!taskHistoryDate) return true;
+    return (t.completed_at || "").slice(0, 10) === taskHistoryDate;
+  });
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const deptMap = new Map(departments.map((d) => [d.id, d]));
   const deptIds = [...deptMap.keys()];
