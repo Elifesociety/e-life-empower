@@ -178,15 +178,20 @@ export function DepartmentWorkLogSection() {
       id: planDialog.id, department_id: planDialog.deptId,
       title, description: planDialog.description || null,
       target_date: planDialog.target_date || null, status: planDialog.status || "planning",
+      remarks: planDialog.remarks ?? null,
       is_public: planDialog.is_public !== false,
     });
     if (ok) { toast({ title: "Saved" }); setPlanDialog({ open: false }); loadAll(); }
   };
-  const cyclePlanStatus = async (plan: Plan) => {
-    if (!canEditItem(plan.created_by_member_id)) return;
-    const idx = PLAN_STATUSES.indexOf(plan.status as any);
-    const next = PLAN_STATUSES[(idx + 1) % PLAN_STATUSES.length];
-    if (await callFn({ action: "update_plan", id: plan.id, status: next })) loadAll();
+  const savePlanStatus = async () => {
+    if (!planStatusDialog.plan) return;
+    const ok = await callFn({
+      action: "update_plan",
+      id: planStatusDialog.plan.id,
+      status: planStatusDialog.status || planStatusDialog.plan.status,
+      remarks: planStatusDialog.remarks || null,
+    });
+    if (ok) { toast({ title: "Updated" }); setPlanStatusDialog({ open: false }); loadAll(); }
   };
   const deletePlan = async (id: string) => {
     if (!confirm("Delete this plan?")) return;
