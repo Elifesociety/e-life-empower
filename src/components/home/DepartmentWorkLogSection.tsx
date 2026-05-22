@@ -386,6 +386,7 @@ export function DepartmentWorkLogSection() {
                         </div>
                         {canEdit && (
                           <div className="flex gap-1 items-center">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title={plan.status === "completed" ? "Reopen" : "Mark completed"} onClick={() => markPlanCompleted(plan)}><CheckCircle2 className={`h-3.5 w-3.5 ${plan.status === "completed" ? "text-emerald-600" : ""}`} /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" title={plan.is_public ? "Make private" : "Make public"} onClick={() => togglePlanPublic(plan)}>{plan.is_public ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}</Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPlanDialog({ open: true, id: plan.id, deptId: plan.department_id, title: plan.title, description: plan.description || "", target_date: plan.target_date || "", status: plan.status, is_public: plan.is_public })}><Pencil className="h-3.5 w-3.5" /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deletePlan(plan.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
