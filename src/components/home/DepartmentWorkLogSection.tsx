@@ -72,6 +72,8 @@ export function DepartmentWorkLogSection() {
     due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string; remarks?: string;
   }>({ open: false });
   const [remarksDialog, setRemarksDialog] = useState<{ open: boolean; task?: Task; remarks?: string; status?: string }>({ open: false });
+  const [taskView, setTaskView] = useState<"pending" | "completed">("pending");
+  const [taskHistoryDate, setTaskHistoryDate] = useState<string>("");
   const [agentSearch, setAgentSearch] = useState("");
   const [agentResults, setAgentResults] = useState<Agent[]>([]);
   const [searching, setSearching] = useState(false);
