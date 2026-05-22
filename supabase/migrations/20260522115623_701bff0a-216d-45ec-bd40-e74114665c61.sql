@@ -1,0 +1,1 @@
+ALTER TABLE public.department_plans ADD COLUMN IF NOT EXISTS remarks text;

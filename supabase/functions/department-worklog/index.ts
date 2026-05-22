@@ -243,6 +243,7 @@ Deno.serve(async (req) => {
       if (body.description !== undefined) patch.description = body.description || null;
       if (body.target_date !== undefined) patch.target_date = body.target_date || null;
       if (body.status !== undefined) patch.status = body.status;
+      if (body.remarks !== undefined) patch.remarks = body.remarks || null;
       if (body.is_public !== undefined) patch.is_public = !!body.is_public;
       const { error } = await supabase.from("department_plans").update(patch).eq("id", id);
       if (error) return json({ error: error.message }, 500);
