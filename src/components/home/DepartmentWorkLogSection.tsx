@@ -203,8 +203,12 @@ export function DepartmentWorkLogSection() {
   const isVisible = (item: { is_public: boolean; created_by_member_id: string | null }) =>
     item.is_public || canEditItem(item.created_by_member_id);
   const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l) && (!filterDate || l.work_date === filterDate));
-  const visiblePlans = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
-  const visibleTodos = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
+  const visiblePlansAll = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
+  const visiblePlans = visiblePlansAll.filter((p) => showPlanCompleted ? p.status === "completed" : p.status !== "completed");
+  const visibleTodosAll = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
+  const visibleTodos = todoView === "pending"
+    ? visibleTodosAll.filter((t) => !t.is_completed)
+    : visibleTodosAll.filter((t) => t.is_completed && (!todoHistoryDate || (t.completed_at || "").slice(0, 10) === todoHistoryDate));
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const deptMap = new Map(departments.map((d) => [d.id, d]));
   const deptIds = [...deptMap.keys()];
