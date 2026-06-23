@@ -12,15 +12,13 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Switch } from "@/components/ui/switch";
-import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon, Eye, EyeOff, ClipboardList, Search, UserCheck } from "lucide-react";
+import { Building2, Plus, Pencil, Trash2, LogIn, LogOut, Loader2, FileText, Target, ListTodo, Calendar as CalendarIcon, Eye, EyeOff, Check, CheckCircle2 } from "lucide-react";
 
 const STATUS_STYLE: Record<string, string> = {
   planning: "bg-blue-500/15 text-blue-700 border-blue-500/40 dark:text-blue-300",
-  pending: "bg-slate-500/15 text-slate-700 border-slate-500/40 dark:text-slate-300",
   in_progress: "bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-300",
   completed: "bg-emerald-500/15 text-emerald-700 border-emerald-500/40 dark:text-emerald-300",
-  on_hold: "bg-orange-500/15 text-orange-700 border-orange-500/40 dark:text-orange-300",
-  cancelled: "bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-300",
+  on_hold: "bg-rose-500/15 text-rose-700 border-rose-500/40 dark:text-rose-300",
 };
 const PALETTE = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6", "#f97316"];
 
@@ -28,17 +26,14 @@ type Dept = { id: string; name: string; description: string | null; color: strin
 type Member = { id: string; agent_id: string; department_id: string; member_role: string };
 type Agent = { id: string; name: string; mobile: string; is_scode?: boolean };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
-type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; remarks: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
+type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
-type Task = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; assigned_agent_id: string; status: string; remarks: string | null; completed_at: string | null; created_at: string; created_by_member_id: string | null };
 
 interface Membership { member_id: string; department_id: string; member_role: string; department: Dept }
 interface Session { token: string; agent: Agent; memberships: Membership[] }
 
 const SESSION_KEY = "elife_dept_session";
-const PLAN_STATUSES = ["planning", "in_progress", "on_hold", "completed", "cancelled"] as const;
-const PLAN_STATUS_LABEL: Record<string, string> = { planning: "Planning", in_progress: "Work in Progress", on_hold: "On Hold", completed: "Completed", cancelled: "Cancelled" };
-const TASK_STATUSES = ["pending", "in_progress", "completed"] as const;
+const PLAN_STATUSES = ["planning", "in_progress", "completed", "on_hold"] as const;
 
 export function DepartmentWorkLogSection() {
   const { toast } = useToast();
@@ -48,12 +43,13 @@ export function DepartmentWorkLogSection() {
   const [logs, setLogs] = useState<Log[]>([]);
   const [plans, setPlans] = useState<Plan[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
-  const [tasks, setTasks] = useState<Task[]>([]);
-  const [taskAgents, setTaskAgents] = useState<Map<string, Agent>>(new Map());
   const [loading, setLoading] = useState(true);
   const [filterDept, setFilterDept] = useState<string>("all");
   const [filterDate, setFilterDate] = useState<string>("");
   const [showDate, setShowDate] = useState(false);
+  const [todoView, setTodoView] = useState<"pending" | "completed">("pending");
+  const [todoHistoryDate, setTodoHistoryDate] = useState<string>("");
+  const [showPlanCompleted, setShowPlanCompleted] = useState(false);
 
   const [session, setSession] = useState<Session | null>(() => {
     try { return JSON.parse(localStorage.getItem(SESSION_KEY) || "null"); } catch { return null; }
@@ -64,47 +60,29 @@ export function DepartmentWorkLogSection() {
   const [logging, setLogging] = useState(false);
 
   const [logDialog, setLogDialog] = useState<{ open: boolean; id?: string; memberId?: string; deptId?: string; details?: string; date?: string; is_public?: boolean }>({ open: false });
-  const [planDialog, setPlanDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; target_date?: string; status?: string; remarks?: string; is_public?: boolean }>({ open: false });
-  const [planStatusDialog, setPlanStatusDialog] = useState<{ open: boolean; plan?: Plan; status?: string; remarks?: string }>({ open: false });
+  const [planDialog, setPlanDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; target_date?: string; status?: string; is_public?: boolean }>({ open: false });
   const [todoDialog, setTodoDialog] = useState<{ open: boolean; id?: string; deptId?: string; title?: string; description?: string; due_date?: string; is_public?: boolean }>({ open: false });
-  const [taskDialog, setTaskDialog] = useState<{
-    open: boolean; id?: string; deptId?: string; title?: string; description?: string;
-    due_date?: string; assigned_agent_id?: string; assigned_agent_label?: string; status?: string; remarks?: string;
-  }>({ open: false });
-  const [remarksDialog, setRemarksDialog] = useState<{ open: boolean; task?: Task; remarks?: string; status?: string }>({ open: false });
-  const [taskView, setTaskView] = useState<"pending" | "completed">("pending");
-  const [taskHistoryDate, setTaskHistoryDate] = useState<string>("");
-  const [agentSearch, setAgentSearch] = useState("");
-  const [agentResults, setAgentResults] = useState<Agent[]>([]);
-  const [searching, setSearching] = useState(false);
 
   const loadAll = async () => {
     setLoading(true);
-    const [d, m, l, p, t, tk] = await Promise.all([
+    const [d, m, l, p, t] = await Promise.all([
       supabase.from("departments").select("*").eq("is_active", true).order("name"),
       supabase.from("department_members").select("id, agent_id, department_id, member_role").eq("is_active", true),
       supabase.from("department_work_logs").select("*").order("work_date", { ascending: false }).order("created_at", { ascending: false }).limit(200),
       supabase.from("department_plans").select("*").order("created_at", { ascending: false }).limit(200),
       supabase.from("department_todos").select("*").order("is_completed").order("created_at", { ascending: false }).limit(200),
-      supabase.from("department_tasks").select("*").order("created_at", { ascending: false }).limit(200),
     ]);
     const depts = (d.data as Dept[]) || [];
     const mem = (m.data as Member[]) || [];
-    const tkData = (tk.data as Task[]) || [];
     setDepartments(depts);
     setMembers(mem);
     setLogs((l.data as Log[]) || []);
     setPlans((p.data as Plan[]) || []);
     setTodos((t.data as Todo[]) || []);
-    setTasks(tkData);
-    const memberAgentIds = mem.map((x) => x.agent_id);
-    const taskAgentIds = tkData.map((x) => x.assigned_agent_id);
-    const allIds = [...new Set([...memberAgentIds, ...taskAgentIds])];
-    if (allIds.length > 0) {
-      const { data: ag } = await supabase.from("pennyekart_agents").select("id, name, mobile").in("id", allIds);
-      const map = new Map((ag || []).map((a: any) => [a.id, a as Agent]));
-      setAgents(new Map([...map].filter(([id]) => memberAgentIds.includes(id))));
-      setTaskAgents(map);
+    if (mem.length > 0) {
+      const ids = [...new Set(mem.map((x) => x.agent_id))];
+      const { data: ag } = await supabase.from("pennyekart_agents").select("id, name, mobile").in("id", ids);
+      setAgents(new Map((ag || []).map((a: any) => [a.id, a as Agent])));
     }
     setLoading(false);
   };
@@ -180,20 +158,20 @@ export function DepartmentWorkLogSection() {
       id: planDialog.id, department_id: planDialog.deptId,
       title, description: planDialog.description || null,
       target_date: planDialog.target_date || null, status: planDialog.status || "planning",
-      remarks: planDialog.remarks ?? null,
       is_public: planDialog.is_public !== false,
     });
     if (ok) { toast({ title: "Saved" }); setPlanDialog({ open: false }); loadAll(); }
   };
-  const savePlanStatus = async () => {
-    if (!planStatusDialog.plan) return;
-    const ok = await callFn({
-      action: "update_plan",
-      id: planStatusDialog.plan.id,
-      status: planStatusDialog.status || planStatusDialog.plan.status,
-      remarks: planStatusDialog.remarks || null,
-    });
-    if (ok) { toast({ title: "Updated" }); setPlanStatusDialog({ open: false }); loadAll(); }
+  const cyclePlanStatus = async (plan: Plan) => {
+    if (!canEditItem(plan.created_by_member_id)) return;
+    const idx = PLAN_STATUSES.indexOf(plan.status as any);
+    const next = PLAN_STATUSES[(idx + 1) % PLAN_STATUSES.length];
+    if (await callFn({ action: "update_plan", id: plan.id, status: next })) loadAll();
+  };
+  const markPlanCompleted = async (plan: Plan) => {
+    if (!canEditItem(plan.created_by_member_id)) return;
+    const next = plan.status === "completed" ? "in_progress" : "completed";
+    if (await callFn({ action: "update_plan", id: plan.id, status: next })) loadAll();
   };
   const deletePlan = async (id: string) => {
     if (!confirm("Delete this plan?")) return;
@@ -226,75 +204,16 @@ export function DepartmentWorkLogSection() {
     if (await callFn({ action: "update_todo", id: todo.id, is_public: !todo.is_public })) loadAll();
   };
 
-  // ---- Tasks ----
-  const searchAgents = async (term: string) => {
-    setAgentSearch(term);
-    const cleaned = term.replace(/\D/g, "");
-    if (cleaned.length < 3) { setAgentResults([]); return; }
-    setSearching(true);
-    try {
-      const { data } = await supabase.functions.invoke("department-worklog", {
-        body: { action: "search_agent_by_mobile", mobile: cleaned, token: session?.token },
-      });
-      setAgentResults(((data as any)?.agents as Agent[]) || []);
-    } finally { setSearching(false); }
-  };
-  const saveTask = async () => {
-    const title = (taskDialog.title || "").trim();
-    if (!title) return toast({ title: "Enter title", variant: "destructive" });
-    if (!taskDialog.id && !taskDialog.deptId) return toast({ title: "Select a department", variant: "destructive" });
-    if (!taskDialog.id && !taskDialog.assigned_agent_id) return toast({ title: "Select an assignee", variant: "destructive" });
-    const ok = await callFn({
-      action: taskDialog.id ? "update_task" : "create_task",
-      id: taskDialog.id, department_id: taskDialog.deptId,
-      title, description: taskDialog.description || null,
-      due_date: taskDialog.due_date || null,
-      assigned_agent_id: taskDialog.assigned_agent_id,
-      status: taskDialog.status || "pending",
-      remarks: taskDialog.remarks ?? null,
-    });
-    if (ok) { toast({ title: "Saved" }); setTaskDialog({ open: false }); setAgentSearch(""); setAgentResults([]); loadAll(); }
-  };
-  const saveRemarks = async () => {
-    if (!remarksDialog.task) return;
-    const ok = await callFn({
-      action: "update_task",
-      id: remarksDialog.task.id,
-      status: remarksDialog.status || remarksDialog.task.status,
-      remarks: remarksDialog.remarks || null,
-    });
-    if (ok) { toast({ title: "Updated" }); setRemarksDialog({ open: false }); loadAll(); }
-  };
-  const cycleTaskStatus = async (task: Task) => {
-    const idx = TASK_STATUSES.indexOf(task.status as any);
-    const next = TASK_STATUSES[(idx + 1) % TASK_STATUSES.length];
-    if (await callFn({ action: "update_task", id: task.id, status: next })) loadAll();
-  };
-  const deleteTask = async (id: string) => {
-    if (!confirm("Delete this task?")) return;
-    if (await callFn({ action: "delete_task", id })) loadAll();
-  };
-  const canEditTask = (task: Task) => canEditItem(task.created_by_member_id);
-  const canUpdateTaskStatus = (task: Task) => {
-    if (canEditTask(task)) return true;
-    if (!session) return false;
-    // Assigned agent (matched by mobile through session agent id pool)
-    return session.agent.id === task.assigned_agent_id;
-  };
-
   const filterMatch = (deptId: string) => filterDept === "all" || deptId === filterDept;
   const isVisible = (item: { is_public: boolean; created_by_member_id: string | null }) =>
     item.is_public || canEditItem(item.created_by_member_id);
   const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l) && (!filterDate || l.work_date === filterDate));
-  const visiblePlans = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
-  const visibleTodos = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
-  const visibleTasks = tasks.filter((t) => filterMatch(t.department_id));
-  const displayedTasks = visibleTasks.filter((t) => {
-    if (taskView === "pending") return t.status !== "completed";
-    if (t.status !== "completed") return false;
-    if (!taskHistoryDate) return true;
-    return (t.completed_at || "").slice(0, 10) === taskHistoryDate;
-  });
+  const visiblePlansAll = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
+  const visiblePlans = visiblePlansAll.filter((p) => showPlanCompleted ? p.status === "completed" : p.status !== "completed");
+  const visibleTodosAll = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
+  const visibleTodos = todoView === "pending"
+    ? visibleTodosAll.filter((t) => !t.is_completed)
+    : visibleTodosAll.filter((t) => t.is_completed && (!todoHistoryDate || (t.completed_at || "").slice(0, 10) === todoHistoryDate));
   const memberMap = new Map(members.map((m) => [m.id, m]));
   const deptMap = new Map(departments.map((d) => [d.id, d]));
   const deptIds = [...deptMap.keys()];
@@ -354,11 +273,10 @@ export function DepartmentWorkLogSection() {
         </div>
 
         <Tabs defaultValue="logs">
-          <TabsList className="grid grid-cols-4 w-full">
+          <TabsList className="grid grid-cols-3 w-full">
             <TabsTrigger value="logs"><FileText className="h-3.5 w-3.5 mr-1" /> Logs</TabsTrigger>
             <TabsTrigger value="plans"><Target className="h-3.5 w-3.5 mr-1" /> Planning</TabsTrigger>
             <TabsTrigger value="todos"><ListTodo className="h-3.5 w-3.5 mr-1" /> Todos</TabsTrigger>
-            <TabsTrigger value="tasks"><ClipboardList className="h-3.5 w-3.5 mr-1" /> Tasks</TabsTrigger>
           </TabsList>
 
           {/* LOGS */}
@@ -431,6 +349,14 @@ export function DepartmentWorkLogSection() {
                 </CardContent>
               </Card>
             )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant={!showPlanCompleted ? "default" : "outline"} onClick={() => setShowPlanCompleted(false)}>
+                <Target className="h-3.5 w-3.5 mr-1" /> Active ({visiblePlansAll.filter((p) => p.status !== "completed").length})
+              </Button>
+              <Button size="sm" variant={showPlanCompleted ? "default" : "outline"} onClick={() => setShowPlanCompleted(true)}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Completed ({visiblePlansAll.filter((p) => p.status === "completed").length})
+              </Button>
+            </div>
             {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
               : visiblePlans.length === 0 ? (
                 <Card><CardContent className="py-10 text-center text-muted-foreground"><Target className="h-10 w-10 mx-auto mb-2 opacity-40" />No plans yet</CardContent></Card>
@@ -443,40 +369,26 @@ export function DepartmentWorkLogSection() {
                         <div className="min-w-0 flex-1">
                           <div className="flex items-center gap-2 flex-wrap mb-1">
                             <DeptBadge deptId={plan.department_id} />
-                            <span className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium ${STATUS_STYLE[plan.status] || ""}`}>
-                              {PLAN_STATUS_LABEL[plan.status] || plan.status.replace("_", " ")}
-                            </span>
+                            <button
+                              type="button"
+                              disabled={!canEdit}
+                              onClick={() => cyclePlanStatus(plan)}
+                              className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium transition ${canEdit ? "hover:opacity-80 cursor-pointer" : "cursor-default"} ${STATUS_STYLE[plan.status] || ""}`}
+                              title={canEdit ? "Click to change status" : ""}
+                            >
+                              {plan.status.replace("_", " ")}
+                            </button>
                             {plan.target_date && <span className="text-xs text-muted-foreground">🎯 {new Date(plan.target_date).toLocaleDateString("en-IN")}</span>}
                             {!plan.is_public && <Badge variant="outline" className="text-[10px]"><EyeOff className="h-3 w-3 mr-1" />Private</Badge>}
                           </div>
                           <p className="font-semibold text-sm">{plan.title}</p>
                           {plan.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{plan.description}</p>}
-                          {plan.remarks && (
-                            <div className="mt-2 p-2 rounded bg-muted/50 border text-xs">
-                              <div className="font-medium text-muted-foreground mb-0.5">Remarks</div>
-                              <p className="whitespace-pre-wrap">{plan.remarks}</p>
-                            </div>
-                          )}
-                          {canEdit && (
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {PLAN_STATUSES.filter((s) => s !== plan.status).map((s) => (
-                                <Button
-                                  key={s}
-                                  size="sm"
-                                  variant="outline"
-                                  className="h-7 text-[11px] px-2"
-                                  onClick={() => setPlanStatusDialog({ open: true, plan, status: s, remarks: plan.remarks || "" })}
-                                >
-                                  {PLAN_STATUS_LABEL[s]}
-                                </Button>
-                              ))}
-                            </div>
-                          )}
                         </div>
                         {canEdit && (
                           <div className="flex gap-1 items-center">
+                            <Button size="icon" variant="ghost" className="h-7 w-7" title={plan.status === "completed" ? "Reopen" : "Mark completed"} onClick={() => markPlanCompleted(plan)}><CheckCircle2 className={`h-3.5 w-3.5 ${plan.status === "completed" ? "text-emerald-600" : ""}`} /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" title={plan.is_public ? "Make private" : "Make public"} onClick={() => togglePlanPublic(plan)}>{plan.is_public ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}</Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPlanDialog({ open: true, id: plan.id, deptId: plan.department_id, title: plan.title, description: plan.description || "", target_date: plan.target_date || "", status: plan.status, remarks: plan.remarks || "", is_public: plan.is_public })}><Pencil className="h-3.5 w-3.5" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setPlanDialog({ open: true, id: plan.id, deptId: plan.department_id, title: plan.title, description: plan.description || "", target_date: plan.target_date || "", status: plan.status, is_public: plan.is_public })}><Pencil className="h-3.5 w-3.5" /></Button>
                             <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deletePlan(plan.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
                           </div>
                         )}
@@ -505,6 +417,20 @@ export function DepartmentWorkLogSection() {
                 </CardContent>
               </Card>
             )}
+            <div className="flex items-center gap-2 flex-wrap">
+              <Button size="sm" variant={todoView === "pending" ? "default" : "outline"} onClick={() => setTodoView("pending")}>
+                <ListTodo className="h-3.5 w-3.5 mr-1" /> Pending ({visibleTodosAll.filter((t) => !t.is_completed).length})
+              </Button>
+              <Button size="sm" variant={todoView === "completed" ? "default" : "outline"} onClick={() => setTodoView("completed")}>
+                <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Completed ({visibleTodosAll.filter((t) => t.is_completed).length})
+              </Button>
+              {todoView === "completed" && (
+                <>
+                  <Input type="date" className="h-9 w-auto" value={todoHistoryDate} onChange={(e) => setTodoHistoryDate(e.target.value)} placeholder="History date" />
+                  {todoHistoryDate && <Button size="sm" variant="ghost" onClick={() => setTodoHistoryDate("")}>Clear</Button>}
+                </>
+              )}
+            </div>
             {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
               : visibleTodos.length === 0 ? (
                 <Card><CardContent className="py-10 text-center text-muted-foreground"><ListTodo className="h-10 w-10 mx-auto mb-2 opacity-40" />No todos yet</CardContent></Card>
@@ -537,212 +463,8 @@ export function DepartmentWorkLogSection() {
                 );
               })}
           </TabsContent>
-
-          {/* TASKS */}
-          <TabsContent value="tasks" className="space-y-3">
-            {session && isScode && (
-              <Card className="border-primary/30">
-                <CardHeader className="pb-3"><CardTitle className="text-base">Allocate a task to an agent</CardTitle></CardHeader>
-                <CardContent>
-                  <Button size="sm" onClick={() => { setAgentSearch(""); setAgentResults([]); setTaskDialog({ open: true, status: "pending" }); }}>
-                    <Plus className="h-3.5 w-3.5 mr-1" /> New task
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-            {session && !isScode && (
-              <p className="text-xs text-muted-foreground text-center">Only S-Code members can create tasks. You can update status on tasks assigned to you.</p>
-            )}
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <Button size="sm" variant={taskView === "pending" ? "default" : "outline"} onClick={() => { setTaskView("pending"); setTaskHistoryDate(""); }}>
-                <ClipboardList className="h-3.5 w-3.5 mr-1" /> Pending
-              </Button>
-              <Button size="sm" variant={taskView === "completed" ? "default" : "outline"} onClick={() => setTaskView("completed")}>
-                ✓ Completed
-              </Button>
-              {taskView === "completed" && (
-                <div className="flex items-center gap-1 ml-auto">
-                  <CalendarIcon className="h-3.5 w-3.5 text-muted-foreground" />
-                  <Input type="date" className="h-8 w-[150px]" value={taskHistoryDate} onChange={(e) => setTaskHistoryDate(e.target.value)} />
-                  {taskHistoryDate && <Button size="sm" variant="ghost" className="h-8 px-2" onClick={() => setTaskHistoryDate("")}>Clear</Button>}
-                </div>
-              )}
-            </div>
-
-            {loading ? <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin" /></div>
-              : displayedTasks.length === 0 ? (
-                <Card><CardContent className="py-10 text-center text-muted-foreground"><ClipboardList className="h-10 w-10 mx-auto mb-2 opacity-40" />{taskView === "completed" ? "No completed tasks" : "No pending tasks"}</CardContent></Card>
-              ) : displayedTasks.map((task) => {
-                const assignee = taskAgents.get(task.assigned_agent_id);
-                const canEdit = canEditTask(task);
-                const canStatus = canUpdateTaskStatus(task);
-                return (
-                  <Card key={task.id} className="border-l-4 overflow-hidden" style={cardStyle(task.department_id)}>
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2 flex-wrap mb-1">
-                            <DeptBadge deptId={task.department_id} />
-                            <button
-                              type="button"
-                              disabled={!canStatus}
-                              onClick={() => cycleTaskStatus(task)}
-                              className={`text-[10px] capitalize rounded border px-2 py-0.5 font-medium transition ${canStatus ? "hover:opacity-80 cursor-pointer" : "cursor-default"} ${STATUS_STYLE[task.status] || ""}`}
-                              title={canStatus ? "Click to change status" : ""}
-                            >
-                              {task.status.replace("_", " ")}
-                            </button>
-                            {task.due_date && <span className="text-xs text-muted-foreground">📅 {new Date(task.due_date).toLocaleDateString("en-IN")}</span>}
-                          </div>
-                          <p className="font-semibold text-sm">{task.title}</p>
-                          {task.description && <p className="text-sm text-muted-foreground whitespace-pre-wrap mt-1">{task.description}</p>}
-                          {task.remarks && (
-                            <div className="mt-2 p-2 rounded bg-muted/50 border text-xs">
-                              <div className="font-medium text-muted-foreground mb-0.5">Remarks</div>
-                              <p className="whitespace-pre-wrap">{task.remarks}</p>
-                            </div>
-                          )}
-                          {assignee && (
-                            <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                              <UserCheck className="h-3.5 w-3.5" /> {assignee.name} · {assignee.mobile}
-                            </p>
-                          )}
-                          {task.completed_at && (
-                            <p className="text-xs text-emerald-600 mt-1">✓ Completed {new Date(task.completed_at).toLocaleString("en-IN")}</p>
-                          )}
-                          {canStatus && (
-                            <div className="mt-2 flex flex-wrap gap-2">
-                              {task.status !== "completed" && (
-                                <Button size="sm" variant="default" className="h-7 text-xs" onClick={() => setRemarksDialog({ open: true, task, remarks: task.remarks || "", status: "completed" })}>
-                                  ✓ Mark Complete
-                                </Button>
-                              )}
-                              <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => setRemarksDialog({ open: true, task, remarks: task.remarks || "", status: task.status })}>
-                                <Pencil className="h-3 w-3 mr-1" /> {task.remarks ? "Edit" : "Add"} Remarks
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                        {canEdit && (
-                          <div className="flex gap-1 items-center">
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => {
-                              const a = taskAgents.get(task.assigned_agent_id);
-                              setAgentSearch(a?.mobile || ""); setAgentResults(a ? [a] : []);
-                              setTaskDialog({ open: true, id: task.id, deptId: task.department_id, title: task.title, description: task.description || "", due_date: task.due_date || "", assigned_agent_id: task.assigned_agent_id, assigned_agent_label: a ? `${a.name} · ${a.mobile}` : "", status: task.status, remarks: task.remarks || "" });
-                            }}><Pencil className="h-3.5 w-3.5" /></Button>
-                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => deleteTask(task.id)}><Trash2 className="h-3.5 w-3.5 text-destructive" /></Button>
-                          </div>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                );
-              })}
-          </TabsContent>
         </Tabs>
       </div>
-
-      {/* Task dialog */}
-      <Dialog open={taskDialog.open} onOpenChange={(open) => { if (!open) { setAgentSearch(""); setAgentResults([]); } setTaskDialog({ open }); }}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto">
-          <DialogHeader><DialogTitle>{taskDialog.id ? "Edit" : "Allocate"} Task</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            {!taskDialog.id && (
-              <div>
-                <Label>Department</Label>
-                <Select value={taskDialog.deptId || ""} onValueChange={(v) => setTaskDialog({ ...taskDialog, deptId: v })}>
-                  <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
-                  <SelectContent>
-                    {departments.map((d) => (<SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            <div><Label>Title *</Label><Input value={taskDialog.title || ""} onChange={(e) => setTaskDialog({ ...taskDialog, title: e.target.value })} /></div>
-            <div><Label>Description</Label><Textarea rows={3} value={taskDialog.description || ""} onChange={(e) => setTaskDialog({ ...taskDialog, description: e.target.value })} /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label>Due date</Label><Input type="date" value={taskDialog.due_date || ""} onChange={(e) => setTaskDialog({ ...taskDialog, due_date: e.target.value })} /></div>
-              <div>
-                <Label>Status</Label>
-                <Select value={taskDialog.status || "pending"} onValueChange={(v) => setTaskDialog({ ...taskDialog, status: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{TASK_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
-                </Select>
-              </div>
-            </div>
-            <div>
-              <Label>Assign to (search by mobile)</Label>
-              <div className="relative">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input
-                  className="pl-8"
-                  placeholder="Type at least 3 digits..."
-                  value={agentSearch}
-                  onChange={(e) => searchAgents(e.target.value)}
-                />
-              </div>
-              {taskDialog.assigned_agent_id && taskDialog.assigned_agent_label && (
-                <div className="mt-2 text-xs flex items-center gap-2 p-2 rounded bg-emerald-500/10 border border-emerald-500/30">
-                  <UserCheck className="h-3.5 w-3.5 text-emerald-600" />
-                  <span className="font-medium">{taskDialog.assigned_agent_label}</span>
-                  <Button size="sm" variant="ghost" className="ml-auto h-6 px-2" onClick={() => setTaskDialog({ ...taskDialog, assigned_agent_id: undefined, assigned_agent_label: undefined })}>Change</Button>
-                </div>
-              )}
-              {!taskDialog.assigned_agent_id && (
-                <div className="mt-2 max-h-48 overflow-y-auto border rounded">
-                  {searching ? <div className="p-3 text-xs text-center text-muted-foreground"><Loader2 className="h-3.5 w-3.5 animate-spin inline mr-1" />Searching...</div>
-                    : agentResults.length === 0 ? <div className="p-3 text-xs text-center text-muted-foreground">No matches</div>
-                    : agentResults.map((a) => (
-                      <button
-                        key={a.id}
-                        type="button"
-                        onClick={() => setTaskDialog({ ...taskDialog, assigned_agent_id: a.id, assigned_agent_label: `${a.name} · ${a.mobile}` })}
-                        className="w-full text-left px-3 py-2 text-sm hover:bg-accent border-b last:border-b-0"
-                      >
-                        <div className="font-medium">{a.name}</div>
-                        <div className="text-xs text-muted-foreground">{a.mobile} · {(a as any).role || ""}</div>
-                      </button>
-                    ))}
-                </div>
-              )}
-            </div>
-            <div>
-              <Label>Remarks / Feedback</Label>
-              <Textarea rows={2} placeholder="Optional remarks" value={taskDialog.remarks || ""} onChange={(e) => setTaskDialog({ ...taskDialog, remarks: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setTaskDialog({ open: false })}>Cancel</Button>
-            <Button onClick={saveTask}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Remarks / complete dialog */}
-      <Dialog open={remarksDialog.open} onOpenChange={(open) => { if (!open) setRemarksDialog({ open: false }); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>{remarksDialog.status === "completed" ? "Complete Task" : "Update Remarks"}</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            {remarksDialog.task && <p className="text-sm font-medium">{remarksDialog.task.title}</p>}
-            <div>
-              <Label>Status</Label>
-              <Select value={remarksDialog.status || "pending"} onValueChange={(v) => setRemarksDialog({ ...remarksDialog, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{TASK_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Remarks</Label>
-              <Textarea rows={4} placeholder="Add remarks, completion notes or feedback..." value={remarksDialog.remarks || ""} onChange={(e) => setRemarksDialog({ ...remarksDialog, remarks: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setRemarksDialog({ open: false })}>Cancel</Button>
-            <Button onClick={saveRemarks}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Login dialog */}
       <Dialog open={loginOpen} onOpenChange={setLoginOpen}>
@@ -814,39 +536,13 @@ export function DepartmentWorkLogSection() {
                 <Label>Status</Label>
                 <Select value={planDialog.status || "planning"} onValueChange={(v) => setPlanDialog({ ...planDialog, status: v })}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>{PLAN_STATUSES.map((s) => <SelectItem key={s} value={s}>{PLAN_STATUS_LABEL[s]}</SelectItem>)}</SelectContent>
+                  <SelectContent>{PLAN_STATUSES.map((s) => <SelectItem key={s} value={s} className="capitalize">{s.replace("_", " ")}</SelectItem>)}</SelectContent>
                 </Select>
               </div>
             </div>
-            <div><Label>Remarks</Label><Textarea rows={2} placeholder="Optional remarks" value={planDialog.remarks || ""} onChange={(e) => setPlanDialog({ ...planDialog, remarks: e.target.value })} /></div>
             <div className="flex items-center justify-between rounded border p-2"><Label className="text-sm flex items-center gap-2">{planDialog.is_public !== false ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />} Visible to public</Label><Switch checked={planDialog.is_public !== false} onCheckedChange={(c) => setPlanDialog({ ...planDialog, is_public: c })} /></div>
           </div>
           <DialogFooter><Button variant="outline" onClick={() => setPlanDialog({ open: false })}>Cancel</Button><Button onClick={savePlan}>Save</Button></DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Plan status change dialog */}
-      <Dialog open={planStatusDialog.open} onOpenChange={(open) => { if (!open) setPlanStatusDialog({ open: false }); }}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Update Plan Status</DialogTitle></DialogHeader>
-          <div className="space-y-3">
-            {planStatusDialog.plan && <p className="text-sm font-medium">{planStatusDialog.plan.title}</p>}
-            <div>
-              <Label>Status</Label>
-              <Select value={planStatusDialog.status || "planning"} onValueChange={(v) => setPlanStatusDialog({ ...planStatusDialog, status: v })}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>{PLAN_STATUSES.map((s) => <SelectItem key={s} value={s}>{PLAN_STATUS_LABEL[s]}</SelectItem>)}</SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label>Remarks</Label>
-              <Textarea rows={4} placeholder="Add a note about this status change..." value={planStatusDialog.remarks || ""} onChange={(e) => setPlanStatusDialog({ ...planStatusDialog, remarks: e.target.value })} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setPlanStatusDialog({ open: false })}>Cancel</Button>
-            <Button onClick={savePlanStatus}>Save</Button>
-          </DialogFooter>
         </DialogContent>
       </Dialog>
 

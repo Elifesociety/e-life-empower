@@ -336,11 +336,6 @@ export default function PennyekartAgentHierarchy() {
               <Users className="h-4 w-4" />
               Hierarchy
             </TabsTrigger>
-            <TabsTrigger value="top-team" className="gap-1.5 flex-1 sm:flex-initial">
-              <Trophy className="h-4 w-4 text-rose-500" />
-              <span className="hidden sm:inline">Top Level Team</span>
-              <span className="sm:hidden">Top Team</span>
-            </TabsTrigger>
             <TabsTrigger value="ranks" className="gap-1.5 flex-1 sm:flex-initial">
               <Trophy className="h-4 w-4" />
               <span className="hidden sm:inline">Agent Ranks</span>
@@ -356,47 +351,6 @@ export default function PennyekartAgentHierarchy() {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="top-team" className="space-y-4 sm:space-y-6">
-            {(() => {
-              const scodeAgents = agents.filter(a => a.role === "scode");
-              if (isLoading) {
-                return (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                  </div>
-                );
-              }
-              if (scodeAgents.length === 0) {
-                return (
-                  <Card>
-                    <CardContent className="py-10 text-center text-muted-foreground text-sm">
-                      No top-level team members found.
-                    </CardContent>
-                  </Card>
-                );
-              }
-              return (
-                <div>
-                  <h2 className="text-sm sm:text-base font-semibold mb-3 flex items-center gap-2">
-                    <Users className="h-4 w-4 text-rose-500" />
-                    Top Level Team ({scodeAgents.length})
-                  </h2>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {scodeAgents.map(agent => (
-                      <AgentProfileCard
-                        key={agent.id}
-                        agent={agent}
-                        allAgents={agents}
-                        panchayaths={panchayaths}
-                        onClick={() => setSelectedAgent(agent)}
-                        isSelected={selectedAgent?.id === agent.id}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })()}
-          </TabsContent>
 
           <TabsContent value="hierarchy" className="space-y-4 sm:space-y-6">
 

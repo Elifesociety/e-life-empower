@@ -1,1 +1,0 @@
-ALTER TABLE public.department_tasks ADD COLUMN IF NOT EXISTS remarks text;

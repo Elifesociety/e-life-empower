@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Search, Phone, CheckCircle2, XCircle, Loader2, IndianRupee, User, MapPin, Building2, Users, Wallet, Share2, Copy, ClipboardList, Sparkles } from "lucide-react";
+import { Search, Phone, CheckCircle2, XCircle, Loader2, IndianRupee, User, MapPin, Building2, Users, Wallet, Share2, Copy } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,6 @@ export function CheckStatusSection() {
   const [oldPayments, setOldPayments] = useState<OldPaymentResult[]>([]);
   const [agentInfo, setAgentInfo] = useState<AgentResult | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
-  const [assignedTasks, setAssignedTasks] = useState<Array<{ id: string; title: string; description: string | null; due_date: string | null; status: string; remarks: string | null; department_name: string | null; department_color: string | null; created_at: string }>>([]);
   const [registerOpen, setRegisterOpen] = useState(false);
   const handleSearch = async () => {
     const cleaned = mobile.replace(/\D/g, "");
@@ -117,37 +116,19 @@ export function CheckStatusSection() {
       setAgentInfo(agentRes.data && agentRes.data.length > 0 ? (agentRes.data[0] as unknown as AgentResult) : null);
       setOldPayments((oldPayRes.data as unknown as OldPaymentResult[]) || []);
 
-      // Fetch wallet balance + assigned tasks if agent found
+      // Fetch wallet balance if agent found
       if (agentRes.data && agentRes.data.length > 0) {
         const agentId = agentRes.data[0].id;
-        const [walletRes, tasksRes] = await Promise.all([
-          supabase.from("agent_wallet_transactions").select("amount").eq("agent_id", agentId),
-          supabase
-            .from("department_tasks")
-            .select("id, title, description, due_date, status, remarks, created_at, department_id")
-            .eq("assigned_agent_id", agentId)
-            .order("created_at", { ascending: false }),
-        ]);
-        if (walletRes.data) {
-          const balance = walletRes.data.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
+        const { data: walletData } = await supabase
+          .from("agent_wallet_transactions")
+          .select("amount")
+          .eq("agent_id", agentId);
+        if (walletData) {
+          const balance = walletData.reduce((sum: number, t: any) => sum + Number(t.amount), 0);
           setWalletBalance(balance);
-        }
-        const tRows = tasksRes.data || [];
-        if (tRows.length > 0) {
-          const deptIds = [...new Set(tRows.map((t: any) => t.department_id))];
-          const { data: depts } = await supabase.from("departments").select("id, name, color").in("id", deptIds);
-          const dMap = new Map((depts || []).map((d: any) => [d.id, d]));
-          setAssignedTasks(tRows.map((t: any) => ({
-            ...t,
-            department_name: dMap.get(t.department_id)?.name ?? null,
-            department_color: dMap.get(t.department_id)?.color ?? null,
-          })));
-        } else {
-          setAssignedTasks([]);
         }
       } else {
         setWalletBalance(null);
-        setAssignedTasks([]);
       }
     } catch (err) {
       console.error("Search error:", err);
@@ -356,63 +337,6 @@ export function CheckStatusSection() {
                         </span>
                       </div>
                     </CardContent>
-                  </Card>
-                )}
-
-                {/* Assigned Tasks */}
-                {agentInfo && assignedTasks.length > 0 && (
-                  <Card className="relative overflow-hidden border-0 shadow-lg">
-                    <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500 via-purple-500 to-indigo-500" />
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(255,255,255,0.25),transparent_60%)]" />
-                    <div className="relative">
-                      <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2 text-white">
-                          <Sparkles className="h-4 w-4" />
-                          Your Assigned Tasks ({assignedTasks.length})
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent className="space-y-3">
-                        {assignedTasks.map((t) => {
-                          const statusColor =
-                            t.status === "completed"
-                              ? "bg-emerald-100 text-emerald-800"
-                              : t.status === "in_progress"
-                              ? "bg-amber-100 text-amber-800"
-                              : "bg-slate-100 text-slate-800";
-                          return (
-                            <div
-                              key={t.id}
-                              className="p-3 rounded-lg bg-white/95 backdrop-blur-sm border border-white/40 shadow-sm"
-                              style={t.department_color ? { borderLeft: `4px solid ${t.department_color}` } : undefined}
-                            >
-                              <div className="flex items-start justify-between gap-2 flex-wrap">
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-2 flex-wrap">
-                                    <ClipboardList className="h-3.5 w-3.5 text-purple-600" />
-                                    <span className="font-semibold text-sm">{t.title}</span>
-                                    <Badge className={`text-[10px] px-1.5 py-0 ${statusColor}`}>
-                                      {t.status.replace("_", " ")}
-                                    </Badge>
-                                  </div>
-                                  {t.description && (
-                                    <p className="text-xs text-muted-foreground mt-1 whitespace-pre-wrap">{t.description}</p>
-                                  )}
-                                  <div className="text-[11px] text-muted-foreground mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5">
-                                    {t.department_name && <span>Dept: {t.department_name}</span>}
-                                    {t.due_date && <span>Due: {new Date(t.due_date).toLocaleDateString("en-IN")}</span>}
-                                  </div>
-                                  {t.remarks && (
-                                    <p className="text-xs mt-2 p-2 rounded bg-muted/60 text-foreground">
-                                      <span className="font-medium">Remarks: </span>{t.remarks}
-                                    </p>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </CardContent>
-                    </div>
                   </Card>
                 )}
 

@@ -243,7 +243,6 @@ Deno.serve(async (req) => {
       if (body.description !== undefined) patch.description = body.description || null;
       if (body.target_date !== undefined) patch.target_date = body.target_date || null;
       if (body.status !== undefined) patch.status = body.status;
-      if (body.remarks !== undefined) patch.remarks = body.remarks || null;
       if (body.is_public !== undefined) patch.is_public = !!body.is_public;
       const { error } = await supabase.from("department_plans").update(patch).eq("id", id);
       if (error) return json({ error: error.message }, 500);
@@ -302,78 +301,6 @@ Deno.serve(async (req) => {
       if (!existing) return json({ error: "Not found" }, 404);
       if (!canEditAny(existing.created_by_member_id)) return json({ error: "Only the creator can delete" }, 403);
       const { error } = await supabase.from("department_todos").delete().eq("id", id);
-      if (error) return json({ error: error.message }, 500);
-      return json({ success: true });
-    }
-
-    // ---- Tasks (assigned to pennyekart agents) ----
-    if (action === "search_agent_by_mobile") {
-      const mobile = String(body.mobile || "").replace(/\D/g, "");
-      if (mobile.length < 3) return json({ agents: [] });
-      const { data } = await supabase
-        .from("pennyekart_agents")
-        .select("id, name, mobile, role, panchayath_id, ward")
-        .ilike("mobile", `%${mobile}%`)
-        .eq("is_active", true)
-        .limit(20);
-      return json({ agents: data || [] });
-    }
-
-    if (action === "create_task") {
-      // Only scode members can create tasks
-      if (!isScode) return json({ error: "Only S-Code members can create tasks" }, 403);
-      const department_id = String(body.department_id || "");
-      const title = String(body.title || "").trim();
-      const assigned_agent_id = String(body.assigned_agent_id || "");
-      if (!department_id || !title || !assigned_agent_id) {
-        return json({ error: "Department, title and assignee required" }, 400);
-      }
-      const member = myMembers.find((m) => m.department_id === department_id) || firstMember;
-      const { data, error } = await supabase.from("department_tasks").insert({
-        department_id, title,
-        description: body.description || null,
-        due_date: body.due_date || null,
-        assigned_agent_id,
-        status: body.status || "pending",
-        created_by_member_id: member.id,
-      }).select().single();
-      if (error) return json({ error: error.message }, 500);
-      return json({ success: true, task: data });
-    }
-    if (action === "update_task") {
-      const id = String(body.id || "");
-      const { data: existing } = await supabase
-        .from("department_tasks")
-        .select("id, created_by_member_id, assigned_agent_id, status")
-        .eq("id", id).single();
-      if (!existing) return json({ error: "Not found" }, 404);
-      // Status/remarks update allowed by assigned agent; full edit by scode/creator
-      const isAssignee = agentIds.includes(existing.assigned_agent_id);
-      const statusRemarksOnly = (body.status !== undefined || body.remarks !== undefined) &&
-        body.title === undefined && body.description === undefined &&
-        body.due_date === undefined && body.assigned_agent_id === undefined;
-      const allowed = canEditAny(existing.created_by_member_id) || (statusRemarksOnly && isAssignee);
-      if (!allowed) return json({ error: "Forbidden" }, 403);
-      const patch: any = { updated_at: new Date().toISOString() };
-      if (body.title !== undefined) patch.title = String(body.title).trim();
-      if (body.description !== undefined) patch.description = body.description || null;
-      if (body.due_date !== undefined) patch.due_date = body.due_date || null;
-      if (body.assigned_agent_id !== undefined) patch.assigned_agent_id = body.assigned_agent_id;
-      if (body.remarks !== undefined) patch.remarks = body.remarks || null;
-      if (body.status !== undefined) {
-        patch.status = body.status;
-        patch.completed_at = body.status === "completed" ? new Date().toISOString() : null;
-      }
-      const { error } = await supabase.from("department_tasks").update(patch).eq("id", id);
-      if (error) return json({ error: error.message }, 500);
-      return json({ success: true });
-    }
-    if (action === "delete_task") {
-      const id = String(body.id || "");
-      const { data: existing } = await supabase.from("department_tasks").select("id, created_by_member_id").eq("id", id).single();
-      if (!existing) return json({ error: "Not found" }, 404);
-      if (!canEditAny(existing.created_by_member_id)) return json({ error: "Only the creator can delete" }, 403);
-      const { error } = await supabase.from("department_tasks").delete().eq("id", id);
       if (error) return json({ error: error.message }, 500);
       return json({ success: true });
     }
