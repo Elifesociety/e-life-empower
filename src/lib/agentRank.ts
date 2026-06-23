@@ -131,9 +131,8 @@ export function calculateAgentRank(
       };
     }
 
-    case "scode":
     default:
-      return { isFull: true, current: 0, required: 0, label: "S-Code", percentage: 100 };
+      return { isFull: true, current: 0, required: 0, label: "", percentage: 100 };
   }
 }
 

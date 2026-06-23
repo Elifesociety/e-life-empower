@@ -61,7 +61,6 @@ import { PennyekartAgent, ROLE_LABELS, AgentRole } from "@/hooks/usePennyekartAg
 const PENNYEKART_DIVISION_ID = "e108eb84-b8a2-452d-b0d4-350d0c90303b";
 
 const ROLE_COLORS: Record<AgentRole, string> = {
-  scode: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
   team_leader: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   coordinator: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   group_leader: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",

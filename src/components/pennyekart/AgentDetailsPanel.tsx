@@ -47,7 +47,6 @@ interface AgentDetailsPanelProps {
 }
 
 const ROLE_COLORS: Record<AgentRole, string> = {
-  scode: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
   team_leader: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   coordinator: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   group_leader: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
@@ -55,7 +54,6 @@ const ROLE_COLORS: Record<AgentRole, string> = {
 };
 
 const AVATAR_BG: Record<AgentRole, string> = {
-  scode: "bg-rose-200 text-rose-700 dark:bg-rose-800 dark:text-rose-200",
   team_leader: "bg-purple-200 text-purple-700 dark:bg-purple-800 dark:text-purple-200",
   coordinator: "bg-blue-200 text-blue-700 dark:bg-blue-800 dark:text-blue-200",
   group_leader: "bg-green-200 text-green-700 dark:bg-green-800 dark:text-green-200",

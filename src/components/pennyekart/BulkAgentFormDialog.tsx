@@ -50,7 +50,7 @@ const singleAgentSchema = z.object({
   // Personal details
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   mobile: z.string().regex(/^[0-9]{10}$/, "Mobile must be 10 digits"),
-  role: z.enum(["scode", "team_leader", "coordinator", "group_leader", "pro"] as const),
+  role: z.enum(["team_leader", "coordinator", "group_leader", "pro"] as const),
   panchayath_id: z.string().min(1, "Select a panchayath"),
   ward: z.string().default(""),
   parent_agent_id: z.string().uuid().nullable().optional(),
@@ -60,7 +60,7 @@ const singleAgentSchema = z.object({
   responsible_wards: z.array(z.string()).default([]),
 }).superRefine((data, ctx) => {
   // Ward is required for non-top-level roles
-  if (data.role !== "team_leader" && data.role !== "scode" && (!data.ward || data.ward.trim() === "")) {
+  if (data.role !== "team_leader" && (!data.ward || data.ward.trim() === "")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Ward is required",
@@ -68,7 +68,7 @@ const singleAgentSchema = z.object({
     });
   }
   // Parent agent is required for non-top-level roles
-  if (data.role !== "team_leader" && data.role !== "scode" && !data.parent_agent_id) {
+  if (data.role !== "team_leader" && !data.parent_agent_id) {
     const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -88,7 +88,7 @@ const singleAgentSchema = z.object({
 
 const bulkAgentSchema = z.object({
   panchayath_id: z.string().uuid("Select a panchayath"),
-  role: z.enum(["scode", "team_leader", "coordinator", "group_leader", "pro"] as const),
+  role: z.enum(["team_leader", "coordinator", "group_leader", "pro"] as const),
   parent_agent_id: z.string().uuid().nullable().optional(),
   // For coordinators, all bulk agents share responsibility wards
   responsible_wards: z.array(z.string()).default([]),
@@ -99,7 +99,7 @@ const bulkAgentSchema = z.object({
     customer_count: z.number().int().min(0).default(0),
   })).min(1, "Add at least one agent"),
 }).superRefine((data, ctx) => {
-  if (data.role !== "team_leader" && data.role !== "scode" && !data.parent_agent_id) {
+  if (data.role !== "team_leader" && !data.parent_agent_id) {
     const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -377,7 +377,7 @@ export function BulkAgentFormDialog({
   const onSubmitSingle = async (values: SingleAgentFormValues) => {
     try {
       // Top-level roles don't have parents
-      if (values.role === "team_leader" || values.role === "scode") {
+      if (values.role === "team_leader") {
         values.parent_agent_id = null;
         // Set ward to "N/A" for top-level roles
         if (!values.ward) {
@@ -439,7 +439,7 @@ export function BulkAgentFormDialog({
   const onSubmitBulk = async (values: BulkAgentFormValues) => {
     try {
       const isPro = values.role === "pro";
-      const isTopLevel = values.role === "team_leader" || values.role === "scode";
+      const isTopLevel = values.role === "team_leader";
       const isCoordinator = values.role === "coordinator";
 
       const agentsToInsert = values.agents.map(a => ({
@@ -471,8 +471,8 @@ export function BulkAgentFormDialog({
 
   const singleParentRole = getParentRole(selectedSingleRole);
   const bulkParentRole = getParentRole(selectedBulkRole);
-  const singleNeedsParent = selectedSingleRole !== "team_leader" && selectedSingleRole !== "scode";
-  const bulkNeedsParent = selectedBulkRole !== "team_leader" && selectedBulkRole !== "scode";
+  const singleNeedsParent = selectedSingleRole !== "team_leader";
+  const bulkNeedsParent = selectedBulkRole !== "team_leader";
 
   // Get ward options for all responsible panchayaths (for Team Leader viewing coordinator wards)
   const getWardsForPanchayath = (panchayathId: string) => {
@@ -855,7 +855,7 @@ function SingleFormContent({
       </div>
 
       {/* Responsibility Section - Only for Team Leaders and Coordinators */}
-      {(selectedRole === "team_leader" || selectedRole === "scode" || selectedRole === "coordinator") && (
+      {(selectedRole === "team_leader" || selectedRole === "coordinator") && (
         <>
           <Separator className="my-2" />
           
@@ -865,7 +865,7 @@ function SingleFormContent({
               Responsibility Scope
             </div>
 
-            {(selectedRole === "team_leader" || selectedRole === "scode") && (
+            {selectedRole === "team_leader" && (
               <FormField
                 control={form.control}
                 name="responsible_panchayath_ids"

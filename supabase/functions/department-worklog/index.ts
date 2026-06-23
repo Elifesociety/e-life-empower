@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
       // Issue session token (simple): mobile + pin hash, validated on each call
       return json({
         success: true,
-        agent: { ...agents[0], is_scode: agents.some((a: any) => a.role === "scode") },
+        agent: agents[0],
         memberships: valid.map((m: any) => ({
           member_id: m.id,
           department_id: m.department_id,
@@ -136,7 +136,6 @@ Deno.serve(async (req) => {
       .eq("is_active", true);
     if (!tokenAgents || tokenAgents.length === 0) return json({ error: "Unauthorized" }, 401);
     const agentIds = tokenAgents.map((a) => a.id);
-    const isScode = tokenAgents.some((a: any) => a.role === "scode");
 
     const { data: myMembers } = await supabase
       .from("department_members")
@@ -149,7 +148,7 @@ Deno.serve(async (req) => {
     const myMemberIds = new Set(myMembers.map((m) => m.id));
     const myDeptIds = new Set(myMembers.map((m) => m.department_id));
     const canEditAny = (creatorId: string | null | undefined) =>
-      isScode || (!!creatorId && myMemberIds.has(creatorId));
+      !!creatorId && myMemberIds.has(creatorId);
 
     if (action === "create_log") {
       let memberId = String(body.member_id || "");
@@ -158,13 +157,9 @@ Deno.serve(async (req) => {
       const work_date = String(body.work_date || new Date().toISOString().slice(0, 10));
       if (!work_details) return json({ error: "Work details required" }, 400);
       let deptId = department_id;
-      // Resolve member_id: prefer explicit; for scode allow any dept (pick membership or first)
       if (memberId && myMemberIds.has(memberId)) {
         const m = myMembers.find((m) => m.id === memberId)!;
         deptId = deptId || m.department_id;
-      } else if (isScode && deptId) {
-        const m = myMembers.find((m) => m.department_id === deptId) || myMembers[0];
-        memberId = m.id;
       } else if (deptId) {
         const m = myMembers.find((m) => m.department_id === deptId);
         if (!m) return json({ error: "Forbidden" }, 403);
@@ -218,7 +213,7 @@ Deno.serve(async (req) => {
     const firstMember = myMembers[0];
     if (action === "create_plan") {
       const department_id = String(body.department_id || "");
-      if (!isScode && !myDeptIds.has(department_id)) return json({ error: "Forbidden" }, 403);
+      if (!myDeptIds.has(department_id)) return json({ error: "Forbidden" }, 403);
       const title = String(body.title || "").trim();
       if (!title) return json({ error: "Title required" }, 400);
       const member = myMembers.find((m) => m.department_id === department_id) || firstMember;
@@ -261,7 +256,7 @@ Deno.serve(async (req) => {
     // ---- Todos ----
     if (action === "create_todo") {
       const department_id = String(body.department_id || "");
-      if (!isScode && !myDeptIds.has(department_id)) return json({ error: "Forbidden" }, 403);
+      if (!myDeptIds.has(department_id)) return json({ error: "Forbidden" }, 403);
       const title = String(body.title || "").trim();
       if (!title) return json({ error: "Title required" }, 400);
       const member = myMembers.find((m) => m.department_id === department_id) || firstMember;

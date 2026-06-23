@@ -76,7 +76,7 @@ export function AgentWorkLogReport({ panchayaths }: Props) {
         .select("id, agent_id, work_date, work_details, created_at")
         .eq("work_date", dateStr);
 
-      setAgents(agentsData || []);
+      setAgents((agentsData || []).filter((a: any) => a.role !== "scode") as any);
       setWorkLogs(logsData || []);
       setIsLoading(false);
     };

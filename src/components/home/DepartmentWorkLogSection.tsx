@@ -24,7 +24,7 @@ const PALETTE = ["#10b981", "#3b82f6", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899
 
 type Dept = { id: string; name: string; description: string | null; color: string | null };
 type Member = { id: string; agent_id: string; department_id: string; member_role: string };
-type Agent = { id: string; name: string; mobile: string; is_scode?: boolean };
+type Agent = { id: string; name: string; mobile: string };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
@@ -117,9 +117,8 @@ export function DepartmentWorkLogSection() {
 
   const myDeptIds = new Set(session?.memberships.map((m) => m.department_id) || []);
   const myMemberIds = new Set(session?.memberships.map((m) => m.member_id) || []);
-  const isScode = !!session?.agent?.is_scode;
-  const canEditDept = (deptId: string) => !!session && (isScode || myDeptIds.has(deptId));
-  const canEditItem = (creatorId: string | null | undefined) => !!session && (isScode || (!!creatorId && myMemberIds.has(creatorId)));
+  const canEditDept = (deptId: string) => !!session && myDeptIds.has(deptId);
+  const canEditItem = (creatorId: string | null | undefined) => !!session && !!creatorId && myMemberIds.has(creatorId);
 
   const callFn = async (body: any) => {
     const { data, error } = await supabase.functions.invoke("department-worklog", { body: { ...body, token: session?.token } });
@@ -244,7 +243,6 @@ export function DepartmentWorkLogSection() {
             {session ? (
               <>
                 <Badge variant="secondary" className="text-xs">Logged in: {session.agent.name}</Badge>
-                {isScode && <Badge className="text-xs bg-amber-500/15 text-amber-700 border border-amber-500/40">S-Code · manages all</Badge>}
                 <Button variant="outline" size="sm" onClick={handleLogout}><LogOut className="h-4 w-4 mr-1.5" /> Logout</Button>
               </>
             ) : (
@@ -281,15 +279,11 @@ export function DepartmentWorkLogSection() {
 
           {/* LOGS */}
           <TabsContent value="logs" className="space-y-3">
-            {session && (session.memberships.length > 0 || isScode) && (
+            {session && session.memberships.length > 0 && (
               <Card className="border-primary/30">
                 <CardHeader className="pb-3"><CardTitle className="text-base">Post a work log</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                  {isScode ? (
-                    <Button size="sm" onClick={() => setLogDialog({ open: true, date: today, details: "", is_public: true })}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Add log (any department)
-                    </Button>
-                  ) : session.memberships.map((m) => (
+                  {session.memberships.map((m) => (
                     <Button key={m.member_id} size="sm" onClick={() => setLogDialog({ open: true, memberId: m.member_id, deptId: m.department_id, date: today, details: "", is_public: true })}>
                       <Plus className="h-3.5 w-3.5 mr-1" /> {m.department.name}
                     </Button>
@@ -333,15 +327,11 @@ export function DepartmentWorkLogSection() {
 
           {/* PLANS */}
           <TabsContent value="plans" className="space-y-3">
-            {session && (session.memberships.length > 0 || isScode) && (
+            {session && session.memberships.length > 0 && (
               <Card className="border-primary/30">
                 <CardHeader className="pb-3"><CardTitle className="text-base">Add a plan</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                  {isScode ? (
-                    <Button size="sm" onClick={() => setPlanDialog({ open: true, status: "planning", is_public: true })}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Add plan (any department)
-                    </Button>
-                  ) : session.memberships.map((m) => (
+                  {session.memberships.map((m) => (
                     <Button key={m.member_id} size="sm" onClick={() => setPlanDialog({ open: true, deptId: m.department_id, status: "planning", is_public: true })}>
                       <Plus className="h-3.5 w-3.5 mr-1" /> {m.department.name}
                     </Button>
@@ -401,15 +391,11 @@ export function DepartmentWorkLogSection() {
 
           {/* TODOS */}
           <TabsContent value="todos" className="space-y-3">
-            {session && (session.memberships.length > 0 || isScode) && (
+            {session && session.memberships.length > 0 && (
               <Card className="border-primary/30">
                 <CardHeader className="pb-3"><CardTitle className="text-base">Add a todo</CardTitle></CardHeader>
                 <CardContent className="flex flex-wrap gap-2">
-                  {isScode ? (
-                    <Button size="sm" onClick={() => setTodoDialog({ open: true, is_public: true })}>
-                      <Plus className="h-3.5 w-3.5 mr-1" /> Add todo (any department)
-                    </Button>
-                  ) : session.memberships.map((m) => (
+                  {session.memberships.map((m) => (
                     <Button key={m.member_id} size="sm" onClick={() => setTodoDialog({ open: true, deptId: m.department_id, is_public: true })}>
                       <Plus className="h-3.5 w-3.5 mr-1" /> {m.department.name}
                     </Button>
@@ -495,7 +481,7 @@ export function DepartmentWorkLogSection() {
                 }}>
                   <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
-                    {(isScode ? departments : departments.filter((d) => myDeptIds.has(d.id))).map((d) => (
+                    {departments.filter((d) => myDeptIds.has(d.id)).map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -521,7 +507,7 @@ export function DepartmentWorkLogSection() {
                 <Select value={planDialog.deptId || ""} onValueChange={(v) => setPlanDialog({ ...planDialog, deptId: v })}>
                   <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
-                    {(isScode ? departments : departments.filter((d) => myDeptIds.has(d.id))).map((d) => (
+                    {departments.filter((d) => myDeptIds.has(d.id)).map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>
@@ -557,7 +543,7 @@ export function DepartmentWorkLogSection() {
                 <Select value={todoDialog.deptId || ""} onValueChange={(v) => setTodoDialog({ ...todoDialog, deptId: v })}>
                   <SelectTrigger><SelectValue placeholder="Select department" /></SelectTrigger>
                   <SelectContent>
-                    {(isScode ? departments : departments.filter((d) => myDeptIds.has(d.id))).map((d) => (
+                    {departments.filter((d) => myDeptIds.has(d.id)).map((d) => (
                       <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>
                     ))}
                   </SelectContent>

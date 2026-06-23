@@ -53,7 +53,6 @@ const ROLE_LABELS: Record<string, string> = {
   coordinator: "Coordinator",
   group_leader: "Group Leader",
   pro: "PRO",
-  scode: "S-Code",
 };
 
 export function AgentComplaintsTab() {
