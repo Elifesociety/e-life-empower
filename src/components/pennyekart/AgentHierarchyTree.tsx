@@ -12,7 +12,6 @@ interface AgentHierarchyTreeProps {
 }
 
 const ROLE_COLORS: Record<AgentRole, string> = {
-  scode: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
   team_leader: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   coordinator: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   group_leader: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
@@ -89,95 +88,22 @@ function PanchayathNode({ panchayathName, agents, onSelectAgent, selectedAgentId
       
       {isExpanded && (
         <div className="p-1.5 sm:p-2 space-y-2">
-          {rootAgents.map(agent => {
-            const isScode = agent.role === "scode";
-            if (isScode) {
-              return (
-                <ScodeAreaOfficeCard
-                  key={agent.id}
-                  agent={agent}
-                  allAgents={agents}
-                  onSelectAgent={onSelectAgent}
-                  selectedAgentId={selectedAgentId}
-                />
-              );
-            }
-            return (
-              <AgentNode
-                key={agent.id}
-                agent={agent}
-                allAgents={agents}
-                depth={0}
-                onSelectAgent={onSelectAgent}
-                selectedAgentId={selectedAgentId}
-              />
-            );
-          })}
+          {rootAgents.map(agent => (
+            <AgentNode
+              key={agent.id}
+              agent={agent}
+              allAgents={agents}
+              depth={0}
+              onSelectAgent={onSelectAgent}
+              selectedAgentId={selectedAgentId}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-interface ScodeAreaOfficeCardProps {
-  agent: PennyekartAgent;
-  allAgents: PennyekartAgent[];
-  onSelectAgent: (agent: PennyekartAgent) => void;
-  selectedAgentId?: string;
-}
-
-function ScodeAreaOfficeCard({ agent, allAgents, onSelectAgent, selectedAgentId }: ScodeAreaOfficeCardProps) {
-  const [isOpen, setIsOpen] = useState(true);
-  const totalCustomers = calculateTotalCustomers(agent, allAgents);
-  const childCount = allAgents.filter(a => a.parent_agent_id === agent.id).length;
-
-  return (
-    <div className="rounded-xl overflow-hidden shadow-sm border border-rose-200 dark:border-rose-900/40 bg-gradient-to-br from-rose-50 via-orange-50 to-amber-50 dark:from-rose-950/20 dark:via-orange-950/20 dark:to-amber-950/20">
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center gap-2 px-3 py-2.5 bg-gradient-to-r from-rose-500 via-pink-500 to-orange-500 hover:from-rose-600 hover:via-pink-600 hover:to-orange-600 transition-all"
-      >
-        {isOpen ? (
-          <ChevronDown className="h-4 w-4 text-white flex-shrink-0" />
-        ) : (
-          <ChevronRight className="h-4 w-4 text-white flex-shrink-0" />
-        )}
-        <Briefcase className="h-4 w-4 text-white flex-shrink-0" />
-        <div className="flex flex-col items-start flex-1 min-w-0">
-          <span className="text-[10px] sm:text-xs font-semibold uppercase tracking-wider text-white/90">
-            Area Office
-          </span>
-          <span className="text-xs sm:text-sm font-bold text-white truncate max-w-full">
-            {agent.name}
-          </span>
-        </div>
-        <div className="flex items-center gap-1.5 flex-shrink-0">
-          <Badge className="text-[10px] px-1.5 py-0 bg-white/25 text-white border-0 hover:bg-white/30">
-            <Users className="h-2.5 w-2.5 mr-0.5" />
-            {childCount}
-          </Badge>
-          {totalCustomers > 0 && (
-            <Badge className="text-[10px] px-1.5 py-0 bg-white/25 text-white border-0 hover:bg-white/30">
-              <Trophy className="h-2.5 w-2.5 mr-0.5" />
-              {totalCustomers}
-            </Badge>
-          )}
-        </div>
-      </button>
-      {isOpen && (
-        <div className="p-1.5 sm:p-2">
-          <AgentNode
-            agent={agent}
-            allAgents={allAgents}
-            depth={0}
-            onSelectAgent={onSelectAgent}
-            selectedAgentId={selectedAgentId}
-          />
-        </div>
-      )}
-    </div>
-  );
-}
 
 interface AgentNodeProps {
   agent: PennyekartAgent;
@@ -237,9 +163,7 @@ function AgentNode({ agent, allAgents, depth, onSelectAgent, selectedAgentId, vi
             <Badge className={cn("text-[10px] sm:text-xs px-1.5 py-0", ROLE_COLORS[agent.role])}>
               {ROLE_LABELS[agent.role]}
             </Badge>
-            {agent.role !== "scode" && (
-              <RankBadge rank={rank} />
-            )}
+            <RankBadge rank={rank} />
           </div>
           <div className="flex items-center gap-2 sm:gap-3 text-[10px] sm:text-xs text-muted-foreground mt-0.5">
             <span className="flex items-center gap-0.5 sm:gap-1">
@@ -253,9 +177,7 @@ function AgentNode({ agent, allAgents, depth, onSelectAgent, selectedAgentId, vi
                 W{agent.ward}
               </span>
             )}
-            {agent.role !== "scode" && (
-              <span className="text-[10px] opacity-70">{rank.label}</span>
-            )}
+            <span className="text-[10px] opacity-70">{rank.label}</span>
           </div>
         </div>
         

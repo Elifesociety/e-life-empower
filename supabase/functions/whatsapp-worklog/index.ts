@@ -65,7 +65,6 @@ const roleLabels: Record<string, string> = {
   coordinator: "Coordinator",
   group_leader: "Group Leader",
   pro: "PRO",
-  scode: "S-Code",
 };
 
 async function buildAbsenceReport(

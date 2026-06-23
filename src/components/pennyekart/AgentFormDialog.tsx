@@ -52,14 +52,14 @@ import { cn } from "@/lib/utils";
 const agentFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(100),
   mobile: z.string().regex(/^[0-9]{10}$/, "Mobile must be 10 digits"),
-  role: z.enum(["scode", "team_leader", "coordinator", "group_leader", "pro"] as const),
+  role: z.enum(["team_leader", "coordinator", "group_leader", "pro"] as const),
   panchayath_id: z.string().uuid("Select a panchayath"),
   ward: z.string().min(1, "Ward is required").max(50),
   parent_agent_id: z.string().uuid().nullable().optional(),
   customer_count: z.number().int().min(0).default(0),
   responsible_panchayath_ids: z.array(z.string()).default([]),
 }).superRefine((data, ctx) => {
-  if (data.role !== "team_leader" && data.role !== "scode" && !data.parent_agent_id) {
+  if (data.role !== "team_leader" && !data.parent_agent_id) {
     const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -245,8 +245,8 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
   }, [open, agent, form]);
 
   const onSubmit = async (values: AgentFormValues) => {
-    // Scode and Team leaders don't have parents
-    if (values.role === "team_leader" || values.role === "scode") {
+    // Team leaders don't have parents
+    if (values.role === "team_leader") {
       values.parent_agent_id = null;
     } else {
       // Non-top-level roles don't have responsible panchayaths
@@ -296,7 +296,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
   };
 
   const parentRole = getParentRole(selectedRole);
-  const needsParent = selectedRole !== "team_leader" && selectedRole !== "scode";
+  const needsParent = selectedRole !== "team_leader";
 
   const handleResponsiblePanchayathToggle = (panchayathId: string, checked: boolean) => {
     const current = form.getValues("responsible_panchayath_ids") || [];
@@ -487,7 +487,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess }: AgentF
                   />
                 )}
 
-                {(selectedRole === "team_leader" || selectedRole === "scode") && (
+                {selectedRole === "team_leader" && (
                   <FormField
                     control={form.control}
                     name="responsible_panchayath_ids"

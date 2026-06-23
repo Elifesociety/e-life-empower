@@ -91,7 +91,6 @@ export function AgentRanksTab({ agents, allAgents, panchayaths, onSelectAgent }:
 
   const rankedAgents = useMemo(() => {
     return agents
-      .filter(a => a.role !== "scode")
       .map(agent => ({
         agent,
         rank: calculateAgentRank(agent, allAgents),

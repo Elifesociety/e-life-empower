@@ -42,7 +42,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
   const [selectedAgentId, setSelectedAgentId] = useState<string>("all");
 
   // Roles that can be used as branch roots (have potential children)
-  const filterableRoles: AgentRole[] = ["scode", "team_leader", "coordinator", "group_leader"];
+  const filterableRoles: AgentRole[] = ["team_leader", "coordinator", "group_leader"];
 
   // Agents of the selected role
   const agentsOfRole = useMemo(() => {
