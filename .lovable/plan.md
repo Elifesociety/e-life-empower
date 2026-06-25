@@ -1,33 +1,52 @@
 
+## Goal
 
-## Add Work Log Report with Absence Analytics to Pennyekart Agents Page
+Add a new standalone section on the home page (`/`) below `BentoHome`, above `CheckStatusSection`, that auto-slides through pending department **plans** and pending department **todos** in two separate horizontal carousels (4s interval). Visibility is scoped to the logged-in department member's departments using the existing member PIN session.
 
-**What**: A new "Work Logs" tab on `/admin/pennyekart-agents` that shows today's work log submissions, highlights agents who haven't submitted, and provides absence analytics -- all filterable by panchayath and role.
+## Placement
 
-### 1. New Component: `AgentWorkLogReport.tsx`
+`src/pages/Index.tsx` order:
+1. `<BentoHome />`
+2. **`<DepartmentPendingSlider />`** (new)
+3. `<CheckStatusSection />`
+4. `<DepartmentWorkLogSection />`
 
-Create `src/components/pennyekart/AgentWorkLogReport.tsx` with:
+## Behavior
 
-- **Date picker** defaulting to today, allowing admins to check any date
-- **Panchayath filter** and **Role filter** (reusing existing panchayath list and ROLE_HIERARCHY)
-- **Summary cards**: Total agents, Submitted count, Absent count, Submission rate %
-- **Two sections**:
-  - **Submitted**: Table of agents who logged work for the selected date, showing agent name, role, panchayath, ward, and work details
-  - **Absent / Not Submitted**: Table of agents who have NO entry in `agent_work_logs` for the selected date, showing name, role, panchayath, ward, and last submission date
-- Data fetched by querying `pennyekart_agents` (all active agents) and `agent_work_logs` (filtered by selected date), then computing the diff client-side
-- Both tables are public SELECT, so no RLS issues
+- Reuse the existing session stored under `localStorage["elife_dept_session"]` (same key used by `DepartmentWorkLogSection`). No new login UI in this section.
+- **Logged out** → render a compact card with a single "Member Login" CTA. The CTA opens the existing `DepartmentWorkLogSection` login dialog by scrolling to it (anchor `#department-login`) — no duplicate login flow.
+- **Logged in** → fetch only:
+  - `department_plans` where `department_id IN (session.memberships[].department_id)` AND `status != 'completed'`
+  - `department_todos` where `department_id IN (...)` AND `is_completed = false`
+  - Ordered by `due_date`/`target_date` asc nulls last, then `created_at` desc, limit 50 each.
+- Two stacked horizontal carousels (Embla, already installed via `@/components/ui/carousel`):
+  - **Pending Planning** — slide shows title, department badge (colored), target date, status pill, short description.
+  - **Pending Todos** — slide shows title, department badge, due date, short description, "Mark done" button if `created_by_member_id` is the current member.
+- Auto-advance every **4000ms** using `embla-carousel-autoplay` plugin (already a transitive dep of embla — add via `bun add embla-carousel-autoplay` if missing). Pause on hover/focus. One slide visible on mobile, 2 on md, 3 on lg.
+- Empty state per slider: "No pending plans" / "No pending todos — great work!".
+- Light realtime: re-fetch when user returns to tab (`visibilitychange`) and after a "Mark done" click.
 
-### 2. Update `PennyekartAgentHierarchy.tsx`
+## Files
 
-- Add a third tab "Work Logs" with a `FileText` icon alongside existing "Hierarchy" and "Agent Ranks" tabs
-- Render the new `AgentWorkLogReport` component in this tab, passing `panchayaths` data
+**New:** `src/components/home/DepartmentPendingSlider.tsx`
+- Reads session from `localStorage["elife_dept_session"]`.
+- Queries Supabase directly with the anon client (no edge function needed — RLS already allows members to read their own department rows; for the slider we filter client-side to memberships and `is_public OR own`).
+- "Mark done" calls existing `department-worklog` edge function with `action: "update_todo", id, is_completed: true, token`.
+- Uses shadcn `Carousel`, `CarouselContent`, `CarouselItem` + `Autoplay` plugin. Two `<Carousel>` instances.
 
-### No database or migration changes needed
-- `agent_work_logs` table already exists with `agent_id`, `work_date`, `work_details` columns
-- `pennyekart_agents` table already has role, panchayath_id, etc.
-- Both have public SELECT RLS policies
+**Edited:** `src/pages/Index.tsx` — insert the new component between `BentoHome` and `CheckStatusSection`.
 
-### File Changes
-1. **Create** `src/components/pennyekart/AgentWorkLogReport.tsx` -- new report component
-2. **Edit** `src/pages/admin/PennyekartAgentHierarchy.tsx` -- add "Work Logs" tab
+**Edited:** `src/components/home/DepartmentWorkLogSection.tsx` — add `id="department-login"` anchor on the section wrapper so the CTA can scroll to it.
 
+## Technical notes
+
+- No DB schema changes, no new edge function, no new RLS.
+- Reuses `department_plans` / `department_todos` tables and the existing `elife_dept_session` localStorage key — staying signed in across the page applies automatically.
+- Styling uses existing semantic tokens (`bg-card`, `text-foreground`, `border-primary/20`) and the per-department color already stored on `departments.color`.
+- Autoplay plugin: `import Autoplay from "embla-carousel-autoplay"`, pass via `plugins={[Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true })]}`.
+
+## Out of scope
+
+- Editing plans/todos inline (kept in `DepartmentWorkLogSection`).
+- Showing other departments' items to a logged-in member (strictly own-department scope as requested).
+- Public view for logged-out visitors (shows login CTA only).
