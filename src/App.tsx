@@ -35,6 +35,7 @@ import AgentTasks from "./pages/admin/AgentTasks";
 import WhatsAppCommands from "./pages/admin/WhatsAppCommands";
 import DepartmentsManagement from "./pages/admin/DepartmentsManagement";
 import RegisterAgent from "./pages/RegisterAgent";
+import { MobileGate } from "./components/MobileGate";
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
+          <MobileGate />
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
