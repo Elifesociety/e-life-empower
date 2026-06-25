@@ -98,6 +98,10 @@ export function PaymentStatusSlider() {
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [searched, setSearched] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const autoplay = useRef(
     Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true }),
