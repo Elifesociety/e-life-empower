@@ -3,6 +3,7 @@ import { BentoHome } from "@/components/home/BentoHome";
 import { CheckStatusSection } from "@/components/home/CheckStatusSection";
 import { DepartmentWorkLogSection } from "@/components/home/DepartmentWorkLogSection";
 import { DepartmentPendingSlider } from "@/components/home/DepartmentPendingSlider";
+import { PaymentStatusSlider } from "@/components/home/PaymentStatusSlider";
 
 const Index = () => {
   return (
@@ -10,6 +11,7 @@ const Index = () => {
       <BentoHome
         afterHero={
           <>
+            <PaymentStatusSlider />
             <DepartmentWorkLogSection />
             <CheckStatusSection />
           </>
