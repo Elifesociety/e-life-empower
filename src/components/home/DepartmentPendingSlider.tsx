@@ -4,9 +4,24 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Target, ListTodo, Loader2, CheckCircle2, LogIn, Calendar as CalendarIcon } from "lucide-react";
+import {
+  Target,
+  ListTodo,
+  Loader2,
+  CheckCircle2,
+  LogIn,
+  Calendar as CalendarIcon,
+} from "lucide-react";
 
 type Dept = { id: string; name: string; color: string | null };
 type Plan = {
@@ -66,6 +81,8 @@ export function DepartmentPendingSlider() {
   const [plans, setPlans] = useState<Plan[]>([]);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedPlan, setSelectedPlan] = useState<Plan | null>(null);
+  const [selectedTodo, setSelectedTodo] = useState<Todo | null>(null);
 
   const planAutoplay = useRef(
     Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true }),
@@ -255,8 +272,9 @@ export function DepartmentPendingSlider() {
                       return (
                         <CarouselItem key={plan.id} className="md:basis-1/2 lg:basis-1/3">
                           <Card
-                            className="border-l-4 h-full"
+                            className="border-l-4 h-full cursor-pointer hover:shadow-md transition-shadow"
                             style={{ borderLeftColor: c, backgroundColor: `${c}10` }}
+                            onClick={() => setSelectedPlan(plan)}
                           >
                             <CardContent className="pt-4 space-y-2">
                               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -313,8 +331,9 @@ export function DepartmentPendingSlider() {
                       return (
                         <CarouselItem key={todo.id} className="md:basis-1/2 lg:basis-1/3">
                           <Card
-                            className="border-l-4 h-full"
+                            className="border-l-4 h-full cursor-pointer hover:shadow-md transition-shadow"
                             style={{ borderLeftColor: c, backgroundColor: `${c}10` }}
+                            onClick={() => setSelectedTodo(todo)}
                           >
                             <CardContent className="pt-4 space-y-2">
                               <div className="flex items-center justify-between gap-2 flex-wrap">
@@ -337,7 +356,10 @@ export function DepartmentPendingSlider() {
                                   size="sm"
                                   variant="outline"
                                   className="w-full h-7 text-xs"
-                                  onClick={() => markTodoDone(todo)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    markTodoDone(todo);
+                                  }}
                                 >
                                   <CheckCircle2 className="h-3.5 w-3.5 mr-1" /> Mark done
                                 </Button>
@@ -353,6 +375,101 @@ export function DepartmentPendingSlider() {
             </div>
           </>
         )}
+
+        {/* Plan Detail Dialog */}
+        <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-start gap-2 text-base leading-snug">
+                <Target className="h-5 w-5 text-primary shrink-0" />
+                {selectedPlan?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedPlan && (
+                  <span className="flex items-center gap-2 mt-1">
+                    <DeptBadge deptId={selectedPlan.department_id} />
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${STATUS_STYLE[selectedPlan.status] || ""}`}
+                    >
+                      {selectedPlan.status.replace("_", " ")}
+                    </Badge>
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {selectedPlan?.description ? (
+                <p className="text-muted-foreground whitespace-pre-line">{selectedPlan.description}</p>
+              ) : (
+                <p className="text-muted-foreground italic">No description provided.</p>
+              )}
+              {selectedPlan?.target_date && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                  Target date: {new Date(selectedPlan.target_date).toLocaleDateString("en-IN")}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedPlan(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Todo Detail Dialog */}
+        <Dialog open={!!selectedTodo} onOpenChange={(open) => !open && setSelectedTodo(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-start gap-2 text-base leading-snug">
+                <ListTodo className="h-5 w-5 text-primary shrink-0" />
+                {selectedTodo?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedTodo && (
+                  <span className="flex items-center gap-2 mt-1">
+                    <DeptBadge deptId={selectedTodo.department_id} />
+                    <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-300">
+                      Pending
+                    </Badge>
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {selectedTodo?.description ? (
+                <p className="text-muted-foreground whitespace-pre-line">{selectedTodo.description}</p>
+              ) : (
+                <p className="text-muted-foreground italic">No description provided.</p>
+              )}
+              {selectedTodo?.due_date && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                  Due date: {new Date(selectedTodo.due_date).toLocaleDateString("en-IN")}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedTodo(null)}>
+                Close
+              </Button>
+              {selectedTodo &&
+                !!selectedTodo.created_by_member_id &&
+                myMemberIds.has(selectedTodo.created_by_member_id) && (
+                  <Button
+                    onClick={() => {
+                      markTodoDone(selectedTodo);
+                      setSelectedTodo(null);
+                    }}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark done
+                  </Button>
+                )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );
