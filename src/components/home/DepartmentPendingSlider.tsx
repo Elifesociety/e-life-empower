@@ -273,8 +273,9 @@ export function DepartmentPendingSlider() {
                       return (
                         <CarouselItem key={plan.id} className="md:basis-1/2 lg:basis-1/3">
                           <Card
-                            className="border-l-4 h-full"
+                            className="border-l-4 h-full cursor-pointer hover:shadow-md transition-shadow"
                             style={{ borderLeftColor: c, backgroundColor: `${c}10` }}
+                            onClick={() => setSelectedPlan(plan)}
                           >
                             <CardContent className="pt-4 space-y-2">
                               <div className="flex items-center justify-between gap-2 flex-wrap">
