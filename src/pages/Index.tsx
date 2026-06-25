@@ -7,10 +7,15 @@ import { DepartmentPendingSlider } from "@/components/home/DepartmentPendingSlid
 const Index = () => {
   return (
     <Layout>
-      <BentoHome />
+      <BentoHome
+        afterHero={
+          <>
+            <DepartmentWorkLogSection />
+            <CheckStatusSection />
+          </>
+        }
+      />
       <DepartmentPendingSlider />
-      <CheckStatusSection />
-      <DepartmentWorkLogSection />
     </Layout>
   );
 };
