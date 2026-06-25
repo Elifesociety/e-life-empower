@@ -21,7 +21,6 @@ import {
   CheckCircle2,
   LogIn,
   Calendar as CalendarIcon,
-  Info,
 } from "lucide-react";
 
 type Dept = { id: string; name: string; color: string | null };
