@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import Autoplay from "embla-carousel-autoplay";
 import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carousel";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -95,6 +98,10 @@ export function PaymentStatusSlider() {
   const [agentInfo, setAgentInfo] = useState<AgentInfo | null>(null);
   const [walletBalance, setWalletBalance] = useState<number | null>(null);
   const [searched, setSearched] = useState(false);
+  const [promptOpen, setPromptOpen] = useState(false);
+  const [activating, setActivating] = useState(false);
+  const navigate = useNavigate();
+  const { toast } = useToast();
 
   const autoplay = useRef(
     Autoplay({ delay: 4000, stopOnInteraction: false, stopOnMouseEnter: true }),
@@ -227,15 +234,40 @@ export function PaymentStatusSlider() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobile, ignored]);
 
-  const handleActivate = () => {
+  const handleActivate = async () => {
     const cleaned = inputMobile.replace(/\D/g, "");
     if (cleaned.length < 10) return;
+    setActivating(true);
     try {
-      localStorage.setItem(MOBILE_KEY, cleaned);
-      localStorage.removeItem(IGNORE_KEY);
-    } catch {}
-    setIgnored(false);
-    setMobile(cleaned);
+      // Check if mobile exists anywhere in hierarchy (agent, collection, or task)
+      const [agentRes, collRes] = await Promise.all([
+        supabase.from("pennyekart_agents").select("id").eq("mobile", cleaned).eq("is_active", true).limit(1),
+        supabase.from("cash_collections").select("id").eq("mobile", cleaned).limit(1),
+      ]);
+      const hasAgent = !!(agentRes.data && agentRes.data.length > 0);
+      const hasCollection = !!(collRes.data && collRes.data.length > 0);
+
+      if (!hasAgent && !hasCollection) {
+        toast({
+          title: "Number not in our records",
+          description: "Showing available programs instead.",
+        });
+        setPromptOpen(false);
+        setInputMobile("");
+        navigate("/programs");
+        return;
+      }
+
+      try {
+        localStorage.setItem(MOBILE_KEY, cleaned);
+        localStorage.removeItem(IGNORE_KEY);
+      } catch {}
+      setIgnored(false);
+      setMobile(cleaned);
+      setPromptOpen(false);
+    } finally {
+      setActivating(false);
+    }
   };
 
   const handleIgnore = () => {
@@ -278,7 +310,7 @@ export function PaymentStatusSlider() {
     );
   }
 
-  // Not yet activated — prompt
+  // Not yet activated — CTA + popup dialog
   if (!mobile) {
     return (
       <section className="py-10 lg:py-14 bg-gradient-to-br from-primary/5 via-fuchsia-500/5 to-amber-500/5">
@@ -294,31 +326,13 @@ export function PaymentStatusSlider() {
               <div>
                 <h3 className="text-lg font-semibold">Activate your personal status feed</h3>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Enter your mobile number once — we'll auto-show your payment records, wallet
-                  and assigned tasks as a live updating card.
+                  See your payment records, wallet and assigned tasks as a live updating card.
                 </p>
               </div>
-              <div className="flex gap-2 max-w-sm mx-auto">
-                <div className="relative flex-1">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    type="tel"
-                    value={inputMobile}
-                    onChange={(e) => setInputMobile(e.target.value)}
-                    placeholder="Mobile number"
-                    className="pl-10"
-                    maxLength={15}
-                    onKeyDown={(e) => e.key === "Enter" && handleActivate()}
-                  />
-                </div>
-                <Button
-                  onClick={handleActivate}
-                  disabled={inputMobile.replace(/\D/g, "").length < 10}
-                >
-                  Activate
+              <div className="flex flex-wrap justify-center gap-2">
+                <Button onClick={() => setPromptOpen(true)}>
+                  <Phone className="h-4 w-4 mr-1.5" /> Enter mobile number
                 </Button>
-              </div>
-              <div>
                 <Button variant="ghost" size="sm" onClick={handleIgnore}>
                   <EyeOff className="h-4 w-4 mr-1.5" /> Ignore for now
                 </Button>
@@ -326,9 +340,47 @@ export function PaymentStatusSlider() {
             </CardContent>
           </Card>
         </div>
+
+        <Dialog open={promptOpen} onOpenChange={(o) => { setPromptOpen(o); if (!o) setInputMobile(""); }}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Activate your personal status feed</DialogTitle>
+              <DialogDescription>
+                Enter your registered mobile number. If we can't find you in our records,
+                we'll show you the available programs page instead.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="relative">
+              <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="tel"
+                value={inputMobile}
+                onChange={(e) => setInputMobile(e.target.value)}
+                placeholder="Mobile number"
+                className="pl-10"
+                maxLength={15}
+                autoFocus
+                onKeyDown={(e) => e.key === "Enter" && !activating && handleActivate()}
+              />
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={() => setPromptOpen(false)} disabled={activating}>
+                Cancel
+              </Button>
+              <Button
+                onClick={handleActivate}
+                disabled={activating || inputMobile.replace(/\D/g, "").length < 10}
+              >
+                {activating ? <Loader2 className="h-4 w-4 mr-1.5 animate-spin" /> : null}
+                Activate
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </section>
     );
   }
+
 
   // Activated — show moving card
   return (
