@@ -114,10 +114,9 @@ export function MobileGate() {
   return (
     <Dialog open modal>
       <DialogContent
-        className="sm:max-w-md"
+        className="sm:max-w-md [&>button]:hidden"
         onPointerDownOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        hideClose
       >
         <DialogHeader>
           <div className="flex justify-center mb-2">
