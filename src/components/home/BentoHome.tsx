@@ -20,13 +20,13 @@ const divisions = [
   { id: "pennyekart", name: "Pennyekart", nameMl: "പെന്നിക്കാർട്ട്", logo: pennyekartLogo },
 ];
 
-export function BentoHome() {
+export function BentoHome({ afterHero }: { afterHero?: React.ReactNode } = {}) {
   return (
     <section className="relative py-8 md:py-12">
-      <div className="container">
+      <div className="container space-y-6 md:space-y-8">
         <div className="grid grid-cols-6 auto-rows-[minmax(120px,auto)] gap-3 md:gap-4">
           {/* Hero — large */}
-          <div className="col-span-6 lg:col-span-4 row-span-2 relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground p-6 md:p-10 flex flex-col justify-between min-h-[340px]">
+          <div className="col-span-6 relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground p-6 md:p-10 flex flex-col justify-between min-h-[340px]">
             <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-primary-foreground/10 blur-3xl" />
             <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-accent/30 blur-3xl" />
             <div className="relative">
