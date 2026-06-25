@@ -101,6 +101,9 @@ export function MobileGate() {
           description: "Showing available programs only.",
         });
         navigate("/programs", { replace: true });
+      } else {
+        // Reload so all listeners (PaymentStatusSlider, etc.) pick up the verified mobile
+        window.location.reload();
       }
     } finally {
       setChecking(false);
