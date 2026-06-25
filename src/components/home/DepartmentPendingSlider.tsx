@@ -4,9 +4,25 @@ import { Carousel, CarouselContent, CarouselItem } from "@/components/ui/carouse
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Target, ListTodo, Loader2, CheckCircle2, LogIn, Calendar as CalendarIcon } from "lucide-react";
+import {
+  Target,
+  ListTodo,
+  Loader2,
+  CheckCircle2,
+  LogIn,
+  Calendar as CalendarIcon,
+  Info,
+} from "lucide-react";
 
 type Dept = { id: string; name: string; color: string | null };
 type Plan = {
