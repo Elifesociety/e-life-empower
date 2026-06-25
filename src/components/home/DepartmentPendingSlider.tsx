@@ -376,6 +376,101 @@ export function DepartmentPendingSlider() {
             </div>
           </>
         )}
+
+        {/* Plan Detail Dialog */}
+        <Dialog open={!!selectedPlan} onOpenChange={(open) => !open && setSelectedPlan(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-start gap-2 text-base leading-snug">
+                <Target className="h-5 w-5 text-primary shrink-0" />
+                {selectedPlan?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedPlan && (
+                  <span className="flex items-center gap-2 mt-1">
+                    <DeptBadge deptId={selectedPlan.department_id} />
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] ${STATUS_STYLE[selectedPlan.status] || ""}`}
+                    >
+                      {selectedPlan.status.replace("_", " ")}
+                    </Badge>
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {selectedPlan?.description ? (
+                <p className="text-muted-foreground whitespace-pre-line">{selectedPlan.description}</p>
+              ) : (
+                <p className="text-muted-foreground italic">No description provided.</p>
+              )}
+              {selectedPlan?.target_date && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                  Target date: {new Date(selectedPlan.target_date).toLocaleDateString("en-IN")}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedPlan(null)}>
+                Close
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Todo Detail Dialog */}
+        <Dialog open={!!selectedTodo} onOpenChange={(open) => !open && setSelectedTodo(null)}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-start gap-2 text-base leading-snug">
+                <ListTodo className="h-5 w-5 text-primary shrink-0" />
+                {selectedTodo?.title}
+              </DialogTitle>
+              <DialogDescription>
+                {selectedTodo && (
+                  <span className="flex items-center gap-2 mt-1">
+                    <DeptBadge deptId={selectedTodo.department_id} />
+                    <Badge variant="outline" className="text-[10px] bg-amber-500/15 text-amber-700 border-amber-500/40 dark:text-amber-300">
+                      Pending
+                    </Badge>
+                  </span>
+                )}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3 text-sm">
+              {selectedTodo?.description ? (
+                <p className="text-muted-foreground whitespace-pre-line">{selectedTodo.description}</p>
+              ) : (
+                <p className="text-muted-foreground italic">No description provided.</p>
+              )}
+              {selectedTodo?.due_date && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <CalendarIcon className="h-4 w-4" />
+                  Due date: {new Date(selectedTodo.due_date).toLocaleDateString("en-IN")}
+                </div>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setSelectedTodo(null)}>
+                Close
+              </Button>
+              {selectedTodo &&
+                !!selectedTodo.created_by_member_id &&
+                myMemberIds.has(selectedTodo.created_by_member_id) && (
+                  <Button
+                    onClick={() => {
+                      markTodoDone(selectedTodo);
+                      setSelectedTodo(null);
+                    }}
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark done
+                  </Button>
+                )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </section>
   );
