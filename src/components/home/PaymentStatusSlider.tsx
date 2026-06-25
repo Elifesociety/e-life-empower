@@ -234,15 +234,40 @@ export function PaymentStatusSlider() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mobile, ignored]);
 
-  const handleActivate = () => {
+  const handleActivate = async () => {
     const cleaned = inputMobile.replace(/\D/g, "");
     if (cleaned.length < 10) return;
+    setActivating(true);
     try {
-      localStorage.setItem(MOBILE_KEY, cleaned);
-      localStorage.removeItem(IGNORE_KEY);
-    } catch {}
-    setIgnored(false);
-    setMobile(cleaned);
+      // Check if mobile exists anywhere in hierarchy (agent, collection, or task)
+      const [agentRes, collRes] = await Promise.all([
+        supabase.from("pennyekart_agents").select("id").eq("mobile", cleaned).eq("is_active", true).limit(1),
+        supabase.from("cash_collections").select("id").eq("mobile", cleaned).limit(1),
+      ]);
+      const hasAgent = !!(agentRes.data && agentRes.data.length > 0);
+      const hasCollection = !!(collRes.data && collRes.data.length > 0);
+
+      if (!hasAgent && !hasCollection) {
+        toast({
+          title: "Number not in our records",
+          description: "Showing available programs instead.",
+        });
+        setPromptOpen(false);
+        setInputMobile("");
+        navigate("/programs");
+        return;
+      }
+
+      try {
+        localStorage.setItem(MOBILE_KEY, cleaned);
+        localStorage.removeItem(IGNORE_KEY);
+      } catch {}
+      setIgnored(false);
+      setMobile(cleaned);
+      setPromptOpen(false);
+    } finally {
+      setActivating(false);
+    }
   };
 
   const handleIgnore = () => {
