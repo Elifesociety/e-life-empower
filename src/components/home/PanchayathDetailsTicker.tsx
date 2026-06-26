@@ -32,17 +32,20 @@ export function PanchayathDetailsTicker() {
         if (a.role in map[a.panchayath_id]) (map[a.panchayath_id] as any)[a.role]++;
         map[a.panchayath_id].total++;
       });
-      const merged: PanchayathRow[] = (pData || []).map((p: any) => ({
-        id: p.id,
-        name: p.name,
-        name_ml: p.name_ml,
-        district: p.district,
-        total: map[p.id]?.total || 0,
-        coordinator: map[p.id]?.coordinator || 0,
-        team_leader: map[p.id]?.team_leader || 0,
-        group_leader: map[p.id]?.group_leader || 0,
-        pro: map[p.id]?.pro || 0,
-      }));
+      const merged: PanchayathRow[] = (pData || [])
+        .map((p: any) => ({
+          id: p.id,
+          name: p.name,
+          name_ml: p.name_ml,
+          district: p.district,
+          total: map[p.id]?.total || 0,
+          coordinator: map[p.id]?.coordinator || 0,
+          team_leader: map[p.id]?.team_leader || 0,
+          group_leader: map[p.id]?.group_leader || 0,
+          pro: map[p.id]?.pro || 0,
+        }))
+        .filter((p) => p.total > 0)
+        .sort((a, b) => b.total - a.total);
       setRows(merged);
     })();
   }, []);
