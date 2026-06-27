@@ -60,7 +60,7 @@ export function PanchayathDetailsTicker() {
           Panchayaths
         </span>
         <div className="flex-1 overflow-hidden">
-          <div className="flex gap-2 animate-marquee whitespace-nowrap" style={{ animationDuration: "60s" }}>
+          <div className="flex gap-2 animate-marquee whitespace-nowrap" style={{ animationDuration: "30s" }}>
             {loop.map((p, i) => {
               const rank = (i % rows.length) + 1;
               const rankColor =
