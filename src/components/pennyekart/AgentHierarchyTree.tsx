@@ -12,6 +12,7 @@ interface AgentHierarchyTreeProps {
 }
 
 const ROLE_COLORS: Record<AgentRole, string> = {
+  super_admin_partner: "bg-rose-100 text-rose-800 dark:bg-rose-900/30 dark:text-rose-300",
   team_leader: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300",
   coordinator: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300",
   group_leader: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300",
@@ -29,15 +30,36 @@ export function AgentHierarchyTree({ agents, onSelectAgent, selectedAgentId }: A
     );
   }
 
-  // Group by panchayath first
-  const byPanchayath = agents.reduce((acc, agent) => {
-    const panchayathName = agent.panchayath?.name || "Unknown Panchayath";
-    if (!acc[panchayathName]) {
-      acc[panchayathName] = [];
+  // Build panchayath id -> name map from agents (so we can place SABPs into
+  // every panchayath listed in their responsible_panchayath_ids).
+  const panchayathNameById = new Map<string, string>();
+  for (const a of agents) {
+    if (a.panchayath_id && a.panchayath?.name) {
+      panchayathNameById.set(a.panchayath_id, a.panchayath.name);
     }
-    acc[panchayathName].push(agent);
-    return acc;
-  }, {} as Record<string, PennyekartAgent[]>);
+  }
+
+  // Group by panchayath. Each agent appears under its home panchayath, plus
+  // Super Admin / Business Partners additionally appear under every panchayath
+  // they are allocated to via responsible_panchayath_ids.
+  const byPanchayath: Record<string, PennyekartAgent[]> = {};
+  const push = (name: string, agent: PennyekartAgent) => {
+    if (!byPanchayath[name]) byPanchayath[name] = [];
+    if (!byPanchayath[name].some((x) => x.id === agent.id)) {
+      byPanchayath[name].push(agent);
+    }
+  };
+
+  for (const agent of agents) {
+    const homeName = agent.panchayath?.name || "Unknown Panchayath";
+    push(homeName, agent);
+    if (agent.role === "super_admin_partner" && agent.responsible_panchayath_ids?.length) {
+      for (const pid of agent.responsible_panchayath_ids) {
+        const name = panchayathNameById.get(pid);
+        if (name && name !== homeName) push(name, agent);
+      }
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -66,7 +88,10 @@ function PanchayathNode({ panchayathName, agents, onSelectAgent, selectedAgentId
   
   // Find root agents: those whose parent is not in this panchayath's agent list
   const agentIds = new Set(agents.map(a => a.id));
-  const rootAgents = agents.filter(a => !a.parent_agent_id || !agentIds.has(a.parent_agent_id));
+  const ROOT_ORDER: AgentRole[] = ["super_admin_partner", "team_leader", "coordinator", "group_leader", "pro"];
+  const rootAgents = agents
+    .filter(a => !a.parent_agent_id || !agentIds.has(a.parent_agent_id))
+    .sort((a, b) => ROOT_ORDER.indexOf(a.role) - ROOT_ORDER.indexOf(b.role));
   
   return (
     <div className="border rounded-lg overflow-hidden">

@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
-export type AgentRole = "team_leader" | "coordinator" | "group_leader" | "pro";
+export type AgentRole = "super_admin_partner" | "team_leader" | "coordinator" | "group_leader" | "pro";
 
 export interface PennyekartAgent {
   id: string;
@@ -210,13 +210,27 @@ export function useAgentMutations() {
 }
 
 export const ROLE_LABELS: Record<AgentRole, string> = {
+  super_admin_partner: "Super Admin / Business Partner",
   team_leader: "Team Leader",
   coordinator: "Coordinator",
   group_leader: "Group Leader",
   pro: "PRO"
 };
 
+// Parent/child hierarchy semantics. Super Admin / Business Partner is a separate
+// top-tier role that sits *alongside* the team-leader hierarchy (allocated by
+// panchayath, not by parent linkage), so it is intentionally excluded here.
 export const ROLE_HIERARCHY: AgentRole[] = ["team_leader", "coordinator", "group_leader", "pro"];
+
+// All selectable roles for forms / filters.
+export const ALL_ROLES: AgentRole[] = ["super_admin_partner", "team_leader", "coordinator", "group_leader", "pro"];
+
+// Roles that do not require a parent agent.
+export const TOP_LEVEL_ROLES: AgentRole[] = ["super_admin_partner", "team_leader"];
+
+export function isTopLevelRole(role: AgentRole): boolean {
+  return TOP_LEVEL_ROLES.includes(role);
+}
 
 export function getParentRole(role: AgentRole): AgentRole | null {
   const index = ROLE_HIERARCHY.indexOf(role);

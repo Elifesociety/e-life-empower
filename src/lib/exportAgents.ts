@@ -157,7 +157,7 @@ export function shareAgentsViaWhatsApp(agents: PennyekartAgent[], panchayaths: P
   function renderTree(parentId: string | null, indent: string) {
     const children = childrenMap.get(parentId) || [];
     for (const child of children) {
-      const roleEmoji = child.role === "team_leader" ? "🏅" : child.role === "coordinator" ? "📋" : child.role === "group_leader" ? "👥" : "🛒";
+      const roleEmoji = child.role === "super_admin_partner" ? "💼" : child.role === "team_leader" ? "🏅" : child.role === "coordinator" ? "📋" : child.role === "group_leader" ? "👥" : "🛒";
       text += `${indent}${roleEmoji} *${ROLE_LABELS[child.role]}*: ${formatAgent(child)}\n`;
       renderTree(child.id, indent + "    ");
     }
