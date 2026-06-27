@@ -88,7 +88,10 @@ function PanchayathNode({ panchayathName, agents, onSelectAgent, selectedAgentId
   
   // Find root agents: those whose parent is not in this panchayath's agent list
   const agentIds = new Set(agents.map(a => a.id));
-  const rootAgents = agents.filter(a => !a.parent_agent_id || !agentIds.has(a.parent_agent_id));
+  const ROOT_ORDER: AgentRole[] = ["super_admin_partner", "team_leader", "coordinator", "group_leader", "pro"];
+  const rootAgents = agents
+    .filter(a => !a.parent_agent_id || !agentIds.has(a.parent_agent_id))
+    .sort((a, b) => ROOT_ORDER.indexOf(a.role) - ROOT_ORDER.indexOf(b.role));
   
   return (
     <div className="border rounded-lg overflow-hidden">
