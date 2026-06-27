@@ -60,7 +60,7 @@ const singleAgentSchema = z.object({
   responsible_wards: z.array(z.string()).default([]),
 }).superRefine((data, ctx) => {
   // Ward is required for non-top-level roles
-  if (data.role !== "team_leader" && (!data.ward || data.ward.trim() === "")) {
+  if ((data.role !== "team_leader" && data.role !== "super_admin_partner") && (!data.ward || data.ward.trim() === "")) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Ward is required",
@@ -68,7 +68,7 @@ const singleAgentSchema = z.object({
     });
   }
   // Parent agent is required for non-top-level roles
-  if (data.role !== "team_leader" && !data.parent_agent_id) {
+  if ((data.role !== "team_leader" && data.role !== "super_admin_partner") && !data.parent_agent_id) {
     const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -77,7 +77,7 @@ const singleAgentSchema = z.object({
     });
   }
   // Team leaders must have at least one responsible panchayath
-  if (data.role === "team_leader" && (!data.responsible_panchayath_ids || data.responsible_panchayath_ids.length === 0)) {
+  if ((data.role === "team_leader" || data.role === "super_admin_partner") && (!data.responsible_panchayath_ids || data.responsible_panchayath_ids.length === 0)) {
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
       message: "Select at least one responsible panchayath",
@@ -99,7 +99,7 @@ const bulkAgentSchema = z.object({
     customer_count: z.number().int().min(0).default(0),
   })).min(1, "Add at least one agent"),
 }).superRefine((data, ctx) => {
-  if (data.role !== "team_leader" && !data.parent_agent_id) {
+  if ((data.role !== "team_leader" && data.role !== "super_admin_partner") && !data.parent_agent_id) {
     const parentRoleLabel = data.role === "pro" ? "Group Leader" : data.role === "group_leader" ? "Coordinator" : "Team Leader";
     ctx.addIssue({
       code: z.ZodIssueCode.custom,
@@ -377,7 +377,7 @@ export function BulkAgentFormDialog({
   const onSubmitSingle = async (values: SingleAgentFormValues) => {
     try {
       // Top-level roles don't have parents
-      if (values.role === "team_leader") {
+      if ((values.role === "team_leader" || values.role === "super_admin_partner")) {
         values.parent_agent_id = null;
         // Set ward to "N/A" for top-level roles
         if (!values.ward) {
@@ -394,7 +394,7 @@ export function BulkAgentFormDialog({
       let responsiblePanchayathIds: string[] = [];
       let responsibleWards: string[] = [];
 
-      if (values.role === "team_leader") {
+      if ((values.role === "team_leader" || values.role === "super_admin_partner")) {
         responsiblePanchayathIds = values.responsible_panchayath_ids || [];
       } else if (values.role === "coordinator") {
         responsibleWards = values.responsible_wards || [];
@@ -439,7 +439,7 @@ export function BulkAgentFormDialog({
   const onSubmitBulk = async (values: BulkAgentFormValues) => {
     try {
       const isPro = values.role === "pro";
-      const isTopLevel = values.role === "team_leader";
+      const isTopLevel = (values.role === "team_leader" || values.role === "super_admin_partner");
       const isCoordinator = values.role === "coordinator";
 
       const agentsToInsert = values.agents.map(a => ({
@@ -471,8 +471,8 @@ export function BulkAgentFormDialog({
 
   const singleParentRole = getParentRole(selectedSingleRole);
   const bulkParentRole = getParentRole(selectedBulkRole);
-  const singleNeedsParent = selectedSingleRole !== "team_leader";
-  const bulkNeedsParent = selectedBulkRole !== "team_leader";
+  const singleNeedsParent = (selectedSingleRole !== "team_leader" && selectedSingleRole !== "super_admin_partner");
+  const bulkNeedsParent = (selectedBulkRole !== "team_leader" && selectedBulkRole !== "super_admin_partner");
 
   // Get ward options for all responsible panchayaths (for Team Leader viewing coordinator wards)
   const getWardsForPanchayath = (panchayathId: string) => {
@@ -760,7 +760,7 @@ function SingleFormContent({
         </div>
 
         {/* Ward - hide for team leaders */}
-        {selectedRole !== "team_leader" && (
+        {(selectedRole !== "team_leader" && selectedRole !== "super_admin_partner") && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <FormField
               control={form.control}
@@ -855,7 +855,7 @@ function SingleFormContent({
       </div>
 
       {/* Responsibility Section - Only for Team Leaders and Coordinators */}
-      {(selectedRole === "team_leader" || selectedRole === "coordinator") && (
+      {(selectedRole === "team_leader" || selectedRole === "super_admin_partner" || selectedRole === "coordinator") && (
         <>
           <Separator className="my-2" />
           
@@ -865,7 +865,7 @@ function SingleFormContent({
               Responsibility Scope
             </div>
 
-            {selectedRole === "team_leader" && (
+            {(selectedRole === "team_leader" || selectedRole === "super_admin_partner") && (
               <FormField
                 control={form.control}
                 name="responsible_panchayath_ids"
