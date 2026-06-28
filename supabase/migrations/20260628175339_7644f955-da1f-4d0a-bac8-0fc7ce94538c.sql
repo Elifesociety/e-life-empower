@@ -1,0 +1,1 @@
+ALTER TABLE public.panchayaths ADD COLUMN IF NOT EXISTS code TEXT;

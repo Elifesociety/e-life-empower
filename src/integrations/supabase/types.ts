@@ -726,6 +726,7 @@ export type Database = {
       }
       panchayaths: {
         Row: {
+          code: string | null
           created_at: string | null
           district: string | null
           id: string
@@ -736,6 +737,7 @@ export type Database = {
           ward: string | null
         }
         Insert: {
+          code?: string | null
           created_at?: string | null
           district?: string | null
           id?: string
@@ -746,6 +748,7 @@ export type Database = {
           ward?: string | null
         }
         Update: {
+          code?: string | null
           created_at?: string | null
           district?: string | null
           id?: string

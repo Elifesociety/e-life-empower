@@ -48,9 +48,11 @@ interface Panchayath {
   district: string | null;
   state: string | null;
   ward: string | null;
+  code: string | null;
   is_active: boolean | null;
   created_at: string | null;
 }
+
 
 interface Cluster {
   id: string;
@@ -79,6 +81,8 @@ export default function LocationsManagement() {
   const [panchayathDistrict, setPanchayathDistrict] = useState("");
   const [panchayathWard, setPanchayathWard] = useState<number | "">("");
   const [panchayathState, setPanchayathState] = useState("Kerala");
+  const [panchayathCode, setPanchayathCode] = useState("");
+
 
   // Cluster form state
   const [clusterName, setClusterName] = useState("");
@@ -182,7 +186,9 @@ export default function LocationsManagement() {
         district: panchayathDistrict.trim() || null,
         ward: panchayathWard ? String(panchayathWard) : null,
         state: panchayathState.trim() || "Kerala",
+        code: panchayathCode.trim() || null,
       };
+
 
       if (adminToken) {
         const response = await supabase.functions.invoke("admin-locations?resource=panchayaths&action=create", {
@@ -268,8 +274,10 @@ export default function LocationsManagement() {
     setPanchayathDistrict("");
     setPanchayathWard("");
     setPanchayathState("Kerala");
+    setPanchayathCode("");
     setError("");
   };
+
 
   const resetClusterForm = () => {
     setClusterName("");
@@ -471,6 +479,20 @@ export default function LocationsManagement() {
                       </p>
                     </div>
 
+                    <div className="space-y-2">
+                      <Label htmlFor="panchayathCode">Panchayath Number / Code</Label>
+                      <Input
+                        id="panchayathCode"
+                        value={panchayathCode}
+                        onChange={(e) => setPanchayathCode(e.target.value)}
+                        placeholder="e.g., LSGI code or custom number"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Optional. Manually enter the official panchayath number or code.
+                      </p>
+                    </div>
+
+
                     <DialogFooter>
                       <Button
                         type="button"
@@ -501,7 +523,9 @@ export default function LocationsManagement() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Name (ML)</TableHead>
+                    <TableHead>Code</TableHead>
                     <TableHead>State</TableHead>
+
                     <TableHead>District</TableHead>
                     <TableHead>Ward</TableHead>
                     <TableHead>Status</TableHead>
@@ -511,7 +535,7 @@ export default function LocationsManagement() {
                 <TableBody>
                   {panchayaths.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                         No panchayaths found. Add your first panchayath to get started.
                       </TableCell>
                     </TableRow>
@@ -520,7 +544,9 @@ export default function LocationsManagement() {
                       <TableRow key={panchayath.id}>
                         <TableCell className="font-medium">{panchayath.name}</TableCell>
                         <TableCell>{panchayath.name_ml || "-"}</TableCell>
+                        <TableCell className="font-mono text-xs">{panchayath.code || "-"}</TableCell>
                         <TableCell>{panchayath.state || "Kerala"}</TableCell>
+
                         <TableCell>{panchayath.district || "-"}</TableCell>
                         <TableCell>{panchayath.ward || "-"}</TableCell>
                         <TableCell>
