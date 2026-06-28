@@ -40,6 +40,7 @@ import {
   AgentRole, 
   ROLE_LABELS, 
   ROLE_HIERARCHY,
+  ALL_ROLES,
   getParentRole,
   useAgentMutations,
 } from "@/hooks/usePennyekartAgents";
@@ -727,7 +728,7 @@ function SingleFormContent({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {ROLE_HIERARCHY.map((role) => (
+                    {ALL_ROLES.map((role) => (
                       <SelectItem key={role} value={role}>
                         {ROLE_LABELS[role]}
                       </SelectItem>
@@ -1042,7 +1043,7 @@ function BulkFormContent({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {ROLE_HIERARCHY.map((role) => (
+                  {ALL_ROLES.map((role) => (
                     <SelectItem key={role} value={role}>
                       {ROLE_LABELS[role]}
                     </SelectItem>
