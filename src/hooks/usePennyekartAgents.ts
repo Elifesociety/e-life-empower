@@ -45,6 +45,11 @@ function getAdminToken(): string | null {
   return null;
 }
 
+async function getSupabaseAccessToken(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token || null;
+}
+
 export function usePennyekartAgents(filters?: AgentFilters) {
   const [agents, setAgents] = useState<PennyekartAgent[]>([]);
   const [hierarchyTree, setHierarchyTree] = useState<PennyekartAgent[]>([]);
@@ -131,8 +136,9 @@ export function useAgentMutations() {
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const callEdgeFunction = async (method: string, body?: object, params?: Record<string, string>) => {
-    const token = getAdminToken();
-    if (!token) {
+    const adminToken = getAdminToken();
+    const accessToken = await getSupabaseAccessToken();
+    if (!adminToken && !accessToken) {
       throw new Error("Not authenticated as admin");
     }
 
@@ -141,13 +147,16 @@ export function useAgentMutations() {
       Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
     }
 
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFudWNxd25pbG9pb3hzb3dkcXpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MDQ3NzcsImV4cCI6MjA4NDk4MDc3N30.hbmuNMcmmFs7-yCYtuJ34jbX6aqWaSDTiryD1VDHFKc",
+    };
+    if (adminToken) headers["x-admin-token"] = adminToken;
+    if (accessToken) headers["Authorization"] = `Bearer ${accessToken}`;
+
     const response = await fetch(url.toString(), {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        "x-admin-token": token,
-        "apikey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFudWNxd25pbG9pb3hzb3dkcXpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MDQ3NzcsImV4cCI6MjA4NDk4MDc3N30.hbmuNMcmmFs7-yCYtuJ34jbX6aqWaSDTiryD1VDHFKc",
-      },
+      headers,
       body: body ? JSON.stringify(body) : undefined,
     });
 
