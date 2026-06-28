@@ -49,40 +49,72 @@ function parseAdminToken(token: string): AdminToken | null {
   }
 }
 
-async function verifyAdmin(adminToken: string): Promise<{ valid: boolean; admin?: AdminToken; isSuperAdmin?: boolean }> {
-  const parsed = parseAdminToken(adminToken);
-  if (!parsed) {
-    return { valid: false };
-  }
-  
+async function verifyAdmin(adminToken: string | null, authHeader: string | null): Promise<{ valid: boolean; admin?: AdminToken; isSuperAdmin?: boolean }> {
   const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-  
-  // Check if admin exists and is active
-  const { data: admin } = await supabase
-    .from("admins")
-    .select("id, division_id, full_name")
-    .eq("id", parsed.admin_id)
-    .eq("is_active", true)
-    .single();
-  
-  if (!admin) {
-    return { valid: false };
+
+  if (adminToken) {
+    const parsed = parseAdminToken(adminToken);
+    if (!parsed) {
+      return { valid: false };
+    }
+    
+    // Check if admin exists and is active
+    const { data: admin } = await supabase
+      .from("admins")
+      .select("id, division_id, full_name")
+      .eq("id", parsed.admin_id)
+      .eq("is_active", true)
+      .single();
+    
+    if (!admin) {
+      return { valid: false };
+    }
+    
+    // Check for super_admin role via user_id
+    let isSuperAdmin = false;
+    if (parsed.user_id) {
+      const { data: roleData } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", parsed.user_id)
+        .eq("role", "super_admin")
+        .single();
+      
+      isSuperAdmin = !!roleData;
+    }
+    
+    return { valid: true, admin: parsed, isSuperAdmin };
   }
-  
-  // Check for super_admin role via user_id
-  let isSuperAdmin = false;
-  if (parsed.user_id) {
+
+  const bearerToken = authHeader?.replace(/^Bearer\s+/i, "");
+  if (bearerToken) {
+    const { data: userData } = await supabase.auth.getUser(bearerToken);
+    const user = userData?.user;
+    if (!user) return { valid: false };
+
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
-      .eq("user_id", parsed.user_id)
+      .eq("user_id", user.id)
       .eq("role", "super_admin")
       .single();
-    
-    isSuperAdmin = !!roleData;
+
+    if (!roleData) return { valid: false };
+
+    return {
+      valid: true,
+      isSuperAdmin: true,
+      admin: {
+        admin_id: user.id,
+        user_id: user.id,
+        division_id: "",
+        full_name: user.email || "Super Admin",
+        exp: Date.now() + 60 * 60 * 1000,
+      },
+    };
   }
-  
-  return { valid: true, admin: parsed, isSuperAdmin };
+
+  return { valid: false };
 }
 
 serve(async (req) => {
@@ -92,14 +124,15 @@ serve(async (req) => {
 
   try {
     const adminToken = req.headers.get("x-admin-token");
-    if (!adminToken) {
+    const authHeader = req.headers.get("authorization");
+    if (!adminToken && !authHeader) {
       return new Response(
-        JSON.stringify({ error: "Unauthorized - No admin token" }),
+        JSON.stringify({ error: "Unauthorized - No admin session" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const { valid, admin, isSuperAdmin } = await verifyAdmin(adminToken);
+    const { valid, admin, isSuperAdmin } = await verifyAdmin(adminToken, authHeader);
     if (!valid || !admin) {
       return new Response(
         JSON.stringify({ error: "Unauthorized - Invalid admin token" }),
