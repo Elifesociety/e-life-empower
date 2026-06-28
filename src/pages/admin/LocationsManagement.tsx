@@ -543,10 +543,10 @@ export default function LocationsManagement() {
                         {isSubmitting ? (
                           <>
                             <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Creating...
+                            {editingPanchayath ? "Saving..." : "Creating..."}
                           </>
                         ) : (
-                          "Create Panchayath"
+                          editingPanchayath ? "Save Changes" : "Create Panchayath"
                         )}
                       </Button>
                     </DialogFooter>
