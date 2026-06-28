@@ -44,6 +44,7 @@ import {
   AgentRole,
   ROLE_LABELS,
   ROLE_HIERARCHY,
+  ALL_ROLES,
   PennyekartAgent,
   getChildRole
 } from "@/hooks/usePennyekartAgents";
@@ -181,7 +182,7 @@ export default function PennyekartAgentHierarchy() {
 
   // Calculate stats
   const totalAgents = agents.length;
-  const byRole = ROLE_HIERARCHY.reduce((acc, role) => {
+  const byRole = ALL_ROLES.reduce((acc, role) => {
     acc[role] = agents.filter(a => a.role === role).length;
     return acc;
   }, {} as Record<AgentRole, number>);
@@ -243,7 +244,7 @@ export default function PennyekartAgentHierarchy() {
               <div className="text-lg sm:text-2xl font-bold">{totalAgents}</div>
               <div className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">Total</div>
             </Card>
-            {ROLE_HIERARCHY.map(role => (
+            {ALL_ROLES.map(role => (
               <Card key={role} className="p-2 sm:p-3 min-w-[80px] sm:min-w-0">
                 <div className="text-lg sm:text-2xl font-bold">{byRole[role]}</div>
                 <div className="text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">{ROLE_LABELS[role]}s</div>
@@ -311,7 +312,7 @@ export default function PennyekartAgentHierarchy() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Roles</SelectItem>
-                  {ROLE_HIERARCHY.map(role => (
+                  {ALL_ROLES.map(role => (
                     <SelectItem key={role} value={role}>{ROLE_LABELS[role]}</SelectItem>
                   ))}
                 </SelectContent>
