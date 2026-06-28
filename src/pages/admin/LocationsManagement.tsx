@@ -446,12 +446,12 @@ export default function LocationsManagement() {
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
-                    <DialogTitle>Add New Panchayath</DialogTitle>
+                    <DialogTitle>{editingPanchayath ? "Edit Panchayath" : "Add New Panchayath"}</DialogTitle>
                     <DialogDescription>
-                      Add a new panchayath with ward details
+                      {editingPanchayath ? "Update panchayath details" : "Add a new panchayath with ward details"}
                     </DialogDescription>
                   </DialogHeader>
-                  <form onSubmit={handleCreatePanchayath} className="space-y-4">
+                  <form onSubmit={handlePanchayathSubmit} className="space-y-4">
                     {error && (
                       <Alert variant="destructive">
                         <AlertCircle className="h-4 w-4" />
