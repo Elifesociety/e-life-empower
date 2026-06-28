@@ -599,13 +599,23 @@ export default function LocationsManagement() {
                           </span>
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => togglePanchayathStatus(panchayath.id, panchayath.is_active ?? true)}
-                          >
-                            {panchayath.is_active ? "Deactivate" : "Activate"}
-                          </Button>
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => openEditDialog(panchayath)}
+                            >
+                              <Pencil className="h-4 w-4 mr-1" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => togglePanchayathStatus(panchayath.id, panchayath.is_active ?? true)}
+                            >
+                              {panchayath.is_active ? "Deactivate" : "Activate"}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
