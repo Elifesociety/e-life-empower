@@ -172,7 +172,7 @@ export default function Panchayaths() {
                       </p>
                     )}
                   </CardHeader>
-                  <CardContent className="pt-2">
+                  <CardContent className="pt-2 space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       {(["coordinator", "team_leader", "group_leader", "pro"] as const).map((r) => {
                         const Icon = roleIcon[r];
@@ -187,7 +187,46 @@ export default function Panchayaths() {
                         );
                       })}
                     </div>
+
+                    {/* Super Admin / Business Partners */}
+                    <div className="rounded-md border-l-4 border-l-amber-500 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-950/30 dark:to-yellow-950/30 px-2.5 py-2">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300 mb-1">
+                        <Crown className="w-3 h-3" /> Super Admin / Business Partner
+                      </div>
+                      {(partnersMap[p.id] || []).length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground italic">Not allocated</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {partnersMap[p.id].map((a) => (
+                            <li key={a.id} className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-amber-900 dark:text-amber-200">{a.name}</span>
+                              <a href={`tel:${a.mobile}`} className="text-[11px] font-mono text-amber-700 dark:text-amber-300 hover:underline">{a.mobile}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+
+                    {/* Team Leaders */}
+                    <div className="rounded-md border-l-4 border-l-blue-500 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-950/30 dark:to-sky-950/30 px-2.5 py-2">
+                      <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-blue-800 dark:text-blue-300 mb-1">
+                        <Shield className="w-3 h-3" /> Team Leaders
+                      </div>
+                      {(leadersMap[p.id] || []).length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground italic">Not allocated</p>
+                      ) : (
+                        <ul className="space-y-1">
+                          {leadersMap[p.id].map((a) => (
+                            <li key={a.id} className="flex items-center justify-between text-xs">
+                              <span className="font-medium text-blue-900 dark:text-blue-200">{a.name}</span>
+                              <a href={`tel:${a.mobile}`} className="text-[11px] font-mono text-blue-700 dark:text-blue-300 hover:underline">{a.mobile}</a>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
                   </CardContent>
+
                 </Card>
               );
             })}
