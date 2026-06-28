@@ -276,7 +276,19 @@ export default function LocationsManagement() {
     setPanchayathWard("");
     setPanchayathState("Kerala");
     setPanchayathCode("");
+    setEditingPanchayath(null);
     setError("");
+  };
+
+  const openEditDialog = (panchayath: Panchayath) => {
+    setPanchayathName(panchayath.name);
+    setPanchayathNameMl(panchayath.name_ml || "");
+    setPanchayathDistrict(panchayath.district || "");
+    setPanchayathWard(panchayath.ward ? Number(panchayath.ward) : "");
+    setPanchayathState(panchayath.state || "Kerala");
+    setPanchayathCode(panchayath.code || "");
+    setEditingPanchayath(panchayath);
+    setIsPanchayathDialogOpen(true);
   };
 
 
