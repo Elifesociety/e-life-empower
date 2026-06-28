@@ -114,7 +114,11 @@ export function Header() {
               <Link
                 key={link.href}
                 to={link.href}
-                onClick={() => setIsMenuOpen(false)}
+                onClick={
+                  link.href === "/"
+                    ? (e) => handleHomeClick(e, true)
+                    : () => setIsMenuOpen(false)
+                }
                 className={cn(
                   "px-4 py-3 rounded-lg text-sm font-medium transition-colors",
                   location.pathname === link.href
