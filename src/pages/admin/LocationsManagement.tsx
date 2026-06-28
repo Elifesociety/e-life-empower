@@ -274,8 +274,10 @@ export default function LocationsManagement() {
     setPanchayathDistrict("");
     setPanchayathWard("");
     setPanchayathState("Kerala");
+    setPanchayathCode("");
     setError("");
   };
+
 
   const resetClusterForm = () => {
     setClusterName("");
