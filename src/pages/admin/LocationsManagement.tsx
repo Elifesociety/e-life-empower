@@ -74,6 +74,7 @@ export default function LocationsManagement() {
   const [isClusterDialogOpen, setIsClusterDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [editingPanchayath, setEditingPanchayath] = useState<Panchayath | null>(null);
 
   // Panchayath form state
   const [panchayathName, setPanchayathName] = useState("");
