@@ -48,9 +48,11 @@ interface Panchayath {
   district: string | null;
   state: string | null;
   ward: string | null;
+  code: string | null;
   is_active: boolean | null;
   created_at: string | null;
 }
+
 
 interface Cluster {
   id: string;
