@@ -523,7 +523,9 @@ export default function LocationsManagement() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Name (ML)</TableHead>
+                    <TableHead>Code</TableHead>
                     <TableHead>State</TableHead>
+
                     <TableHead>District</TableHead>
                     <TableHead>Ward</TableHead>
                     <TableHead>Status</TableHead>
