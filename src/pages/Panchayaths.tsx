@@ -353,7 +353,7 @@ export default function Panchayaths() {
                           {partnersMap[p.id].map((a) => (
                             <li key={a.id} className="flex items-center justify-between text-xs">
                               <span className="font-medium text-amber-900 dark:text-amber-200">{a.name}</span>
-                              <a href={`tel:${a.mobile}`} className="text-[11px] font-mono text-amber-700 dark:text-amber-300 hover:underline">{a.mobile}</a>
+                              <a href={`tel:${a.mobile}`} onClick={(e) => e.stopPropagation()} className="text-[11px] font-mono text-amber-700 dark:text-amber-300 hover:underline">{a.mobile}</a>
                             </li>
                           ))}
                         </ul>
@@ -372,7 +372,7 @@ export default function Panchayaths() {
                           {leadersMap[p.id].map((a) => (
                             <li key={a.id} className="flex items-center justify-between text-xs">
                               <span className="font-medium text-blue-900 dark:text-blue-200">{a.name}</span>
-                              <a href={`tel:${a.mobile}`} className="text-[11px] font-mono text-blue-700 dark:text-blue-300 hover:underline">{a.mobile}</a>
+                              <a href={`tel:${a.mobile}`} onClick={(e) => e.stopPropagation()} className="text-[11px] font-mono text-blue-700 dark:text-blue-300 hover:underline">{a.mobile}</a>
                             </li>
                           ))}
                         </ul>
@@ -385,6 +385,12 @@ export default function Panchayaths() {
           </div>
         )}
       </div>
+      <PanchayathAgentsDialog
+        panchayath={selected}
+        open={!!selected}
+        onOpenChange={(o) => !o && setSelected(null)}
+      />
     </Layout>
+
   );
 }
