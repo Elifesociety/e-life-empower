@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-token",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-admin-token, x-caller-mobile",
   "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
 };
 
@@ -117,6 +117,37 @@ async function verifyAdmin(adminToken: string | null, authHeader: string | null)
   return { valid: false };
 }
 
+interface CallerAgent {
+  id: string;
+  role: "super_admin_partner" | "team_leader";
+  panchayath_id: string;
+  responsible_panchayath_ids: string[];
+}
+
+async function getCallerAgent(mobile: string): Promise<CallerAgent | null> {
+  const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const { data } = await supabase
+    .from("pennyekart_agents")
+    .select("id, role, panchayath_id, responsible_panchayath_ids, is_active")
+    .eq("mobile", mobile)
+    .in("role", ["super_admin_partner", "team_leader"])
+    .eq("is_active", true)
+    .limit(1)
+    .maybeSingle();
+  if (!data) return null;
+  return {
+    id: data.id,
+    role: data.role,
+    panchayath_id: data.panchayath_id,
+    responsible_panchayath_ids: data.responsible_panchayath_ids || [],
+  };
+}
+
+function callerHasPanchayathScope(caller: CallerAgent, panchayathId: string): boolean {
+  if (caller.panchayath_id === panchayathId) return true;
+  return (caller.responsible_panchayath_ids || []).includes(panchayathId);
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -125,17 +156,33 @@ serve(async (req) => {
   try {
     const adminToken = req.headers.get("x-admin-token");
     const authHeader = req.headers.get("authorization");
-    if (!adminToken && !authHeader) {
+    const callerMobile = req.headers.get("x-caller-mobile");
+
+    let admin: AdminToken | null = null;
+    let isSuperAdmin = false;
+    let caller: CallerAgent | null = null;
+
+    if (adminToken || authHeader) {
+      const result = await verifyAdmin(adminToken, authHeader);
+      if (!result.valid || !result.admin) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - Invalid admin token" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+      admin = result.admin;
+      isSuperAdmin = !!result.isSuperAdmin;
+    } else if (callerMobile) {
+      caller = await getCallerAgent(callerMobile.replace(/\D/g, ""));
+      if (!caller) {
+        return new Response(
+          JSON.stringify({ error: "Unauthorized - Caller is not a Team Leader or Super Admin/Business Partner" }),
+          { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    } else {
       return new Response(
         JSON.stringify({ error: "Unauthorized - No admin session" }),
-        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    const { valid, admin, isSuperAdmin } = await verifyAdmin(adminToken, authHeader);
-    if (!valid || !admin) {
-      return new Response(
-        JSON.stringify({ error: "Unauthorized - Invalid admin token" }),
         { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
