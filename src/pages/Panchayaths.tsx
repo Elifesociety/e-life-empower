@@ -167,8 +167,13 @@ export default function Panchayaths() {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-start justify-between gap-2">
                       <div>
-                        <div className="font-semibold">{p.name}</div>
+                    <div className="font-semibold">{p.name}</div>
                         {p.name_ml && <div className="text-xs text-muted-foreground font-normal">{p.name_ml}</div>}
+                        {p.code && (
+                          <Badge variant="outline" className="mt-1 text-[10px] font-mono">
+                            Code: {p.code}
+                          </Badge>
+                        )}
                       </div>
                       <Badge variant="secondary" className="shrink-0">
                         <Users className="w-3 h-3 mr-1" /> {counts.total}
