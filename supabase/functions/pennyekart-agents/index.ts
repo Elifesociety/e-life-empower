@@ -212,13 +212,13 @@ serve(async (req) => {
       async function fetchAgentForCustomer(targetAgentId: string) {
         const { data } = await supabase
           .from("pennyekart_agents")
-          .select("id, role, mobile, is_active")
+          .select("id, role, mobile, is_active, panchayath_id, responsible_panchayath_ids")
           .eq("id", targetAgentId)
           .maybeSingle();
         return data;
       }
 
-      function assertAuthorized(targetAgentRow: { mobile: string; role: string; is_active: boolean } | null) {
+      async function assertAuthorized(targetAgentRow: { mobile: string; role: string; is_active: boolean; panchayath_id: string; responsible_panchayath_ids: string[] | null } | null) {
         if (!targetAgentRow) return { ok: false, status: 404, error: "Agent not found" };
         if (!ALLOWED_ROLES.includes(targetAgentRow.role)) {
           return { ok: false, status: 400, error: "Direct customers are only available for Coordinator, Group Leader, or PRO agents" };
@@ -226,6 +226,23 @@ serve(async (req) => {
         if (admin) return { ok: true };
         if (normalizedCaller && normalizedCaller === targetAgentRow.mobile && targetAgentRow.is_active) {
           return { ok: true };
+        }
+        // Team Leaders and Super Admin / Business Partners with scope over the target agent's panchayath
+        if (normalizedCaller) {
+          const { data: callerRow } = await supabase
+            .from("pennyekart_agents")
+            .select("role, panchayath_id, responsible_panchayath_ids, is_active")
+            .eq("mobile", normalizedCaller)
+            .in("role", ["team_leader", "super_admin_partner"])
+            .eq("is_active", true)
+            .maybeSingle();
+          if (callerRow) {
+            const scope = new Set<string>([
+              callerRow.panchayath_id,
+              ...((callerRow.responsible_panchayath_ids as string[] | null) || []),
+            ].filter(Boolean));
+            if (scope.has(targetAgentRow.panchayath_id)) return { ok: true };
+          }
         }
         return { ok: false, status: 403, error: "Forbidden" };
       }
@@ -274,7 +291,7 @@ serve(async (req) => {
         const targetAgentId = body?.agent_id;
         if (!targetAgentId) return jsonResp({ error: "Missing agent_id" }, 400);
         const targetAgent = await fetchAgentForCustomer(targetAgentId);
-        const authz = assertAuthorized(targetAgent as any);
+        const authz = await assertAuthorized(targetAgent as any);
         if (!authz.ok) return jsonResp({ error: authz.error }, authz.status);
         const v = validateCustomer(body?.customer);
         if (!v.ok) return jsonResp({ error: v.error }, 400);
@@ -300,7 +317,7 @@ serve(async (req) => {
           .maybeSingle();
         if (!existing) return jsonResp({ error: "Customer not found" }, 404);
         const targetAgent = await fetchAgentForCustomer(existing.agent_id);
-        const authz = assertAuthorized(targetAgent as any);
+        const authz = await assertAuthorized(targetAgent as any);
         if (!authz.ok) return jsonResp({ error: authz.error }, authz.status);
         const v = validateCustomer(body?.customer);
         if (!v.ok) return jsonResp({ error: v.error }, 400);
@@ -327,7 +344,7 @@ serve(async (req) => {
           .maybeSingle();
         if (!existing) return jsonResp({ error: "Customer not found" }, 404);
         const targetAgent = await fetchAgentForCustomer(existing.agent_id);
-        const authz = assertAuthorized(targetAgent as any);
+        const authz = await assertAuthorized(targetAgent as any);
         if (!authz.ok) return jsonResp({ error: authz.error }, authz.status);
         const { error } = await supabase
           .from("agent_direct_customers")

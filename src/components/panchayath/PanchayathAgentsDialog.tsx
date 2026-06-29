@@ -2,9 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Phone, Crown, Shield, UserCheck, Briefcase, Users, Lock } from "lucide-react";
+import { Loader2, Plus, Pencil, Phone, Crown, Shield, UserCheck, Briefcase, Users, Lock, ShoppingCart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { AgentFormDialog } from "@/components/pennyekart/AgentFormDialog";
+import { AgentDirectCustomersDialog } from "@/components/pennyekart/AgentDirectCustomersDialog";
 import {
   PennyekartAgent,
   AgentRole,
@@ -43,6 +44,7 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
   const [access, setAccess] = useState<PanchayathAccess | null>(null);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PennyekartAgent | null>(null);
+  const [customersFor, setCustomersFor] = useState<PennyekartAgent | null>(null);
 
   const fetchAgents = async (panchayathId: string) => {
     setLoading(true);
@@ -196,17 +198,30 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
                               </div>
                             </div>
                             {canManage && (
-                              <Button
-                                size="icon"
-                                variant="ghost"
-                                className="h-7 w-7 shrink-0"
-                                onClick={() => {
-                                  setEditing(a);
-                                  setFormOpen(true);
-                                }}
-                              >
-                                <Pencil className="h-3.5 w-3.5" />
-                              </Button>
+                              <div className="flex items-center gap-0.5 shrink-0">
+                                {(a.role === "coordinator" || a.role === "group_leader" || a.role === "pro") && (
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    className="h-7 w-7"
+                                    title="Direct customers"
+                                    onClick={() => setCustomersFor(a)}
+                                  >
+                                    <ShoppingCart className="h-3.5 w-3.5" />
+                                  </Button>
+                                )}
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7"
+                                  onClick={() => {
+                                    setEditing(a);
+                                    setFormOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-3.5 w-3.5" />
+                                </Button>
+                              </div>
                             )}
                           </div>
                         </div>
@@ -230,6 +245,15 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
           onSuccess={() => {
             fetchAgents(panchayath.id);
           }}
+        />
+      )}
+
+      {canManage && customersFor && (
+        <AgentDirectCustomersDialog
+          open={!!customersFor}
+          onOpenChange={(o) => !o && setCustomersFor(null)}
+          agent={customersFor}
+          callerMobile={callerMobile}
         />
       )}
     </>
