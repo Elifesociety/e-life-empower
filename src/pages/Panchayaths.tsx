@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
+import { PanchayathAgentsDialog } from "@/components/panchayath/PanchayathAgentsDialog";
 
 interface Panchayath {
   id: string;
@@ -86,6 +87,8 @@ export default function Panchayaths() {
   const [search, setSearch] = useState("");
   const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set());
   const [sortBy, setSortBy] = useState<SortKey>("code");
+  const [selected, setSelected] = useState<Panchayath | null>(null);
+
 
   useEffect(() => {
     (async () => {
@@ -282,7 +285,12 @@ export default function Panchayaths() {
             {filtered.map((p) => {
               const counts = metricsMap[p.id] || emptyMetrics();
               return (
-                <Card key={p.id} className="hover:shadow-lg transition-shadow border-l-4 border-l-kerala-green">
+                <Card
+                  key={p.id}
+                  onClick={() => setSelected(p)}
+                  className="cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all border-l-4 border-l-kerala-green"
+                >
+
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-start justify-between gap-2">
                       <div>
