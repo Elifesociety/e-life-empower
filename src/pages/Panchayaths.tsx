@@ -14,6 +14,7 @@ interface Panchayath {
   name_ml: string | null;
   district: string | null;
   state: string | null;
+  code: string | null;
 }
 
 interface RoleCounts {
@@ -51,7 +52,7 @@ export default function Panchayaths() {
   useEffect(() => {
     (async () => {
       const [{ data: pData }, { data: aData }] = await Promise.all([
-        supabase.from("panchayaths").select("id, name, name_ml, district, state").eq("is_active", true).order("name"),
+        supabase.from("panchayaths").select("id, name, name_ml, district, state, code").eq("is_active", true).order("name"),
         supabase.from("pennyekart_agents").select("id, name, mobile, role, panchayath_id, responsible_panchayath_ids").eq("is_active", true),
       ]);
       const map: Record<string, RoleCounts> = {};
@@ -71,10 +72,16 @@ export default function Panchayaths() {
           ids.forEach((pid) => (partners[pid] ||= []).push(a));
         }
       });
+      const sorted = (pData || []).sort((a: any, b: any) => {
+        if (!a.code && !b.code) return 0;
+        if (!a.code) return 1;
+        if (!b.code) return -1;
+        return a.code.localeCompare(b.code);
+      });
       setAgentMap(map);
       setLeadersMap(leaders);
       setPartnersMap(partners);
-      setPanchayaths(pData || []);
+      setPanchayaths(sorted);
       setLoading(false);
     })();
   }, []);
@@ -87,7 +94,8 @@ export default function Panchayaths() {
       (p) =>
         p.name.toLowerCase().includes(q) ||
         p.name_ml?.toLowerCase().includes(q) ||
-        p.district?.toLowerCase().includes(q),
+        p.district?.toLowerCase().includes(q) ||
+        p.code?.toLowerCase().includes(q),
     );
   }, [panchayaths, search]);
 
@@ -141,7 +149,7 @@ export default function Panchayaths() {
           <Input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search panchayath, district…"
+            placeholder="Search panchayath, district, code…"
             className="pl-9"
           />
         </div>
@@ -159,8 +167,13 @@ export default function Panchayaths() {
                   <CardHeader className="pb-2">
                     <CardTitle className="text-base flex items-start justify-between gap-2">
                       <div>
-                        <div className="font-semibold">{p.name}</div>
+                    <div className="font-semibold">{p.name}</div>
                         {p.name_ml && <div className="text-xs text-muted-foreground font-normal">{p.name_ml}</div>}
+                        {p.code && (
+                          <Badge variant="outline" className="mt-1 text-[10px] font-mono">
+                            Code: {p.code}
+                          </Badge>
+                        )}
                       </div>
                       <Badge variant="secondary" className="shrink-0">
                         <Users className="w-3 h-3 mr-1" /> {counts.total}
