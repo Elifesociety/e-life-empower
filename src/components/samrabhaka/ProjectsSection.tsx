@@ -5,7 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Pencil, Trash2, Briefcase, User, Users, Users2, Building2, Handshake, PieChart, Sparkles, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
