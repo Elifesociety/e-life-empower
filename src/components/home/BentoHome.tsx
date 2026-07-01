@@ -24,9 +24,9 @@ export function BentoHome({ afterHero }: { afterHero?: React.ReactNode } = {}) {
   return (
     <section className="relative py-8 md:py-12">
       <div className="container space-y-6 md:space-y-8">
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground min-h-[340px] grid grid-cols-1 lg:grid-cols-6">
-          {/* Hero content */}
-          <div className="relative lg:col-span-4 p-6 md:p-10 flex flex-col justify-between overflow-hidden">
+        <div className="grid grid-cols-1 lg:grid-cols-6 gap-3 md:gap-4">
+          {/* Main Hero */}
+          <div className="lg:col-span-4 relative overflow-hidden rounded-3xl bg-gradient-to-br from-primary via-primary to-accent text-primary-foreground p-6 md:p-10 flex flex-col justify-between min-h-[340px]">
             <div className="absolute -top-16 -right-16 w-72 h-72 rounded-full bg-primary-foreground/10 blur-3xl pointer-events-none" />
             <div className="absolute -bottom-20 -left-10 w-72 h-72 rounded-full bg-accent/30 blur-3xl pointer-events-none" />
             <div className="relative">
@@ -53,10 +53,10 @@ export function BentoHome({ afterHero }: { afterHero?: React.ReactNode } = {}) {
             </div>
           </div>
 
-          {/* Samrambhaka.com agent entry — inset panel on the hero */}
+          {/* Samrambhaka.com agent portal */}
           <Link
             to="/samrambhaka"
-            className="group relative lg:col-span-2 flex flex-col justify-between overflow-hidden p-6 md:p-8 text-white bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 hover:from-pink-600 hover:to-pink-800 transition-all"
+            className="group lg:col-span-2 relative flex flex-col justify-between rounded-3xl overflow-hidden p-6 md:p-8 text-white bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 hover:from-pink-600 hover:to-pink-800 shadow-xl border-4 border-white/20 min-h-[340px] transition-all hover:-translate-y-1"
           >
             <div className="absolute inset-0 opacity-20 pointer-events-none">
               <div className="absolute top-4 right-4 w-32 h-32 bg-white rounded-full blur-3xl" />
@@ -73,7 +73,7 @@ export function BentoHome({ afterHero }: { afterHero?: React.ReactNode } = {}) {
                 Login or register with your agent mobile number.
               </p>
             </div>
-            <div className="relative mt-6">
+            <div className="relative">
               <div className="inline-flex items-center gap-2 bg-white text-pink-700 px-5 py-3 rounded-xl font-semibold shadow-lg group-hover:gap-3 transition-all">
                 <LogIn className="h-4 w-4" />
                 Login / Register
