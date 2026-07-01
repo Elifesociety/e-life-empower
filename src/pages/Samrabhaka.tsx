@@ -311,6 +311,36 @@ function ProfileRow({ icon, label, value }: { icon: React.ReactNode; label: stri
   );
 }
 
+function FeatureTile({
+  icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group relative text-left rounded-xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 via-white to-pink-50 p-5 transition-all hover:shadow-lg hover:border-pink-500 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-pink-400"
+    >
+      <div className="flex items-start gap-3">
+        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 text-white flex items-center justify-center shadow-md">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base text-foreground group-hover:text-pink-700 transition-colors">{title}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-pink-400 group-hover:text-pink-600 group-hover:translate-x-1 transition-all" />
+      </div>
+    </button>
+  );
+}
+
 function formatRole(role: string): string {
   return role
     .split("_")
