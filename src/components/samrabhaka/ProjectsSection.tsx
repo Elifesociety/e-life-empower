@@ -5,9 +5,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Trash2, Briefcase } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Briefcase, User, Users, Users2, Building2, Handshake, PieChart, Sparkles, Check } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qnucqwniloioxsowdqzj.supabase.co";
@@ -236,37 +237,60 @@ export function ProjectsSection({ token }: { token: string }) {
             </div>
             <div className="space-y-2">
               <Label>Model</Label>
-              <Select value={form.model} onValueChange={(v) => setForm((f) => ({ ...f, model: v as typeof form.model }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="individual">Individual</SelectItem>
-                  <SelectItem value="partnership">Partnership</SelectItem>
-                  <SelectItem value="group">Group</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { v: "individual", label: "Individual", icon: User },
+                  { v: "partnership", label: "Partnership", icon: Handshake },
+                  { v: "group", label: "Group", icon: Users2 },
+                ].map((o) => (
+                  <ChoiceCard
+                    key={o.v}
+                    active={form.model === o.v}
+                    onClick={() => setForm((f) => ({ ...f, model: o.v as typeof form.model }))}
+                    icon={<o.icon className="h-5 w-5" />}
+                    label={o.label}
+                  />
+                ))}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Entity</Label>
-              <Select value={form.entity} onValueChange={(v) => setForm((f) => ({ ...f, entity: v as typeof form.entity }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="own_company">Own Company</SelectItem>
-                  <SelectItem value="elife_affiliated">Affiliated with e-Life</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  { v: "own_company", label: "Own Company", icon: Building2 },
+                  { v: "elife_affiliated", label: "Affiliated with e-Life", icon: Users },
+                ].map((o) => (
+                  <ChoiceCard
+                    key={o.v}
+                    active={form.entity === o.v}
+                    onClick={() => setForm((f) => ({ ...f, entity: o.v as typeof form.entity }))}
+                    icon={<o.icon className="h-5 w-5" />}
+                    label={o.label}
+                  />
+                ))}
+              </div>
             </div>
             <div className="space-y-2">
               <Label>Budget Plan</Label>
-              <Select value={form.budget_plan} onValueChange={(v) => setForm((f) => ({ ...f, budget_plan: v as typeof form.budget_plan }))}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="own_100">a. Own 100% : e-Life 0%</SelectItem>
-                  <SelectItem value="80_20">b. Own 80% : e-Life 20%</SelectItem>
-                  <SelectItem value="50_50">c. Own 50% : e-Life 50%</SelectItem>
-                  <SelectItem value="20_80">d. Own 20% : e-Life 80%</SelectItem>
-                  <SelectItem value="samrambhini">e. സംരംഭിനി (Special — 0 investment)</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                {[
+                  { v: "own_100", label: "Own 100% : e-Life 0%", sub: "Full self-funded" },
+                  { v: "80_20", label: "Own 80% : e-Life 20%", sub: "Majority self" },
+                  { v: "50_50", label: "Own 50% : e-Life 50%", sub: "Equal partnership" },
+                  { v: "20_80", label: "Own 20% : e-Life 80%", sub: "e-Life majority" },
+                  { v: "samrambhini", label: "സംരംഭിനി", sub: "Special — 0 investment", special: true },
+                ].map((o) => (
+                  <ChoiceCard
+                    key={o.v}
+                    active={form.budget_plan === o.v}
+                    onClick={() => setForm((f) => ({ ...f, budget_plan: o.v as typeof form.budget_plan }))}
+                    icon={o.special ? <Sparkles className="h-5 w-5" /> : <PieChart className="h-5 w-5" />}
+                    label={o.label}
+                    sub={o.sub}
+                    special={o.special}
+                  />
+                ))}
+              </div>
             </div>
             <DialogFooter>
               <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
@@ -279,5 +303,46 @@ export function ProjectsSection({ token }: { token: string }) {
         </DialogContent>
       </Dialog>
     </Card>
+  );
+}
+
+function ChoiceCard({
+  active,
+  onClick,
+  icon,
+  label,
+  sub,
+  special,
+}: {
+  active: boolean;
+  onClick: () => void;
+  icon: React.ReactNode;
+  label: string;
+  sub?: string;
+  special?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "relative text-left rounded-lg border-2 p-3 transition-all hover:shadow-md focus:outline-none focus:ring-2 focus:ring-pink-400",
+        active
+          ? "border-pink-600 bg-gradient-to-br from-pink-100 to-pink-50 shadow-sm"
+          : "border-border bg-card hover:border-pink-300",
+        special && !active && "border-dashed border-pink-300 bg-pink-50/40",
+      )}
+    >
+      {active && (
+        <span className="absolute top-2 right-2 h-5 w-5 rounded-full bg-pink-600 text-white flex items-center justify-center">
+          <Check className="h-3 w-3" />
+        </span>
+      )}
+      <div className={cn("flex items-center gap-2", active ? "text-pink-700" : "text-foreground")}>
+        {icon}
+        <span className="font-medium text-sm">{label}</span>
+      </div>
+      {sub && <p className="text-xs text-muted-foreground mt-1">{sub}</p>}
+    </button>
   );
 }
