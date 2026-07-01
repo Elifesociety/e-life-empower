@@ -6,9 +6,10 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSamrabhakaAuth } from "@/hooks/useSamrabhakaAuth";
 import { toast } from "sonner";
-import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight } from "lucide-react";
+import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight, ChevronDown } from "lucide-react";
 import { ProjectsSection } from "@/components/samrabhaka/ProjectsSection";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 
 type Step = "mobile" | "register" | "login";
 
