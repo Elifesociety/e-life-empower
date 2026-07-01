@@ -1,53 +1,71 @@
-## Goal
-Let Coordinators, Group Leaders, and PROs maintain a list of their direct customers (name, mobile, ward, address). Manageable from the admin agent panel and via agent self-service on the home page.
+## Overview
 
-## Database
-New table `public.agent_direct_customers`:
-- `agent_id` (FK → pennyekart_agents, cascade delete)
-- `name`, `mobile`, `ward`, `address`, `notes`
-- Unique on `(agent_id, mobile)` to prevent duplicates
-- Index on `agent_id`
+Add a new agent-only portal at route `/samrambhaka` (branded "സംരംഭക.കോം"). Any active agent in `pennyekart_agents` (all roles) can register by verifying their mobile number and setting a password; they then log in with mobile + password to see a simple welcome + profile page. Entry point is a bright pink vertical card placed to the right of the hero on the home page.
 
-RLS + grants:
-- Public SELECT (anon + authenticated) — same pattern as pennyekart_agents
-- INSERT/UPDATE/DELETE denied from client; all writes go through edge function with service role
+## 1. Database — new `agent_auth` table
 
-`pennyekart_agents.customer_count` stays untouched (existing manual field).
+Migration creating a separate credentials table:
 
-## Edge function — extend `pennyekart-agents`
-Reuse existing auth (admin token OR `x-caller-mobile` header). New actions:
-- `list_customers { agent_id }` — anyone
-- `add_customer { agent_id, customer }` — admin OR caller mobile matches agent. Role must be coordinator/group_leader/pro.
-- `update_customer { id, customer }` — same auth
-- `delete_customer { id }` — same auth
+- `agent_auth`
+  - `agent_id` → FK to `pennyekart_agents.id` (unique, on delete cascade)
+  - `mobile` (unique, indexed) — snapshot for fast login lookup
+  - `password_hash` (bcrypt)
+  - `last_login_at`
+  - standard `id`, `created_at`, `updated_at`
 
-Zod validation: name 1–100, mobile 10 digits, ward ≤ 50, address ≤ 300.
+GRANTs: `service_role` full access; no `anon`/`authenticated` grants (all access goes through the edge function). RLS enabled with service-role-only policy. Password hash never leaves the edge function.
 
-## Admin UI
-In `AgentDetailsPanel.tsx`, when selected agent's role is coordinator/group_leader/pro, add a "Direct Customers" section:
-- Count + scrollable list
-- "Add Customer" button → opens `DirectCustomerFormDialog`
-- Per-row edit/delete
+## 2. Edge function — `samrabhaka-auth`
 
-New files:
-- `src/components/pennyekart/DirectCustomerFormDialog.tsx` (form with zod)
-- `src/hooks/useAgentDirectCustomers.ts` (list/create/update/delete via edge function)
+New Deno function with actions:
 
-## Self-service UI — home page
-New component `src/components/home/AgentDirectCustomersSection.tsx`, mounted in `Index.tsx` below `CheckStatusSection`. Reuses the agent mobile-login pattern from `AgentWorkLog.tsx`:
-- Agent enters mobile → if matched agent role ∈ {coordinator, group_leader, pro} show their customers + add/edit/delete
-- Otherwise show "Not available for your role"
-- Uses `x-caller-mobile` header on the edge function
+- `check_mobile` → given mobile, returns `{ exists: true, has_password: bool, name, role }` if the mobile matches an active agent; `{ exists: false }` otherwise. Drives the register-vs-login flow.
+- `register` → mobile + new password. Validates agent exists & active, no existing row in `agent_auth`, hashes with bcrypt, inserts row, returns session token.
+- `login` → mobile + password. Verifies hash, updates `last_login_at`, returns session token.
+- `me` → validates token, returns agent profile (name, mobile, role, panchayath name, ward).
+- `change_password` → old + new password (for logged-in users; optional but small).
+
+Session token: signed JWT-style string (same pattern as existing `admin-auth`), stored in `localStorage` under `samrabhaka_token`. Uses existing `LOVABLE_API_KEY`/`SUPABASE_SERVICE_ROLE_KEY` env; no new secrets required.
+
+Validation with Zod, CORS headers, rate-limit-friendly error messages.
+
+## 3. Frontend
+
+### Hero entry card
+Update `src/components/home/HeroSection.tsx`: change layout so the existing hero content sits in a 2-column grid on `lg:`, with a right-side vertical pink card matching the uploaded reference:
+
+- Hot pink gradient panel, rounded, full-height of hero
+- Malayalam heading "സംരംഭക.കോം" top, white text
+- "Login / Register" button bottom
+- Links to `/samrambhaka`
+- On mobile it stacks below the hero content
+
+### New page `src/pages/Samrabhaka.tsx` + route in `App.tsx`
+
+Single page with three states driven by local component state:
+
+1. **Mobile step** — input mobile, calls `check_mobile`.
+2. **Register step** (if `has_password === false`) — shows agent name/role for confirmation, password + confirm password inputs, calls `register`.
+3. **Login step** (if `has_password === true`) — password input, calls `login`.
+4. **Dashboard** (after token) — welcome card with name, mobile, role, panchayath, ward, and Logout button. Uses existing `Layout` and design tokens (no hardcoded colors in the dashboard portion; the pink card is intentional per user's screenshot).
+
+### Auth hook
+Small `useSamrabhakaAuth` hook wrapping token in `localStorage` and `me` fetch on mount.
+
+## Technical notes
+
+- Password rules: min 6 chars, confirm-match, client + server Zod validation.
+- Mobile normalized to digits only server-side; unique index on `agent_auth.mobile` prevents duplicates.
+- Bcrypt via `npm:bcryptjs` inside the edge function.
+- Token signed with `LOVABLE_API_KEY` (already available) — same approach as `admin-auth`; 30-day expiry.
+- No changes to existing auth (`useAuth`) — this is a separate lightweight session for the public agent portal.
+- `pennyekart_agents.is_active = true` is required to register or login.
 
 ## Files touched
-- New migration (table + grants + RLS)
-- `supabase/functions/pennyekart-agents/index.ts` — 4 new actions
-- `src/hooks/useAgentDirectCustomers.ts` — new
-- `src/components/pennyekart/DirectCustomerFormDialog.tsx` — new
-- `src/components/pennyekart/AgentDetailsPanel.tsx` — add section
-- `src/components/home/AgentDirectCustomersSection.tsx` — new
-- `src/pages/Index.tsx` — mount new section
 
-## Out of scope
-- No change to `customer_count` field or any rollup logic
-- No bulk import (can be added later)
+- `supabase/migrations/*` (new — via migration tool): `agent_auth` table + grants + RLS + updated_at trigger
+- `supabase/functions/samrabhaka-auth/index.ts` (new)
+- `src/components/home/HeroSection.tsx` (add right-side pink card, 2-col layout)
+- `src/pages/Samrabhaka.tsx` (new)
+- `src/hooks/useSamrabhakaAuth.ts` (new)
+- `src/App.tsx` (register `/samrambhaka` route)
