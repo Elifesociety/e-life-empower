@@ -79,3 +79,4 @@ Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/c
 29/06/26 elife
 01/07/26 agents
 07/06/26 elife
+01/06/26 anas mon kk
