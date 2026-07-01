@@ -73,6 +73,44 @@ export type Database = {
           },
         ]
       }
+      agent_auth: {
+        Row: {
+          agent_id: string
+          created_at: string
+          id: string
+          last_login_at: string | null
+          mobile: string
+          password_hash: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string
+          id?: string
+          last_login_at?: string | null
+          mobile: string
+          password_hash: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string
+          id?: string
+          last_login_at?: string | null
+          mobile?: string
+          password_hash?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_auth_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: true
+            referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_complaints: {
         Row: {
           admin_remarks: string | null
