@@ -36,6 +36,7 @@ import WhatsAppCommands from "./pages/admin/WhatsAppCommands";
 import DepartmentsManagement from "./pages/admin/DepartmentsManagement";
 import RegisterAgent from "./pages/RegisterAgent";
 import Panchayaths from "./pages/Panchayaths";
+import Samrabhaka from "./pages/Samrabhaka";
 import { MobileGate } from "./components/MobileGate";
 
 const queryClient = new QueryClient();
@@ -61,6 +62,8 @@ const App = () => (
             <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="/register-agent" element={<RegisterAgent />} />
             <Route path="/panchayaths" element={<Panchayaths />} />
+            <Route path="/samrambhaka" element={<Samrabhaka />} />
+            <Route path="/samrabhaka" element={<Samrabhaka />} />
 
             {/* Protected routes - Dashboard redirect */}
             <Route
