@@ -6,8 +6,9 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSamrabhakaAuth } from "@/hooks/useSamrabhakaAuth";
 import { toast } from "sonner";
-import { Loader2, LogOut, User, Phone, MapPin, Shield } from "lucide-react";
+import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight } from "lucide-react";
 import { ProjectsSection } from "@/components/samrabhaka/ProjectsSection";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type Step = "mobile" | "register" | "login";
 
@@ -18,6 +19,7 @@ export default function Samrabhaka() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [openFeature, setOpenFeature] = useState<"tasks" | "projects" | null>(null);
   const [pending, setPending] = useState(false);
   const [agentPreview, setAgentPreview] = useState<{ name: string; role: string } | null>(null);
 
@@ -121,9 +123,46 @@ export default function Samrabhaka() {
             </CardContent>
           </Card>
 
-          <div className="mt-6">
-            <ProjectsSection token={token} />
+          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <FeatureTile
+              icon={<ListChecks className="h-6 w-6" />}
+              title="Your Tasks"
+              description="View and manage your assigned tasks"
+              onClick={() => setOpenFeature("tasks")}
+            />
+            <FeatureTile
+              icon={<Briefcase className="h-6 w-6" />}
+              title="My Projects"
+              description="Your entrepreneurship projects"
+              onClick={() => setOpenFeature("projects")}
+            />
           </div>
+
+          <Dialog open={openFeature === "projects"} onOpenChange={(o) => !o && setOpenFeature(null)}>
+            <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <Briefcase className="h-5 w-5 text-pink-600" /> My Projects
+                </DialogTitle>
+                <DialogDescription>Your entrepreneurship projects</DialogDescription>
+              </DialogHeader>
+              <ProjectsSection token={token} />
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={openFeature === "tasks"} onOpenChange={(o) => !o && setOpenFeature(null)}>
+            <DialogContent className="max-w-3xl">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <ListChecks className="h-5 w-5 text-pink-600" /> Your Tasks
+                </DialogTitle>
+                <DialogDescription>Tasks assigned to you</DialogDescription>
+              </DialogHeader>
+              <div className="py-10 text-center text-sm text-muted-foreground">
+                No tasks assigned yet. Check back soon.
+              </div>
+            </DialogContent>
+          </Dialog>
         </div>
       </Layout>
     );
@@ -269,6 +308,36 @@ function ProfileRow({ icon, label, value }: { icon: React.ReactNode; label: stri
         <p className="font-medium">{value}</p>
       </div>
     </div>
+  );
+}
+
+function FeatureTile({
+  icon,
+  title,
+  description,
+  onClick,
+}: {
+  icon: React.ReactNode;
+  title: string;
+  description: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className="group relative text-left rounded-xl border-2 border-pink-200 bg-gradient-to-br from-pink-50 via-white to-pink-50 p-5 transition-all hover:shadow-lg hover:border-pink-500 hover:-translate-y-0.5 focus:outline-none focus:ring-2 focus:ring-pink-400"
+    >
+      <div className="flex items-start gap-3">
+        <div className="h-12 w-12 rounded-lg bg-gradient-to-br from-pink-500 to-pink-700 text-white flex items-center justify-center shadow-md">
+          {icon}
+        </div>
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-base text-foreground group-hover:text-pink-700 transition-colors">{title}</h3>
+          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+        </div>
+        <ChevronRight className="h-5 w-5 text-pink-400 group-hover:text-pink-600 group-hover:translate-x-1 transition-all" />
+      </div>
+    </button>
   );
 }
 
