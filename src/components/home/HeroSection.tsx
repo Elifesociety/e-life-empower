@@ -1,4 +1,4 @@
-import { ArrowRight, Users, Heart, Sprout, Sparkles } from "lucide-react";
+import { ArrowRight, Users, Heart, Sprout, Sparkles, LogIn } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 
@@ -19,7 +19,8 @@ export function HeroSection() {
       <div className="absolute bottom-32 right-[35%] w-4 h-4 bg-primary/30 rounded-full animate-bounce" style={{ animationDelay: '0.8s' }} />
       
       <div className="container relative">
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="grid lg:grid-cols-[1fr_auto] gap-8 items-stretch max-w-6xl mx-auto">
+         <div className="text-center lg:text-left">
           {/* Badge */}
           <div className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-gradient-to-r from-primary/15 to-accent/15 border border-primary/20 text-primary text-sm font-medium mb-8 shadow-sm">
             <Sparkles className="h-4 w-4" />
@@ -43,7 +44,7 @@ export function HeroSection() {
           </p>
           
           {/* CTA Buttons */}
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-16">
+          <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start mb-16">
             <Button asChild size="lg" className="gap-2 shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 transition-all">
               <Link to="/programs">
                 View Programs
@@ -89,6 +90,36 @@ export function HeroSection() {
               <p className="text-sm text-muted-foreground">Wide Reach</p>
             </div>
           </div>
+         </div>
+
+         {/* Samrabhaka.com vertical entry card */}
+         <Link
+           to="/samrambhaka"
+           className="group relative flex flex-col justify-between rounded-3xl overflow-hidden shadow-2xl border-4 border-white/30 min-h-[420px] lg:min-h-full lg:w-72 p-8 text-white bg-gradient-to-br from-pink-500 via-pink-600 to-pink-700 hover:from-pink-600 hover:to-pink-800 transition-all hover:-translate-y-1"
+         >
+           <div className="absolute inset-0 opacity-20 pointer-events-none">
+             <div className="absolute top-4 right-4 w-32 h-32 bg-white rounded-full blur-3xl" />
+             <div className="absolute bottom-8 left-4 w-40 h-40 bg-yellow-300 rounded-full blur-3xl" />
+           </div>
+           <div className="relative">
+             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 backdrop-blur-sm text-xs font-medium mb-6">
+               <Sparkles className="h-3 w-3" /> Agent Portal
+             </div>
+             <h3 className="font-display text-3xl md:text-4xl font-bold leading-tight drop-shadow-sm">
+               സംരംഭക.<br />കോം
+             </h3>
+             <p className="mt-3 text-white/90 text-sm">
+               Login or register with your agent mobile number.
+             </p>
+           </div>
+           <div className="relative">
+             <div className="inline-flex items-center gap-2 bg-white text-pink-700 px-5 py-3 rounded-xl font-semibold shadow-lg group-hover:gap-3 transition-all">
+               <LogIn className="h-4 w-4" />
+               Login / Register
+               <ArrowRight className="h-4 w-4" />
+             </div>
+           </div>
+         </Link>
         </div>
       </div>
     </section>
