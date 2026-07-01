@@ -19,6 +19,7 @@ export default function Samrabhaka() {
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [openFeature, setOpenFeature] = useState<"tasks" | "projects" | null>(null);
   const [pending, setPending] = useState(false);
   const [agentPreview, setAgentPreview] = useState<{ name: string; role: string } | null>(null);
 
