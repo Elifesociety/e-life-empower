@@ -87,43 +87,52 @@ export default function Samrabhaka() {
     return (
       <Layout>
         <div className="container max-w-3xl py-10">
-          <div className="mb-8 text-center">
-            <h1 className="font-display text-4xl font-bold bg-gradient-to-r from-pink-500 to-pink-700 bg-clip-text text-transparent">
-              സംരംഭക.കോം
-            </h1>
-            <p className="text-muted-foreground mt-2">Welcome back, {agent.name}</p>
+          <div className="mb-8 flex items-start justify-between gap-4">
+            <div className="text-left">
+              <h1 className="font-display text-4xl font-bold bg-gradient-to-r from-pink-500 to-pink-700 bg-clip-text text-transparent">
+                സംരംഭക.കോം
+              </h1>
+              <p className="text-muted-foreground mt-2">Welcome back, {agent.name}</p>
+            </div>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2 border-pink-300 hover:bg-pink-50">
+                  <User className="h-4 w-4 text-pink-600" />
+                  <span className="hidden sm:inline">Profile</span>
+                  <ChevronDown className="h-4 w-4 text-pink-600" />
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent align="end" className="w-80 p-0 border-2">
+                <div className="p-4 border-b bg-gradient-to-br from-pink-50 to-transparent">
+                  <div className="flex items-center gap-2 font-semibold">
+                    <User className="h-5 w-5 text-pink-600" /> Your Profile
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">Agent information from Pennyekart hierarchy</p>
+                </div>
+                <div className="p-4 space-y-1">
+                  <ProfileRow icon={<User className="h-4 w-4" />} label="Name" value={agent.name} />
+                  <ProfileRow icon={<Phone className="h-4 w-4" />} label="Mobile" value={agent.mobile} />
+                  <ProfileRow icon={<Shield className="h-4 w-4" />} label="Role" value={formatRole(agent.role)} />
+                  {agent.panchayaths?.name && (
+                    <ProfileRow
+                      icon={<MapPin className="h-4 w-4" />}
+                      label="Panchayath"
+                      value={`${agent.panchayaths.name}${agent.panchayaths.district ? " · " + agent.panchayaths.district : ""}`}
+                    />
+                  )}
+                  {agent.ward && <ProfileRow icon={<MapPin className="h-4 w-4" />} label="Ward" value={agent.ward} />}
+                  <div className="pt-3">
+                    <Button variant="outline" onClick={logout} className="gap-2 w-full">
+                      <LogOut className="h-4 w-4" /> Logout
+                    </Button>
+                  </div>
+                </div>
+              </PopoverContent>
+            </Popover>
           </div>
 
-          <Card className="border-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <User className="h-5 w-5 text-primary" />
-                Your Profile
-              </CardTitle>
-              <CardDescription>Agent information from Pennyekart hierarchy</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <ProfileRow icon={<User className="h-4 w-4" />} label="Name" value={agent.name} />
-              <ProfileRow icon={<Phone className="h-4 w-4" />} label="Mobile" value={agent.mobile} />
-              <ProfileRow icon={<Shield className="h-4 w-4" />} label="Role" value={formatRole(agent.role)} />
-              {agent.panchayaths?.name && (
-                <ProfileRow
-                  icon={<MapPin className="h-4 w-4" />}
-                  label="Panchayath"
-                  value={`${agent.panchayaths.name}${agent.panchayaths.district ? " · " + agent.panchayaths.district : ""}`}
-                />
-              )}
-              {agent.ward && <ProfileRow icon={<MapPin className="h-4 w-4" />} label="Ward" value={agent.ward} />}
-
-              <div className="pt-4 border-t">
-                <Button variant="outline" onClick={logout} className="gap-2">
-                  <LogOut className="h-4 w-4" /> Logout
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-
-          <div className="mt-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <FeatureTile
               icon={<ListChecks className="h-6 w-6" />}
               title="Your Tasks"
