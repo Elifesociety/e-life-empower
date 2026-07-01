@@ -203,6 +203,120 @@ serve(async (req) => {
       return json({ success: true });
     }
 
+    // ---- auth helper for project actions ----
+    const requireAuth = async () => {
+      const token = req.headers.get("x-samrabhaka-token") || body.token;
+      if (!token) return { error: json({ error: "Unauthorized" }, 401) };
+      const payload = await verifyToken(token, secret);
+      if (!payload) return { error: json({ error: "Invalid or expired token" }, 401) };
+      return { agent_id: payload.agent_id as string };
+    };
+
+    const BUDGET_SHARES: Record<string, { own: number; elife: number }> = {
+      own_100: { own: 100, elife: 0 },
+      "80_20": { own: 80, elife: 20 },
+      "50_50": { own: 50, elife: 50 },
+      "20_80": { own: 20, elife: 80 },
+      samrambhini: { own: 0, elife: 0 },
+    };
+
+    // ---- list_projects ----
+    if (action === "list_projects") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const { data, error } = await supabase
+        .from("agent_projects")
+        .select("*")
+        .eq("agent_id", auth.agent_id)
+        .order("created_at", { ascending: false });
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, projects: data || [] });
+    }
+
+    // ---- create_project ----
+    if (action === "create_project") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const p = body.project || {};
+      if (!p.project_name || !p.model || !p.entity || !p.budget_plan) {
+        return json({ error: "project_name, model, entity and budget_plan are required" }, 400);
+      }
+      if (!["individual", "partnership", "group"].includes(p.model)) return json({ error: "Invalid model" }, 400);
+      if (!["own_company", "elife_affiliated"].includes(p.entity)) return json({ error: "Invalid entity" }, 400);
+      const shares = BUDGET_SHARES[p.budget_plan];
+      if (!shares) return json({ error: "Invalid budget_plan" }, 400);
+
+      const { data, error } = await supabase
+        .from("agent_projects")
+        .insert({
+          agent_id: auth.agent_id,
+          project_name: String(p.project_name).slice(0, 200),
+          plan_description: p.plan_description || null,
+          model: p.model,
+          entity: p.entity,
+          budget_plan: p.budget_plan,
+          own_share: shares.own,
+          elife_share: shares.elife,
+        })
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, project: data });
+    }
+
+    // ---- update_project ----
+    if (action === "update_project") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      const p = body.project || {};
+      if (!id) return json({ error: "id required" }, 400);
+
+      const patch: Record<string, unknown> = {};
+      if (p.project_name !== undefined) patch.project_name = String(p.project_name).slice(0, 200);
+      if (p.plan_description !== undefined) patch.plan_description = p.plan_description || null;
+      if (p.model !== undefined) {
+        if (!["individual", "partnership", "group"].includes(p.model)) return json({ error: "Invalid model" }, 400);
+        patch.model = p.model;
+      }
+      if (p.entity !== undefined) {
+        if (!["own_company", "elife_affiliated"].includes(p.entity)) return json({ error: "Invalid entity" }, 400);
+        patch.entity = p.entity;
+      }
+      if (p.budget_plan !== undefined) {
+        const shares = BUDGET_SHARES[p.budget_plan];
+        if (!shares) return json({ error: "Invalid budget_plan" }, 400);
+        patch.budget_plan = p.budget_plan;
+        patch.own_share = shares.own;
+        patch.elife_share = shares.elife;
+      }
+
+      const { data, error } = await supabase
+        .from("agent_projects")
+        .update(patch)
+        .eq("id", id)
+        .eq("agent_id", auth.agent_id)
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, project: data });
+    }
+
+    // ---- delete_project ----
+    if (action === "delete_project") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      if (!id) return json({ error: "id required" }, 400);
+      const { error } = await supabase
+        .from("agent_projects")
+        .delete()
+        .eq("id", id)
+        .eq("agent_id", auth.agent_id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
     return json({ error: "Invalid action" }, 400);
   } catch (e) {
     console.error("samrabhaka-auth error:", e);

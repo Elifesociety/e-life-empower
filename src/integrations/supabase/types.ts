@@ -196,6 +196,59 @@ export type Database = {
           },
         ]
       }
+      agent_projects: {
+        Row: {
+          agent_id: string
+          budget_plan: string
+          created_at: string
+          elife_share: number
+          entity: string
+          id: string
+          model: string
+          own_share: number
+          plan_description: string | null
+          project_name: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agent_id: string
+          budget_plan: string
+          created_at?: string
+          elife_share?: number
+          entity: string
+          id?: string
+          model: string
+          own_share?: number
+          plan_description?: string | null
+          project_name: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agent_id?: string
+          budget_plan?: string
+          created_at?: string
+          elife_share?: number
+          entity?: string
+          id?: string
+          model?: string
+          own_share?: number
+          plan_description?: string | null
+          project_name?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_projects_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_wallet_transactions: {
         Row: {
           agent_id: string
