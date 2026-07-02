@@ -730,6 +730,30 @@ export type Database = {
         }
         Relationships: []
       }
+      districts: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          name: string
+          state: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name: string
+          state: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          name?: string
+          state?: string
+        }
+        Relationships: []
+      }
       divisions: {
         Row: {
           color: string | null
