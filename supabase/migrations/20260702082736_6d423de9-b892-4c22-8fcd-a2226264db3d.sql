@@ -1,0 +1,3 @@
+CREATE POLICY "Admins manage districts insert" ON public.districts FOR INSERT TO authenticated WITH CHECK (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins manage districts update" ON public.districts FOR UPDATE TO authenticated USING (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'admin')) WITH CHECK (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'admin'));
+CREATE POLICY "Admins manage districts delete" ON public.districts FOR DELETE TO authenticated USING (public.has_role(auth.uid(), 'super_admin') OR public.has_role(auth.uid(), 'admin'));
