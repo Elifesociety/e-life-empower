@@ -178,10 +178,68 @@ export default function LocationsManagement() {
     setClusters(data || []);
   };
 
+  const fetchDistricts = async () => {
+    // Districts are publicly readable; use direct client to avoid needing admin token
+    const { data, error } = await supabase
+      .from("districts")
+      .select("*")
+      .order("state")
+      .order("name");
+
+    if (error) {
+      console.error("Error fetching districts:", error);
+      return;
+    }
+    setDistricts(data || []);
+  };
+
+  const handleCreateDistrict = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const stateVal = newDistrictState.trim();
+      const nameVal = newDistrictName.trim();
+      if (!stateVal || !nameVal) throw new Error("State and district name are required");
+
+      if (adminToken) {
+        const response = await supabase.functions.invoke(
+          "admin-locations?resource=districts&action=create",
+          {
+            headers: { "x-admin-token": adminToken },
+            body: { state: stateVal, name: nameVal },
+            method: "POST",
+          }
+        );
+        if (response.error) throw new Error(response.error.message);
+      } else {
+        const { error: insertError } = await supabase
+          .from("districts")
+          .insert({ state: stateVal, name: nameVal });
+        if (insertError) throw insertError;
+      }
+
+      toast({ title: "District added", description: `${nameVal}, ${stateVal}` });
+      setNewDistrictName("");
+      setIsDistrictDialogOpen(false);
+      await fetchDistricts();
+      // Auto-select the newly created district in the panchayath form
+      setPanchayathState(stateVal);
+      setPanchayathDistrict(nameVal);
+    } catch (err: any) {
+      const msg = err?.message || "Failed to add district";
+      setError(msg);
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchPanchayaths(), fetchClusters()]);
+      await Promise.all([fetchPanchayaths(), fetchClusters(), fetchDistricts()]);
       setIsLoading(false);
     };
     loadData();
