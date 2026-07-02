@@ -367,7 +367,7 @@ export default function LocationsManagement() {
   const resetPanchayathForm = () => {
     setPanchayathName("");
     setPanchayathNameMl("");
-    setPanchayathDistrict("");
+    setPanchayathDistrict("Malappuram");
     setPanchayathWard("");
     setPanchayathState("Kerala");
     setPanchayathCode("");
