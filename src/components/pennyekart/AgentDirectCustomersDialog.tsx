@@ -118,8 +118,8 @@ export function AgentDirectCustomersDialog({ open, onOpenChange, agent, callerMo
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-2xl max-h-[85vh] overflow-hidden flex flex-col">
-          <DialogHeader>
+        <DialogContent className="max-w-2xl h-[90vh] sm:h-[85vh] p-0 flex flex-col gap-0">
+          <DialogHeader className="px-5 pt-5 pb-3 border-b">
             <DialogTitle className="flex items-center gap-2">
               Direct Customers
               <Badge variant="secondary">{customers.length}</Badge>
@@ -129,7 +129,7 @@ export function AgentDirectCustomersDialog({ open, onOpenChange, agent, callerMo
             </p>
           </DialogHeader>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 px-5 py-3 border-b bg-muted/30">
             <div className="relative flex-1">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
               <Input
@@ -151,7 +151,7 @@ export function AgentDirectCustomersDialog({ open, onOpenChange, agent, callerMo
             </Button>
           </div>
 
-          <div className="flex-1 overflow-y-auto -mx-1 px-1">
+          <div className="flex-1 overflow-y-auto px-5 py-4">
             {isLoading ? (
               <div className="flex items-center justify-center py-10">
                 <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -165,7 +165,7 @@ export function AgentDirectCustomersDialog({ open, onOpenChange, agent, callerMo
             ) : (
               <div className="space-y-4">
                 <div>
-                  <div className="flex items-center gap-2 mb-2 sticky top-0 bg-background/95 backdrop-blur py-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Local ({agent.panchayath?.name || "Agent's Panchayath"})
                     </h4>
@@ -178,7 +178,7 @@ export function AgentDirectCustomersDialog({ open, onOpenChange, agent, callerMo
                   )}
                 </div>
                 <div>
-                  <div className="flex items-center gap-2 mb-2 sticky top-0 bg-background/95 backdrop-blur py-1">
+                  <div className="flex items-center gap-2 mb-2">
                     <h4 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                       Outside Location
                     </h4>
