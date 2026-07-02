@@ -737,6 +737,129 @@ export default function LocationsManagement() {
             </div>
           </TabsContent>
 
+          {/* Districts Tab */}
+          <TabsContent value="districts">
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={() => {
+                  setNewDistrictState("Kerala");
+                  setNewDistrictName("");
+                  setIsDistrictDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add District
+              </Button>
+            </div>
+
+            <div className="rounded-lg border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>State</TableHead>
+                    <TableHead>District</TableHead>
+                    <TableHead>Panchayaths</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {districts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No districts found. Add your first district to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    districts.map((d) => {
+                      const count = panchayaths.filter(
+                        (p) => p.state === d.state && p.district === d.name
+                      ).length;
+                      return (
+                        <TableRow key={d.id}>
+                          <TableCell className="font-medium">{d.state}</TableCell>
+                          <TableCell>{d.name}</TableCell>
+                          <TableCell>{count}</TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                d.is_active !== false
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {d.is_active !== false ? "Active" : "Inactive"}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <Dialog open={isDistrictDialogOpen} onOpenChange={setIsDistrictDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New District</DialogTitle>
+                  <DialogDescription>
+                    Add a district under a state. It will become available when creating panchayaths.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateDistrict} className="space-y-4">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="newDistrictState">State</Label>
+                    <Input
+                      id="newDistrictState"
+                      value={newDistrictState}
+                      onChange={(e) => setNewDistrictState(e.target.value)}
+                      placeholder="e.g., Kerala"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="newDistrictName">District Name</Label>
+                    <Input
+                      id="newDistrictName"
+                      value={newDistrictName}
+                      onChange={(e) => setNewDistrictName(e.target.value)}
+                      placeholder="e.g., Malappuram"
+                      required
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDistrictDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        "Add District"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
+          </TabsContent>
+
           {/* Clusters Tab */}
           <TabsContent value="clusters">
             <div className="flex justify-end mb-4">
