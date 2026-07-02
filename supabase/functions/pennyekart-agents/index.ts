@@ -181,8 +181,8 @@ serve(async (req) => {
       }
       admin = result.admin;
       isSuperAdmin = !!result.isSuperAdmin;
-    } else if (callerMobile && isDirectCustomerAction) {
-      // Direct-customer self-service: validated inside the action handler.
+    } else if (isDirectCustomerAction) {
+      // Direct-customer actions: list_customers is public read; mutations validated inside the action handler.
     } else if (callerMobile) {
       caller = await getCallerAgent(callerMobile.replace(/\D/g, ""));
       if (!caller) {
