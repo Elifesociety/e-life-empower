@@ -85,6 +85,12 @@ export default function LocationsManagement() {
   const [error, setError] = useState("");
   const [editingPanchayath, setEditingPanchayath] = useState<Panchayath | null>(null);
 
+  // Panchayath filters
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterState, setFilterState] = useState<string>("all");
+  const [filterDistrict, setFilterDistrict] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
   // Panchayath form state
   const [panchayathName, setPanchayathName] = useState("");
   const [panchayathNameMl, setPanchayathNameMl] = useState("");
@@ -667,6 +673,70 @@ export default function LocationsManagement() {
               </Dialog>
             </div>
 
+
+            {/* Filters */}
+            {(() => {
+              const filteredPanchayaths = panchayaths.filter((p) => {
+                const q = filterSearch.trim().toLowerCase();
+                if (q && !(
+                  (p.name || "").toLowerCase().includes(q) ||
+                  (p.name_ml || "").toLowerCase().includes(q) ||
+                  (p.code || "").toLowerCase().includes(q)
+                )) return false;
+                if (filterState !== "all" && (p.state || "Kerala") !== filterState) return false;
+                if (filterDistrict !== "all" && (p.district || "") !== filterDistrict) return false;
+                if (filterStatus === "active" && !p.is_active) return false;
+                if (filterStatus === "inactive" && p.is_active) return false;
+                return true;
+              });
+              const stateOptions = Array.from(new Set(panchayaths.map((p) => p.state || "Kerala")));
+              const districtOptions = Array.from(
+                new Set(
+                  panchayaths
+                    .filter((p) => filterState === "all" || (p.state || "Kerala") === filterState)
+                    .map((p) => p.district || "")
+                    .filter(Boolean)
+                )
+              );
+              return (
+                <>
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <Input
+                      placeholder="Search name / code..."
+                      value={filterSearch}
+                      onChange={(e) => setFilterSearch(e.target.value)}
+                    />
+                    <Select value={filterState} onValueChange={(v) => { setFilterState(v); setFilterDistrict("all"); }}>
+                      <SelectTrigger><SelectValue placeholder="State" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All States</SelectItem>
+                        {stateOptions.map((s) => (<SelectItem key={s} value={s}>{s}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterDistrict} onValueChange={setFilterDistrict}>
+                      <SelectTrigger><SelectValue placeholder="District" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Districts</SelectItem>
+                        {districtOptions.map((d) => (<SelectItem key={d} value={d}>{d}</SelectItem>))}
+                      </SelectContent>
+                    </Select>
+                    <Select value={filterStatus} onValueChange={setFilterStatus}>
+                      <SelectTrigger><SelectValue placeholder="Status" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">All Status</SelectItem>
+                        <SelectItem value="active">Active</SelectItem>
+                        <SelectItem value="inactive">Inactive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">
+                    Showing {filteredPanchayaths.length} of {panchayaths.length}
+                    {(filterSearch || filterState !== "all" || filterDistrict !== "all" || filterStatus !== "all") && (
+                      <Button variant="link" size="sm" className="h-auto p-0 ml-2 text-xs" onClick={() => { setFilterSearch(""); setFilterState("all"); setFilterDistrict("all"); setFilterStatus("all"); }}>
+                        Clear filters
+                      </Button>
+                    )}
+                  </div>
             <div className="rounded-lg border bg-card">
               <Table>
                 <TableHeader>
@@ -683,14 +753,14 @@ export default function LocationsManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {panchayaths.length === 0 ? (
+                  {filteredPanchayaths.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
-                        No panchayaths found. Add your first panchayath to get started.
+                        No panchayaths match the current filters.
                       </TableCell>
                     </TableRow>
                   ) : (
-                    panchayaths.map((panchayath) => (
+                    filteredPanchayaths.map((panchayath) => (
                       <TableRow key={panchayath.id}>
                         <TableCell className="font-medium">{panchayath.name}</TableCell>
                         <TableCell>{panchayath.name_ml || "-"}</TableCell>
@@ -735,6 +805,9 @@ export default function LocationsManagement() {
                 </TableBody>
               </Table>
             </div>
+                </>
+              );
+            })()}
           </TabsContent>
 
           {/* Districts Tab */}
