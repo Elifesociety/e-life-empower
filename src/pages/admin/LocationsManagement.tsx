@@ -495,6 +495,10 @@ export default function LocationsManagement() {
               <MapPin className="h-4 w-4" />
               Panchayaths
             </TabsTrigger>
+            <TabsTrigger value="districts" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Districts
+            </TabsTrigger>
             <TabsTrigger value="clusters" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
               Clusters
