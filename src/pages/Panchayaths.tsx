@@ -181,11 +181,13 @@ export default function Panchayaths() {
     setActiveFilters(new Set());
     setSortBy("code");
     setSearch("");
+    setMyOnly(false);
   };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = panchayaths.filter((p) => {
+      if (myOnly && myPanchayathIds && !myPanchayathIds.has(p.id)) return false;
       if (q) {
         const matches =
           p.name.toLowerCase().includes(q) ||
