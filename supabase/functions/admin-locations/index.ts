@@ -150,6 +150,62 @@ serve(async (req) => {
       }
     }
 
+    if (resource === "districts") {
+      if (req.method === "GET" || action === "list") {
+        const { data, error } = await supabase
+          .from("districts")
+          .select("*")
+          .order("state")
+          .order("name");
+        if (error) throw error;
+        return new Response(
+          JSON.stringify({ data }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (req.method === "POST" && action === "create") {
+        const body = await req.json();
+        const payload = {
+          state: (body.state || "").trim(),
+          name: (body.name || "").trim(),
+          is_active: body.is_active ?? true,
+        };
+        if (!payload.state || !payload.name) {
+          return new Response(
+            JSON.stringify({ error: "state and name are required" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        const { data, error } = await supabase
+          .from("districts")
+          .insert(payload)
+          .select()
+          .single();
+        if (error) throw error;
+        return new Response(
+          JSON.stringify({ data }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
+      if (req.method === "PATCH" && action === "update") {
+        const body = await req.json();
+        const { id, ...updates } = body;
+        const { data, error } = await supabase
+          .from("districts")
+          .update(updates)
+          .eq("id", id)
+          .select()
+          .single();
+        if (error) throw error;
+        return new Response(
+          JSON.stringify({ data }),
+          { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+    }
+
     return new Response(
       JSON.stringify({ error: "Invalid resource or action" }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }

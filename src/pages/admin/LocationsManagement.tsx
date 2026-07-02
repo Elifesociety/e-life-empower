@@ -35,7 +35,7 @@ import {
 } from "@/components/ui/tabs";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
-import { Loader2, Plus, ArrowLeft, AlertCircle, MapPin, Building, Pencil } from "lucide-react";
+import { Loader2, Plus, ArrowLeft, AlertCircle, MapPin, Building, Pencil, Globe } from "lucide-react";
 import { Link } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelect } from "@/components/ui/searchable-select";
@@ -66,12 +66,21 @@ interface Cluster {
   };
 }
 
+interface District {
+  id: string;
+  state: string;
+  name: string;
+  is_active: boolean | null;
+}
+
 export default function LocationsManagement() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPanchayathDialogOpen, setIsPanchayathDialogOpen] = useState(false);
   const [isClusterDialogOpen, setIsClusterDialogOpen] = useState(false);
+  const [isDistrictDialogOpen, setIsDistrictDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [editingPanchayath, setEditingPanchayath] = useState<Panchayath | null>(null);
@@ -79,11 +88,14 @@ export default function LocationsManagement() {
   // Panchayath form state
   const [panchayathName, setPanchayathName] = useState("");
   const [panchayathNameMl, setPanchayathNameMl] = useState("");
-  const [panchayathDistrict, setPanchayathDistrict] = useState("");
+  const [panchayathDistrict, setPanchayathDistrict] = useState("Malappuram");
   const [panchayathWard, setPanchayathWard] = useState<number | "">("");
   const [panchayathState, setPanchayathState] = useState("Kerala");
   const [panchayathCode, setPanchayathCode] = useState("");
 
+  // District form state
+  const [newDistrictState, setNewDistrictState] = useState("Kerala");
+  const [newDistrictName, setNewDistrictName] = useState("");
 
   // Cluster form state
   const [clusterName, setClusterName] = useState("");
@@ -166,10 +178,68 @@ export default function LocationsManagement() {
     setClusters(data || []);
   };
 
+  const fetchDistricts = async () => {
+    // Districts are publicly readable; use direct client to avoid needing admin token
+    const { data, error } = await supabase
+      .from("districts")
+      .select("*")
+      .order("state")
+      .order("name");
+
+    if (error) {
+      console.error("Error fetching districts:", error);
+      return;
+    }
+    setDistricts(data || []);
+  };
+
+  const handleCreateDistrict = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setIsSubmitting(true);
+
+    try {
+      const stateVal = newDistrictState.trim();
+      const nameVal = newDistrictName.trim();
+      if (!stateVal || !nameVal) throw new Error("State and district name are required");
+
+      if (adminToken) {
+        const response = await supabase.functions.invoke(
+          "admin-locations?resource=districts&action=create",
+          {
+            headers: { "x-admin-token": adminToken },
+            body: { state: stateVal, name: nameVal },
+            method: "POST",
+          }
+        );
+        if (response.error) throw new Error(response.error.message);
+      } else {
+        const { error: insertError } = await supabase
+          .from("districts")
+          .insert({ state: stateVal, name: nameVal });
+        if (insertError) throw insertError;
+      }
+
+      toast({ title: "District added", description: `${nameVal}, ${stateVal}` });
+      setNewDistrictName("");
+      setIsDistrictDialogOpen(false);
+      await fetchDistricts();
+      // Auto-select the newly created district in the panchayath form
+      setPanchayathState(stateVal);
+      setPanchayathDistrict(nameVal);
+    } catch (err: any) {
+      const msg = err?.message || "Failed to add district";
+      setError(msg);
+      toast({ title: "Error", description: msg, variant: "destructive" });
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   useEffect(() => {
     const loadData = async () => {
       setIsLoading(true);
-      await Promise.all([fetchPanchayaths(), fetchClusters()]);
+      await Promise.all([fetchPanchayaths(), fetchClusters(), fetchDistricts()]);
       setIsLoading(false);
     };
     loadData();
@@ -297,7 +367,7 @@ export default function LocationsManagement() {
   const resetPanchayathForm = () => {
     setPanchayathName("");
     setPanchayathNameMl("");
-    setPanchayathDistrict("");
+    setPanchayathDistrict("Malappuram");
     setPanchayathWard("");
     setPanchayathState("Kerala");
     setPanchayathCode("");
@@ -425,6 +495,10 @@ export default function LocationsManagement() {
               <MapPin className="h-4 w-4" />
               Panchayaths
             </TabsTrigger>
+            <TabsTrigger value="districts" className="flex items-center gap-2">
+              <Globe className="h-4 w-4" />
+              Districts
+            </TabsTrigger>
             <TabsTrigger value="clusters" className="flex items-center gap-2">
               <Building className="h-4 w-4" />
               Clusters
@@ -483,22 +557,60 @@ export default function LocationsManagement() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="panchayathState">State</Label>
-                        <Input
-                          id="panchayathState"
+                        <Select
                           value={panchayathState}
-                          onChange={(e) => setPanchayathState(e.target.value)}
-                          placeholder="Kerala"
-                        />
+                          onValueChange={(v) => {
+                            setPanchayathState(v);
+                            // Reset district if it no longer exists in the new state
+                            const stillValid = districts.some(
+                              (d) => d.state === v && d.name === panchayathDistrict
+                            );
+                            if (!stillValid) setPanchayathDistrict("");
+                          }}
+                        >
+                          <SelectTrigger id="panchayathState">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from(new Set(districts.map((d) => d.state))).map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="panchayathDistrict">District</Label>
-                        <Input
-                          id="panchayathDistrict"
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="panchayathDistrict">District</Label>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-xs"
+                            onClick={() => {
+                              setNewDistrictState(panchayathState || "Kerala");
+                              setIsDistrictDialogOpen(true);
+                            }}
+                          >
+                            + Add new
+                          </Button>
+                        </div>
+                        <Select
                           value={panchayathDistrict}
-                          onChange={(e) => setPanchayathDistrict(e.target.value)}
-                          placeholder="District name"
-                        />
+                          onValueChange={setPanchayathDistrict}
+                          disabled={!panchayathState}
+                        >
+                          <SelectTrigger id="panchayathDistrict">
+                            <SelectValue placeholder="Select district" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {districts
+                              .filter((d) => d.state === panchayathState && d.is_active !== false)
+                              .map((d) => (
+                                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
@@ -623,6 +735,129 @@ export default function LocationsManagement() {
                 </TableBody>
               </Table>
             </div>
+          </TabsContent>
+
+          {/* Districts Tab */}
+          <TabsContent value="districts">
+            <div className="flex justify-end mb-4">
+              <Button
+                onClick={() => {
+                  setNewDistrictState("Kerala");
+                  setNewDistrictName("");
+                  setIsDistrictDialogOpen(true);
+                }}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Add District
+              </Button>
+            </div>
+
+            <div className="rounded-lg border bg-card">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>State</TableHead>
+                    <TableHead>District</TableHead>
+                    <TableHead>Panchayaths</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {districts.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                        No districts found. Add your first district to get started.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    districts.map((d) => {
+                      const count = panchayaths.filter(
+                        (p) => p.state === d.state && p.district === d.name
+                      ).length;
+                      return (
+                        <TableRow key={d.id}>
+                          <TableCell className="font-medium">{d.state}</TableCell>
+                          <TableCell>{d.name}</TableCell>
+                          <TableCell>{count}</TableCell>
+                          <TableCell>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${
+                                d.is_active !== false
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }`}
+                            >
+                              {d.is_active !== false ? "Active" : "Inactive"}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+
+            <Dialog open={isDistrictDialogOpen} onOpenChange={setIsDistrictDialogOpen}>
+              <DialogContent>
+                <DialogHeader>
+                  <DialogTitle>Add New District</DialogTitle>
+                  <DialogDescription>
+                    Add a district under a state. It will become available when creating panchayaths.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleCreateDistrict} className="space-y-4">
+                  {error && (
+                    <Alert variant="destructive">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+
+                  <div className="space-y-2">
+                    <Label htmlFor="newDistrictState">State</Label>
+                    <Input
+                      id="newDistrictState"
+                      value={newDistrictState}
+                      onChange={(e) => setNewDistrictState(e.target.value)}
+                      placeholder="e.g., Kerala"
+                      required
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="newDistrictName">District Name</Label>
+                    <Input
+                      id="newDistrictName"
+                      value={newDistrictName}
+                      onChange={(e) => setNewDistrictName(e.target.value)}
+                      placeholder="e.g., Malappuram"
+                      required
+                    />
+                  </div>
+
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsDistrictDialogOpen(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" disabled={isSubmitting}>
+                      {isSubmitting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        "Add District"
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
+              </DialogContent>
+            </Dialog>
           </TabsContent>
 
           {/* Clusters Tab */}
