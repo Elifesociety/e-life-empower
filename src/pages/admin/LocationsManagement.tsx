@@ -557,22 +557,60 @@ export default function LocationsManagement() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="panchayathState">State</Label>
-                        <Input
-                          id="panchayathState"
+                        <Select
                           value={panchayathState}
-                          onChange={(e) => setPanchayathState(e.target.value)}
-                          placeholder="Kerala"
-                        />
+                          onValueChange={(v) => {
+                            setPanchayathState(v);
+                            // Reset district if it no longer exists in the new state
+                            const stillValid = districts.some(
+                              (d) => d.state === v && d.name === panchayathDistrict
+                            );
+                            if (!stillValid) setPanchayathDistrict("");
+                          }}
+                        >
+                          <SelectTrigger id="panchayathState">
+                            <SelectValue placeholder="Select state" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {Array.from(new Set(districts.map((d) => d.state))).map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
 
                       <div className="space-y-2">
-                        <Label htmlFor="panchayathDistrict">District</Label>
-                        <Input
-                          id="panchayathDistrict"
+                        <div className="flex items-center justify-between">
+                          <Label htmlFor="panchayathDistrict">District</Label>
+                          <Button
+                            type="button"
+                            variant="link"
+                            size="sm"
+                            className="h-auto p-0 text-xs"
+                            onClick={() => {
+                              setNewDistrictState(panchayathState || "Kerala");
+                              setIsDistrictDialogOpen(true);
+                            }}
+                          >
+                            + Add new
+                          </Button>
+                        </div>
+                        <Select
                           value={panchayathDistrict}
-                          onChange={(e) => setPanchayathDistrict(e.target.value)}
-                          placeholder="District name"
-                        />
+                          onValueChange={setPanchayathDistrict}
+                          disabled={!panchayathState}
+                        >
+                          <SelectTrigger id="panchayathDistrict">
+                            <SelectValue placeholder="Select district" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {districts
+                              .filter((d) => d.state === panchayathState && d.is_active !== false)
+                              .map((d) => (
+                                <SelectItem key={d.id} value={d.name}>{d.name}</SelectItem>
+                              ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                     </div>
 
