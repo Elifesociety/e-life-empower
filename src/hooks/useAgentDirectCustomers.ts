@@ -8,6 +8,9 @@ export interface AgentDirectCustomer {
   ward: string | null;
   address: string | null;
   notes: string | null;
+  panchayath_id: string | null;
+  is_outside: boolean;
+  panchayath?: { id: string; name: string } | null;
   created_at: string;
   updated_at: string;
 }
@@ -18,6 +21,8 @@ export interface DirectCustomerInput {
   ward?: string;
   address?: string;
   notes?: string;
+  panchayath_id?: string | null;
+  is_outside?: boolean;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qnucqwniloioxsowdqzj.supabase.co";
