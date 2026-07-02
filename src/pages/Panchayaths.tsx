@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Search, Users, Crown, Shield, UserCheck, Briefcase, ShoppingCart, FileText } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Users, Crown, Shield, UserCheck, Briefcase, ShoppingCart, FileText, User } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -88,6 +88,9 @@ export default function Panchayaths() {
   const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set());
   const [sortBy, setSortBy] = useState<SortKey>("code");
   const [selected, setSelected] = useState<Panchayath | null>(null);
+  const [myPanchayathIds, setMyPanchayathIds] = useState<Set<string> | null>(null);
+  const [myOnly, setMyOnly] = useState(false);
+  const [myAgentName, setMyAgentName] = useState<string | null>(null);
 
 
   useEffect(() => {
@@ -137,6 +140,35 @@ export default function Panchayaths() {
     })();
   }, []);
 
+  // Resolve current user's panchayaths from MobileGate mobile
+  useEffect(() => {
+    (async () => {
+      try {
+        const mobile = (localStorage.getItem("elife_status_mobile") || "").replace(/\D/g, "");
+        if (mobile.length !== 10) {
+          setMyPanchayathIds(new Set());
+          return;
+        }
+        const { data } = await supabase
+          .from("pennyekart_agents")
+          .select("name, panchayath_id, responsible_panchayath_ids")
+          .eq("mobile", mobile)
+          .eq("is_active", true);
+        const ids = new Set<string>();
+        let name: string | null = null;
+        (data || []).forEach((a: any) => {
+          if (a.panchayath_id) ids.add(a.panchayath_id);
+          (a.responsible_panchayath_ids || []).forEach((id: string) => id && ids.add(id));
+          if (!name) name = a.name;
+        });
+        setMyPanchayathIds(ids);
+        setMyAgentName(name);
+      } catch {
+        setMyPanchayathIds(new Set());
+      }
+    })();
+  }, []);
+
   const toggleFilter = (k: FilterKey) =>
     setActiveFilters((prev) => {
       const next = new Set(prev);
@@ -149,11 +181,13 @@ export default function Panchayaths() {
     setActiveFilters(new Set());
     setSortBy("code");
     setSearch("");
+    setMyOnly(false);
   };
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = panchayaths.filter((p) => {
+      if (myOnly && myPanchayathIds && !myPanchayathIds.has(p.id)) return false;
       if (q) {
         const matches =
           p.name.toLowerCase().includes(q) ||
@@ -179,7 +213,7 @@ export default function Panchayaths() {
       });
     }
     return list;
-  }, [panchayaths, search, activeFilters, sortBy, metricsMap]);
+  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds]);
 
   const totals = useMemo(() => {
     return Object.values(metricsMap).reduce(
@@ -197,7 +231,8 @@ export default function Panchayaths() {
     );
   }, [metricsMap]);
 
-  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0;
+  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly;
+  const hasMy = !!(myPanchayathIds && myPanchayathIds.size > 0);
 
   return (
     <Layout>
@@ -242,6 +277,17 @@ export default function Panchayaths() {
               className="pl-9"
             />
           </div>
+          <Button
+            variant={myOnly ? "default" : "outline"}
+            size="default"
+            onClick={() => setMyOnly((v) => !v)}
+            disabled={!hasMy}
+            title={hasMy ? (myAgentName ? `Filter to ${myAgentName}'s panchayaths` : "Filter to your panchayaths") : "Set your mobile number on the home page to enable"}
+            className={myOnly ? "bg-amber-500 hover:bg-amber-600 text-green-900" : ""}
+          >
+            <User className="w-4 h-4 mr-1.5" />
+            {myOnly ? `My Panchayaths (${myPanchayathIds?.size ?? 0})` : "My Panchayaths"}
+          </Button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
             <SelectTrigger className="sm:w-56"><SelectValue placeholder="Sort by" /></SelectTrigger>
             <SelectContent>
@@ -251,6 +297,7 @@ export default function Panchayaths() {
             </SelectContent>
           </Select>
         </div>
+
 
         <div className="flex flex-wrap gap-2 items-center mb-4">
           {FILTER_CHIPS.map((c) => {
