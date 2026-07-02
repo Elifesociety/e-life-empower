@@ -66,12 +66,21 @@ interface Cluster {
   };
 }
 
+interface District {
+  id: string;
+  state: string;
+  name: string;
+  is_active: boolean | null;
+}
+
 export default function LocationsManagement() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [clusters, setClusters] = useState<Cluster[]>([]);
+  const [districts, setDistricts] = useState<District[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isPanchayathDialogOpen, setIsPanchayathDialogOpen] = useState(false);
   const [isClusterDialogOpen, setIsClusterDialogOpen] = useState(false);
+  const [isDistrictDialogOpen, setIsDistrictDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [editingPanchayath, setEditingPanchayath] = useState<Panchayath | null>(null);
@@ -79,11 +88,14 @@ export default function LocationsManagement() {
   // Panchayath form state
   const [panchayathName, setPanchayathName] = useState("");
   const [panchayathNameMl, setPanchayathNameMl] = useState("");
-  const [panchayathDistrict, setPanchayathDistrict] = useState("");
+  const [panchayathDistrict, setPanchayathDistrict] = useState("Malappuram");
   const [panchayathWard, setPanchayathWard] = useState<number | "">("");
   const [panchayathState, setPanchayathState] = useState("Kerala");
   const [panchayathCode, setPanchayathCode] = useState("");
 
+  // District form state
+  const [newDistrictState, setNewDistrictState] = useState("Kerala");
+  const [newDistrictName, setNewDistrictName] = useState("");
 
   // Cluster form state
   const [clusterName, setClusterName] = useState("");
