@@ -673,14 +673,6 @@ export default function LocationsManagement() {
               </Dialog>
             </div>
 
-            <div className="rounded-lg border bg-card">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Name (ML)</TableHead>
-                    <TableHead>Code</TableHead>
-                    <TableHead>State</TableHead>
 
             {/* Filters */}
             {(() => {
