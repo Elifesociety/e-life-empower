@@ -124,60 +124,64 @@ export function DirectCustomerFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-lg max-h-[90vh] p-0 flex flex-col gap-0">
+        <DialogHeader className="px-5 pt-5 pb-3 border-b">
           <DialogTitle>{initialCustomer ? "Edit Customer" : "Add Customer"}</DialogTitle>
         </DialogHeader>
-        <div className="space-y-3 py-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="dc-name">Name *</Label>
-            <Input id="dc-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="dc-mobile">Mobile *</Label>
-            <Input
-              id="dc-mobile"
-              value={mobile}
-              onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
-              maxLength={10}
-              inputMode="numeric"
-              placeholder="10-digit mobile"
-            />
+        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-name">Name *</Label>
+              <Input id="dc-name" value={name} onChange={(e) => setName(e.target.value)} maxLength={100} />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-mobile">Mobile *</Label>
+              <Input
+                id="dc-mobile"
+                value={mobile}
+                onChange={(e) => setMobile(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                maxLength={10}
+                inputMode="numeric"
+                placeholder="10-digit mobile"
+              />
+            </div>
           </div>
 
-          <div className="flex items-center justify-between rounded-md border px-3 py-2">
-            <div>
+          <div className="flex items-center justify-between rounded-md border px-3 py-2 gap-3">
+            <div className="min-w-0">
               <Label htmlFor="dc-outside" className="cursor-pointer">Outside Location</Label>
-              <p className="text-xs text-muted-foreground">Customer belongs to a different panchayath (treated as a separate head)</p>
+              <p className="text-xs text-muted-foreground">Customer from a different panchayath</p>
             </div>
             <Switch id="dc-outside" checked={isOutside} onCheckedChange={handleToggleOutside} />
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Panchayath *</Label>
-            {isOutside ? (
-              <SearchableSelect
-                value={panchayathId}
-                onValueChange={setPanchayathId}
-                options={panchayaths.map((p) => ({ value: p.id, label: p.name }))}
-                placeholder="Select panchayath"
-                searchPlaceholder="Search panchayath..."
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-1.5">
+              <Label>Panchayath *</Label>
+              {isOutside ? (
+                <SearchableSelect
+                  value={panchayathId}
+                  onValueChange={setPanchayathId}
+                  options={panchayaths.map((p) => ({ value: p.id, label: p.name }))}
+                  placeholder="Select panchayath"
+                  searchPlaceholder="Search panchayath..."
+                />
+              ) : (
+                <Input value={defaultPanchayathName || "—"} disabled />
+              )}
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="dc-ward">Ward *</Label>
+              <Input
+                id="dc-ward"
+                value={ward}
+                onChange={(e) => setWard(e.target.value)}
+                maxLength={50}
+                placeholder={isOutside ? "Enter ward" : `Default: ${defaultWard || "—"}`}
               />
-            ) : (
-              <Input value={defaultPanchayathName || "—"} disabled />
-            )}
+            </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="dc-ward">Ward *</Label>
-            <Input
-              id="dc-ward"
-              value={ward}
-              onChange={(e) => setWard(e.target.value)}
-              maxLength={50}
-              placeholder={isOutside ? "Enter ward" : `Default: ${defaultWard || "—"}`}
-            />
-          </div>
           <div className="space-y-1.5">
             <Label htmlFor="dc-address">Address</Label>
             <Textarea id="dc-address" value={address} onChange={(e) => setAddress(e.target.value)} rows={2} maxLength={300} />
@@ -187,7 +191,7 @@ export function DirectCustomerFormDialog({
             <Textarea id="dc-notes" value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} maxLength={500} />
           </div>
         </div>
-        <DialogFooter>
+        <DialogFooter className="px-5 py-3 border-t bg-muted/30">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
