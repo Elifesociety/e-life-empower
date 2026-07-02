@@ -247,19 +247,23 @@ serve(async (req) => {
         return { ok: false, status: 403, error: "Forbidden" };
       }
 
-      function validateCustomer(c: any): { ok: true; value: { name: string; mobile: string; ward: string | null; address: string | null; notes: string | null } } | { ok: false; error: string } {
+      function validateCustomer(c: any): { ok: true; value: { name: string; mobile: string; ward: string | null; address: string | null; notes: string | null; panchayath_id: string | null; is_outside: boolean } } | { ok: false; error: string } {
         if (!c || typeof c !== "object") return { ok: false, error: "Missing customer" };
         const name = String(c.name || "").trim();
         const mobile = String(c.mobile || "").replace(/\D/g, "");
         const ward = c.ward != null ? String(c.ward).trim() : "";
         const address = c.address != null ? String(c.address).trim() : "";
         const notes = c.notes != null ? String(c.notes).trim() : "";
+        const panchayath_id = c.panchayath_id != null && String(c.panchayath_id).trim() !== ""
+          ? String(c.panchayath_id).trim()
+          : null;
+        const is_outside = c.is_outside === true;
         if (name.length < 1 || name.length > 100) return { ok: false, error: "Name must be 1-100 characters" };
         if (mobile.length !== 10) return { ok: false, error: "Mobile must be 10 digits" };
         if (ward.length > 50) return { ok: false, error: "Ward must be ≤ 50 characters" };
         if (address.length > 300) return { ok: false, error: "Address must be ≤ 300 characters" };
         if (notes.length > 500) return { ok: false, error: "Notes must be ≤ 500 characters" };
-        return { ok: true, value: { name, mobile, ward: ward || null, address: address || null, notes: notes || null } };
+        return { ok: true, value: { name, mobile, ward: ward || null, address: address || null, notes: notes || null, panchayath_id, is_outside } };
       }
 
       function jsonResp(payload: unknown, status = 200) {
@@ -280,7 +284,7 @@ serve(async (req) => {
         }
         const { data, error } = await supabase
           .from("agent_direct_customers")
-          .select("*")
+          .select("*, panchayath:panchayaths(id, name)")
           .eq("agent_id", targetAgentId)
           .order("created_at", { ascending: false });
         if (error) throw error;
