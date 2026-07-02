@@ -813,6 +813,9 @@ export default function LocationsManagement() {
                 </TableBody>
               </Table>
             </div>
+                </>
+              );
+            })()}
           </TabsContent>
 
           {/* Districts Tab */}
