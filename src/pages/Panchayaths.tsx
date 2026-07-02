@@ -140,6 +140,35 @@ export default function Panchayaths() {
     })();
   }, []);
 
+  // Resolve current user's panchayaths from MobileGate mobile
+  useEffect(() => {
+    (async () => {
+      try {
+        const mobile = (localStorage.getItem("elife_status_mobile") || "").replace(/\D/g, "");
+        if (mobile.length !== 10) {
+          setMyPanchayathIds(new Set());
+          return;
+        }
+        const { data } = await supabase
+          .from("pennyekart_agents")
+          .select("name, panchayath_id, responsible_panchayath_ids")
+          .eq("mobile", mobile)
+          .eq("is_active", true);
+        const ids = new Set<string>();
+        let name: string | null = null;
+        (data || []).forEach((a: any) => {
+          if (a.panchayath_id) ids.add(a.panchayath_id);
+          (a.responsible_panchayath_ids || []).forEach((id: string) => id && ids.add(id));
+          if (!name) name = a.name;
+        });
+        setMyPanchayathIds(ids);
+        setMyAgentName(name);
+      } catch {
+        setMyPanchayathIds(new Set());
+      }
+    })();
+  }, []);
+
   const toggleFilter = (k: FilterKey) =>
     setActiveFilters((prev) => {
       const next = new Set(prev);
