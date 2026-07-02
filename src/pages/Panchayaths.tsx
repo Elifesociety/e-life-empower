@@ -213,7 +213,7 @@ export default function Panchayaths() {
       });
     }
     return list;
-  }, [panchayaths, search, activeFilters, sortBy, metricsMap]);
+  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds]);
 
   const totals = useMemo(() => {
     return Object.values(metricsMap).reduce(
