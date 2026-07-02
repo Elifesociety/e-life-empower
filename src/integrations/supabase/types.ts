@@ -158,9 +158,11 @@ export type Database = {
           agent_id: string
           created_at: string
           id: string
+          is_outside: boolean
           mobile: string
           name: string
           notes: string | null
+          panchayath_id: string | null
           updated_at: string
           ward: string | null
         }
@@ -169,9 +171,11 @@ export type Database = {
           agent_id: string
           created_at?: string
           id?: string
+          is_outside?: boolean
           mobile: string
           name: string
           notes?: string | null
+          panchayath_id?: string | null
           updated_at?: string
           ward?: string | null
         }
@@ -180,9 +184,11 @@ export type Database = {
           agent_id?: string
           created_at?: string
           id?: string
+          is_outside?: boolean
           mobile?: string
           name?: string
           notes?: string | null
+          panchayath_id?: string | null
           updated_at?: string
           ward?: string | null
         }
@@ -192,6 +198,13 @@ export type Database = {
             columns: ["agent_id"]
             isOneToOne: false
             referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_direct_customers_panchayath_id_fkey"
+            columns: ["panchayath_id"]
+            isOneToOne: false
+            referencedRelation: "panchayaths"
             referencedColumns: ["id"]
           },
         ]
