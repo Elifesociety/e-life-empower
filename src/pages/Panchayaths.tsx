@@ -277,6 +277,17 @@ export default function Panchayaths() {
               className="pl-9"
             />
           </div>
+          <Button
+            variant={myOnly ? "default" : "outline"}
+            size="default"
+            onClick={() => setMyOnly((v) => !v)}
+            disabled={!hasMy}
+            title={hasMy ? (myAgentName ? `Filter to ${myAgentName}'s panchayaths` : "Filter to your panchayaths") : "Set your mobile number on the home page to enable"}
+            className={myOnly ? "bg-amber-500 hover:bg-amber-600 text-green-900" : ""}
+          >
+            <User className="w-4 h-4 mr-1.5" />
+            {myOnly ? `My Panchayaths (${myPanchayathIds?.size ?? 0})` : "My Panchayaths"}
+          </Button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
             <SelectTrigger className="sm:w-56"><SelectValue placeholder="Sort by" /></SelectTrigger>
             <SelectContent>
@@ -286,6 +297,7 @@ export default function Panchayaths() {
             </SelectContent>
           </Select>
         </div>
+
 
         <div className="flex flex-wrap gap-2 items-center mb-4">
           {FILTER_CHIPS.map((c) => {
