@@ -85,6 +85,12 @@ export default function LocationsManagement() {
   const [error, setError] = useState("");
   const [editingPanchayath, setEditingPanchayath] = useState<Panchayath | null>(null);
 
+  // Panchayath filters
+  const [filterSearch, setFilterSearch] = useState("");
+  const [filterState, setFilterState] = useState<string>("all");
+  const [filterDistrict, setFilterDistrict] = useState<string>("all");
+  const [filterStatus, setFilterStatus] = useState<string>("all");
+
   // Panchayath form state
   const [panchayathName, setPanchayathName] = useState("");
   const [panchayathNameMl, setPanchayathNameMl] = useState("");
