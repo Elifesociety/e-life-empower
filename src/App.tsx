@@ -254,6 +254,16 @@ const App = () => (
               }
             />
 
+            {/* Samrambhaka Management - Super Admin only */}
+            <Route
+              path="/super-admin/samrambhaka"
+              element={
+                <ProtectedRoute requiredRoles={["super_admin"]}>
+                  <SamrambhakaManagement />
+                </ProtectedRoute>
+              }
+            />
+
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
