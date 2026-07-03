@@ -317,6 +317,202 @@ serve(async (req) => {
       return json({ success: true });
     }
 
+    // Helper: assert caller owns the project (or is a member)
+    const assertProjectAccess = async (project_id: string, agent_id: string) => {
+      const { data: proj } = await supabase
+        .from("agent_projects")
+        .select("id, agent_id, model")
+        .eq("id", project_id)
+        .maybeSingle();
+      if (!proj) return { error: json({ error: "Project not found" }, 404) };
+      if (proj.agent_id === agent_id) return { project: proj, isOwner: true as const };
+      const { data: mem } = await supabase
+        .from("agent_project_members")
+        .select("id")
+        .eq("project_id", project_id)
+        .eq("agent_id", agent_id)
+        .maybeSingle();
+      if (!mem) return { error: json({ error: "Forbidden" }, 403) };
+      return { project: proj, isOwner: false as const };
+    };
+
+    if (action === "get_project") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      if (!id) return json({ error: "id required" }, 400);
+      const acc = await assertProjectAccess(id, auth.agent_id);
+      if ("error" in acc) return acc.error;
+
+      const [{ data: project }, { data: todos }, { data: notes }, { data: members }] = await Promise.all([
+        supabase.from("agent_projects").select("*").eq("id", id).single(),
+        supabase.from("agent_project_todos").select("*").eq("project_id", id).order("created_at", { ascending: true }),
+        supabase.from("agent_project_notes").select("*").eq("project_id", id).order("created_at", { ascending: false }),
+        supabase
+          .from("agent_project_members")
+          .select("id, agent_id, created_at, pennyekart_agents(id, name, mobile, role)")
+          .eq("project_id", id)
+          .order("created_at", { ascending: true }),
+      ]);
+
+      return json({ success: true, project, todos: todos || [], notes: notes || [], members: members || [], isOwner: acc.isOwner });
+    }
+
+    if (action === "add_todo") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const project_id: string = body.project_id;
+      const title: string = (body.title || "").toString().trim();
+      if (!project_id || !title) return json({ error: "project_id and title required" }, 400);
+      const acc = await assertProjectAccess(project_id, auth.agent_id);
+      if ("error" in acc) return acc.error;
+      const { data, error } = await supabase
+        .from("agent_project_todos")
+        .insert({ project_id, title: title.slice(0, 300) })
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, todo: data });
+    }
+
+    if (action === "toggle_todo") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      const is_done: boolean = !!body.is_done;
+      if (!id) return json({ error: "id required" }, 400);
+      const { data: todo } = await supabase.from("agent_project_todos").select("project_id").eq("id", id).maybeSingle();
+      if (!todo) return json({ error: "Not found" }, 404);
+      const acc = await assertProjectAccess(todo.project_id, auth.agent_id);
+      if ("error" in acc) return acc.error;
+      const { error } = await supabase.from("agent_project_todos").update({ is_done }).eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
+    if (action === "delete_todo") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      if (!id) return json({ error: "id required" }, 400);
+      const { data: todo } = await supabase.from("agent_project_todos").select("project_id").eq("id", id).maybeSingle();
+      if (!todo) return json({ error: "Not found" }, 404);
+      const acc = await assertProjectAccess(todo.project_id, auth.agent_id);
+      if ("error" in acc) return acc.error;
+      const { error } = await supabase.from("agent_project_todos").delete().eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
+    if (action === "add_note") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const project_id: string = body.project_id;
+      const bodyText: string = (body.body || "").toString().trim();
+      const title: string | null = body.title ? String(body.title).slice(0, 200) : null;
+      if (!project_id || !bodyText) return json({ error: "project_id and body required" }, 400);
+      const acc = await assertProjectAccess(project_id, auth.agent_id);
+      if ("error" in acc) return acc.error;
+      const { data, error } = await supabase
+        .from("agent_project_notes")
+        .insert({ project_id, title, body: bodyText })
+        .select()
+        .single();
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true, note: data });
+    }
+
+    if (action === "delete_note") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      if (!id) return json({ error: "id required" }, 400);
+      const { data: n } = await supabase.from("agent_project_notes").select("project_id").eq("id", id).maybeSingle();
+      if (!n) return json({ error: "Not found" }, 404);
+      const acc = await assertProjectAccess(n.project_id, auth.agent_id);
+      if ("error" in acc) return acc.error;
+      const { error } = await supabase.from("agent_project_notes").delete().eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
+    if (action === "search_registered_agents") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const q: string = (body.q || "").toString().trim();
+      if (q.length < 2) return json({ success: true, agents: [] });
+
+      const { data: authRows } = await supabase.from("agent_auth").select("agent_id").limit(1000);
+      const registeredIds = (authRows || []).map((r) => r.agent_id);
+      if (registeredIds.length === 0) return json({ success: true, agents: [] });
+
+      const { data: agents } = await supabase
+        .from("pennyekart_agents")
+        .select("id, name, mobile, role")
+        .in("id", registeredIds)
+        .or(`name.ilike.%${q}%,mobile.ilike.%${q}%`)
+        .limit(20);
+      return json({ success: true, agents: (agents || []).filter((a) => a.id !== auth.agent_id) });
+    }
+
+    if (action === "add_member") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const project_id: string = body.project_id;
+      const agent_id: string = body.agent_id;
+      if (!project_id || !agent_id) return json({ error: "project_id and agent_id required" }, 400);
+
+      const { data: proj } = await supabase
+        .from("agent_projects")
+        .select("id, agent_id, model")
+        .eq("id", project_id)
+        .maybeSingle();
+      if (!proj) return json({ error: "Project not found" }, 404);
+      if (proj.agent_id !== auth.agent_id) return json({ error: "Only the project owner can add members" }, 403);
+      if (proj.model === "individual") return json({ error: "Individual projects cannot have partners" }, 400);
+      if (agent_id === proj.agent_id) return json({ error: "You are already the owner" }, 400);
+
+      const { data: authRow } = await supabase.from("agent_auth").select("id").eq("agent_id", agent_id).maybeSingle();
+      if (!authRow) return json({ error: "Selected user is not a registered Samrambhaka user" }, 400);
+
+      if (proj.model === "partnership") {
+        const { count } = await supabase
+          .from("agent_project_members")
+          .select("id", { count: "exact", head: true })
+          .eq("project_id", project_id);
+        if ((count || 0) >= 3) return json({ error: "Partnership projects allow max 4 members (owner + 3 partners)" }, 400);
+      }
+
+      const { data, error } = await supabase
+        .from("agent_project_members")
+        .insert({ project_id, agent_id })
+        .select("id, agent_id, created_at, pennyekart_agents(id, name, mobile, role)")
+        .single();
+      if (error) {
+        if (String(error.message).toLowerCase().includes("duplicate")) return json({ error: "Already a member" }, 400);
+        return json({ error: error.message }, 500);
+      }
+      return json({ success: true, member: data });
+    }
+
+    if (action === "remove_member") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+      const id: string = body.id;
+      if (!id) return json({ error: "id required" }, 400);
+      const { data: mem } = await supabase
+        .from("agent_project_members")
+        .select("id, project_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (!mem) return json({ error: "Not found" }, 404);
+      const { data: proj } = await supabase.from("agent_projects").select("agent_id").eq("id", mem.project_id).maybeSingle();
+      if (!proj || proj.agent_id !== auth.agent_id) return json({ error: "Only the project owner can remove members" }, 403);
+      const { error } = await supabase.from("agent_project_members").delete().eq("id", id);
+      if (error) return json({ error: error.message }, 500);
+      return json({ success: true });
+    }
+
     return json({ error: "Invalid action" }, 400);
   } catch (e) {
     console.error("samrabhaka-auth error:", e);
