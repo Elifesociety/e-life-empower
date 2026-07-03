@@ -24,18 +24,35 @@ function verifyAdminToken(token: string | null): boolean {
   }
 }
 
+async function verifySupabaseSuperAdmin(supabase: any, authHeader: string | null): Promise<boolean> {
+  const bearer = authHeader?.replace(/^Bearer\s+/i, "");
+  if (!bearer) return false;
+  const { data: userData } = await supabase.auth.getUser(bearer);
+  const user = userData?.user;
+  if (!user) return false;
+  const { data: role } = await supabase
+    .from("user_roles")
+    .select("role")
+    .eq("user_id", user.id)
+    .eq("role", "super_admin")
+    .maybeSingle();
+  return !!role;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    if (!verifyAdminToken(req.headers.get("x-admin-token"))) {
-      return json({ error: "Unauthorized" }, 401);
-    }
-
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
+
+    const hasAdminToken = verifyAdminToken(req.headers.get("x-admin-token"));
+    const hasSupabaseAuth = hasAdminToken ? false : await verifySupabaseSuperAdmin(supabase, req.headers.get("Authorization"));
+    if (!hasAdminToken && !hasSupabaseAuth) {
+      return json({ error: "Unauthorized" }, 401);
+    }
 
     const body = await req.json().catch(() => ({}));
     const action: string = body.action;

@@ -50,9 +50,11 @@ interface Task {
 }
 
 async function callAdmin(token: string, action: string, payload: Record<string, unknown> = {}) {
+  const headers: Record<string, string> = {};
+  if (token) headers["x-admin-token"] = token;
   const { data, error } = await supabase.functions.invoke("admin-samrambhaka", {
     body: { action, ...payload },
-    headers: { "x-admin-token": token },
+    headers,
   });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
@@ -118,7 +120,7 @@ function ProjectsAdmin({ token }: { token: string }) {
     } finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { if (token) load(); }, [token, load]);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => projects.filter((p) => {
     if (modelFilter !== "all" && p.model !== modelFilter) return false;
@@ -372,7 +374,7 @@ function BudgetPlansAdmin({ token }: { token: string }) {
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { if (token) load(); }, [token, load]);
+  useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this budget plan?")) return;

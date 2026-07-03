@@ -26,3 +26,7 @@ verify_jwt = false
 
 [functions.whatsapp-worklog]
 verify_jwt = false
+
+[functions.admin-samrambhaka]
+verify_jwt = false
+
