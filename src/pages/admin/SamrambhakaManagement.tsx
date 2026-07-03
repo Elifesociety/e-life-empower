@@ -120,7 +120,7 @@ function ProjectsAdmin({ token }: { token: string }) {
     } finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { if (token) load(); }, [token, load]);
+  useEffect(() => { load(); }, [load]);
 
   const filtered = useMemo(() => projects.filter((p) => {
     if (modelFilter !== "all" && p.model !== modelFilter) return false;
@@ -374,7 +374,7 @@ function BudgetPlansAdmin({ token }: { token: string }) {
     } catch (e: any) { toast.error(e.message); } finally { setLoading(false); }
   }, [token]);
 
-  useEffect(() => { if (token) load(); }, [token, load]);
+  useEffect(() => { load(); }, [load]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("Delete this budget plan?")) return;
