@@ -1628,6 +1628,42 @@ export type Database = {
           },
         ]
       }
+      samrambhaka_budget_plans: {
+        Row: {
+          created_at: string
+          elife_share: number
+          id: string
+          is_active: boolean
+          key: string
+          label: string
+          own_share: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          elife_share?: number
+          id?: string
+          is_active?: boolean
+          key: string
+          label: string
+          own_share?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          elife_share?: number
+          id?: string
+          is_active?: boolean
+          key?: string
+          label?: string
+          own_share?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           id: string
