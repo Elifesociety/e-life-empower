@@ -152,6 +152,16 @@ export function ProjectsSection({ token }: { token: string }) {
     }
   };
 
+  if (openProjectId) {
+    return (
+      <ProjectDashboard
+        token={token}
+        projectId={openProjectId}
+        onBack={() => { setOpenProjectId(null); load(); }}
+      />
+    );
+  }
+
   return (
     <Card className="border-2">
       <CardHeader className="flex flex-row items-start justify-between gap-3">
