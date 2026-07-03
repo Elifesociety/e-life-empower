@@ -32,7 +32,8 @@ import {
   IndianRupee,
   FileSpreadsheet,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
@@ -210,6 +211,12 @@ export default function SuperAdminDashboard() {
             <Link to="/super-admin/departments" className="flex flex-col items-center gap-1.5 sm:gap-2">
               <Building2 className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-[10px] sm:text-sm">Departments</span>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto py-3 sm:py-4">
+            <Link to="/super-admin/samrambhaka" className="flex flex-col items-center gap-1.5 sm:gap-2">
+              <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-[10px] sm:text-sm">Samrambhaka</span>
             </Link>
           </Button>
         </div>

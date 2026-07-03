@@ -33,6 +33,7 @@ import SalesReport from "./pages/admin/SalesReport";
 import Payouts from "./pages/admin/Payouts";
 import AgentTasks from "./pages/admin/AgentTasks";
 import WhatsAppCommands from "./pages/admin/WhatsAppCommands";
+import SamrambhakaManagement from "./pages/admin/SamrambhakaManagement";
 import DepartmentsManagement from "./pages/admin/DepartmentsManagement";
 import RegisterAgent from "./pages/RegisterAgent";
 import Panchayaths from "./pages/Panchayaths";
@@ -249,6 +250,16 @@ const App = () => (
               element={
                 <ProtectedRoute requiredRoles={["super_admin"]}>
                   <DepartmentsManagement />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Samrambhaka Management - Super Admin only */}
+            <Route
+              path="/super-admin/samrambhaka"
+              element={
+                <ProtectedRoute requiredRoles={["super_admin"]}>
+                  <SamrambhakaManagement />
                 </ProtectedRoute>
               }
             />
