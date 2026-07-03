@@ -7,9 +7,10 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Trash2, Briefcase, User, Users, Users2, Building2, Handshake, PieChart, Sparkles, Check } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Briefcase, User, Users, Users2, Building2, Handshake, PieChart, Sparkles, Check, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { ProjectDashboard } from "./ProjectDashboard";
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://qnucqwniloioxsowdqzj.supabase.co";
 const ANON_KEY =
