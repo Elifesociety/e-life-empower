@@ -70,6 +70,7 @@ export function ProjectsSection({ token }: { token: string }) {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<AgentProject | null>(null);
   const [saving, setSaving] = useState(false);
+  const [openProjectId, setOpenProjectId] = useState<string | null>(null);
 
   const [form, setForm] = useState({
     project_name: "",
