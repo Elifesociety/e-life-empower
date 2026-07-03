@@ -188,12 +188,22 @@ export function ProjectsSection({ token }: { token: string }) {
         ) : (
           <div className="space-y-3">
             {projects.map((p) => (
-              <div key={p.id} className="rounded-lg border p-4 bg-gradient-to-br from-pink-50/50 to-transparent hover:shadow-sm transition-shadow">
+              <div
+                key={p.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => setOpenProjectId(p.id)}
+                onKeyDown={(e) => { if (e.key === "Enter") setOpenProjectId(p.id); }}
+                className="rounded-lg border p-4 bg-gradient-to-br from-pink-50/50 to-transparent hover:shadow-md hover:border-pink-400 transition-all cursor-pointer group"
+              >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-base">{p.project_name}</h4>
+                    <div className="flex items-center gap-1.5">
+                      <h4 className="font-semibold text-base group-hover:text-pink-700 transition-colors">{p.project_name}</h4>
+                      <ChevronRight className="h-4 w-4 text-pink-400 group-hover:translate-x-0.5 transition-transform" />
+                    </div>
                     {p.plan_description && (
-                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap">{p.plan_description}</p>
+                      <p className="text-sm text-muted-foreground mt-1 whitespace-pre-wrap line-clamp-2">{p.plan_description}</p>
                     )}
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       <Badge variant="secondary">{MODEL_LABELS[p.model]}</Badge>
@@ -205,7 +215,7 @@ export function ProjectsSection({ token }: { token: string }) {
                       </Badge>
                     </div>
                   </div>
-                  <div className="flex flex-col gap-1">
+                  <div className="flex flex-col gap-1" onClick={(e) => e.stopPropagation()}>
                     <Button size="icon" variant="ghost" onClick={() => openEdit(p)}>
                       <Pencil className="h-4 w-4" />
                     </Button>
