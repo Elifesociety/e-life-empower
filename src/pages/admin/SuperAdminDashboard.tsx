@@ -32,7 +32,8 @@ import {
   IndianRupee,
   FileSpreadsheet,
   BarChart3,
-  MessageSquare
+  MessageSquare,
+  Sparkles
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { formatDistanceToNow } from "date-fns";
