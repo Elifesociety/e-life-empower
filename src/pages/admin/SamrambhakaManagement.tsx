@@ -50,9 +50,11 @@ interface Task {
 }
 
 async function callAdmin(token: string, action: string, payload: Record<string, unknown> = {}) {
+  const headers: Record<string, string> = {};
+  if (token) headers["x-admin-token"] = token;
   const { data, error } = await supabase.functions.invoke("admin-samrambhaka", {
     body: { action, ...payload },
-    headers: { "x-admin-token": token },
+    headers,
   });
   if (error) throw new Error(error.message);
   if (data?.error) throw new Error(data.error);
