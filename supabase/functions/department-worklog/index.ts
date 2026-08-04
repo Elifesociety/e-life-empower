@@ -60,18 +60,33 @@ Deno.serve(async (req) => {
         if (pin) pin_hash = await hashPin(pin);
         if (!pin_hash) return json({ error: "PIN required for new member" }, 400);
 
+        const can_view_all = body.can_view_all === undefined ? undefined : !!body.can_view_all;
+
         if (existing) {
+          const patch: any = { pin_hash, member_role, is_active: true };
+          if (can_view_all !== undefined) patch.can_view_all = can_view_all;
           const { error } = await supabase
             .from("department_members")
-            .update({ pin_hash, member_role, is_active: true })
+            .update(patch)
             .eq("id", existing.id);
           if (error) return json({ error: error.message }, 500);
         } else {
           const { error } = await supabase
             .from("department_members")
-            .insert({ department_id, agent_id, pin_hash, member_role });
+            .insert({ department_id, agent_id, pin_hash, member_role, can_view_all: can_view_all ?? false });
           if (error) return json({ error: error.message }, 500);
         }
+        return json({ success: true });
+      }
+
+      if (action === "admin_set_member_permission") {
+        const id = String(body.id || "");
+        if (!id) return json({ error: "Missing id" }, 400);
+        const { error } = await supabase
+          .from("department_members")
+          .update({ can_view_all: !!body.can_view_all })
+          .eq("id", id);
+        if (error) return json({ error: error.message }, 500);
         return json({ success: true });
       }
 
