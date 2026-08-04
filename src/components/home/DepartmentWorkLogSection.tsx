@@ -210,9 +210,14 @@ export function DepartmentWorkLogSection() {
   };
 
   const filterMatch = (deptId: string) => filterDept === "all" || deptId === filterDept;
-  const isVisible = (item: { is_public: boolean; created_by_member_id: string | null }) =>
-    item.is_public || canEditItem(item.created_by_member_id);
-  const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l) && (!filterDate || l.work_date === filterDate));
+  const canViewAll = !!session?.memberships.some((m) => m.can_view_all);
+  const isMine = (creatorId: string | null | undefined) => !!creatorId && myMemberIds.has(creatorId);
+  const isVisible = (item: { is_public: boolean; created_by_member_id: string | null; department_id: string }, ownerId?: string | null) => {
+    if (!session) return item.is_public;
+    if (canViewAll) return myDeptIds.has(item.department_id) || item.is_public;
+    return isMine(item.created_by_member_id) || isMine(ownerId);
+  };
+  const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l, l.member_id) && (!filterDate || l.work_date === filterDate));
   const visiblePlansAll = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
   const visiblePlans = visiblePlansAll.filter((p) => showPlanCompleted ? p.status === "completed" : p.status !== "completed");
   const visibleTodosAll = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));
