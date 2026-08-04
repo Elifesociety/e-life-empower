@@ -114,6 +114,21 @@ export default function DepartmentsManagement() {
     load();
   };
 
+  const setMemberPermission = async (id: string, can_view_all: boolean) => {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, can_view_all } : m)));
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data, error } = await supabase.functions.invoke("department-worklog", {
+      body: { action: "admin_set_member_permission", id, can_view_all },
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    if (error || (data as any)?.error) {
+      toast({ title: "Error", description: error?.message || (data as any)?.error, variant: "destructive" });
+      load();
+      return;
+    }
+    toast({ title: can_view_all ? "Permission granted" : "Permission removed" });
+  };
+
   const agentMap = new Map(agents.map((a) => [a.id, a]));
 
   return (
