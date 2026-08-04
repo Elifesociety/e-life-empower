@@ -115,7 +115,7 @@ Deno.serve(async (req) => {
       const agentIds = agents.map((a) => a.id);
       const { data: members } = await supabase
         .from("department_members")
-        .select("id, department_id, agent_id, member_role, pin_hash, is_active, departments(id, name, color, icon)")
+        .select("id, department_id, agent_id, member_role, can_view_all, pin_hash, is_active, departments(id, name, color, icon)")
         .in("agent_id", agentIds)
         .eq("is_active", true);
 
@@ -134,6 +134,7 @@ Deno.serve(async (req) => {
           department_id: m.department_id,
           department: m.departments,
           member_role: m.member_role,
+          can_view_all: !!m.can_view_all,
         })),
         token: `${mobile}:${pinHash}`,
       });
