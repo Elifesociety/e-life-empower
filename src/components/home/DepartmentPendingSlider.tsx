@@ -49,6 +49,7 @@ interface Membership {
   member_id: string;
   department_id: string;
   member_role: string;
+  can_view_all?: boolean;
   department: { id: string; name: string; color: string | null };
 }
 interface Session {
