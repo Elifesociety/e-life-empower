@@ -44,7 +44,7 @@ export default function DepartmentsManagement() {
     setLoading(true);
     const [d, m, a, l, p, t] = await Promise.all([
       supabase.from("departments").select("*").order("created_at"),
-      supabase.from("department_members").select("id, department_id, agent_id, member_role, is_active, created_at, updated_at"),
+      supabase.from("department_members").select("id, department_id, agent_id, member_role, is_active, can_view_all, created_at, updated_at"),
       supabase.from("pennyekart_agents").select("id, name, mobile, role").eq("is_active", true).order("name"),
       supabase.from("department_work_logs").select("*").order("work_date", { ascending: false }).limit(500),
       supabase.from("department_plans").select("*").order("created_at", { ascending: false }).limit(500),
