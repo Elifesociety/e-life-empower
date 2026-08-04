@@ -12,13 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Pencil, UserPlus, Loader2, Users, Building2, FileText, Target, ListTodo, Calendar as CalendarIcon } from "lucide-react";
 
 type Department = { id: string; name: string; description: string | null; color: string | null; icon: string | null; is_active: boolean };
 type Agent = { id: string; name: string; mobile: string; role: string };
-type Member = { id: string; department_id: string; agent_id: string; member_role: string; is_active: boolean };
+type Member = { id: string; department_id: string; agent_id: string; member_role: string; is_active: boolean; can_view_all?: boolean };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string };
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean };
@@ -43,7 +44,7 @@ export default function DepartmentsManagement() {
     setLoading(true);
     const [d, m, a, l, p, t] = await Promise.all([
       supabase.from("departments").select("*").order("created_at"),
-      supabase.from("department_members").select("id, department_id, agent_id, member_role, is_active, created_at, updated_at"),
+      supabase.from("department_members").select("id, department_id, agent_id, member_role, is_active, can_view_all, created_at, updated_at"),
       supabase.from("pennyekart_agents").select("id, name, mobile, role").eq("is_active", true).order("name"),
       supabase.from("department_work_logs").select("*").order("work_date", { ascending: false }).limit(500),
       supabase.from("department_plans").select("*").order("created_at", { ascending: false }).limit(500),
@@ -113,6 +114,21 @@ export default function DepartmentsManagement() {
     load();
   };
 
+  const setMemberPermission = async (id: string, can_view_all: boolean) => {
+    setMembers((prev) => prev.map((m) => (m.id === id ? { ...m, can_view_all } : m)));
+    const { data: { session } } = await supabase.auth.getSession();
+    const { data, error } = await supabase.functions.invoke("department-worklog", {
+      body: { action: "admin_set_member_permission", id, can_view_all },
+      headers: { Authorization: `Bearer ${session?.access_token}` },
+    });
+    if (error || (data as any)?.error) {
+      toast({ title: "Error", description: error?.message || (data as any)?.error, variant: "destructive" });
+      load();
+      return;
+    }
+    toast({ title: can_view_all ? "Permission granted" : "Permission removed" });
+  };
+
   const agentMap = new Map(agents.map((a) => [a.id, a]));
 
   return (
@@ -176,10 +192,14 @@ export default function DepartmentsManagement() {
                             {deptMembers.map((m) => {
                               const a = agentMap.get(m.agent_id);
                               return (
-                                <div key={m.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                                <div key={m.id} className="flex items-center justify-between gap-2 p-2 rounded border text-sm">
                                   <div className="min-w-0">
                                     <p className="font-medium truncate">{a?.name || "Unknown"} <span className="text-xs text-muted-foreground">({a?.mobile})</span></p>
                                     <p className="text-xs text-muted-foreground">{a?.role.replace(/_/g, " ")} • {m.member_role}</p>
+                                    <label className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Switch checked={!!m.can_view_all} onCheckedChange={(c) => setMemberPermission(m.id, c)} />
+                                      Can view all members' records
+                                    </label>
                                   </div>
                                   <div className="flex gap-1">
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setMemberDialog({ open: true, deptId: d.id, memberId: m.id, agentId: m.agent_id, role: m.member_role })}><Pencil className="h-3.5 w-3.5" /></Button>

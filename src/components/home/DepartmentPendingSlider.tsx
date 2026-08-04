@@ -49,6 +49,7 @@ interface Membership {
   member_id: string;
   department_id: string;
   member_role: string;
+  can_view_all?: boolean;
   department: { id: string; name: string; color: string | null };
 }
 interface Session {
@@ -141,8 +142,10 @@ export function DepartmentPendingSlider() {
         .order("created_at", { ascending: false })
         .limit(50),
     ]);
-    setPlans((p.data as Plan[]) || []);
-    setTodos((t.data as Todo[]) || []);
+    const canViewAll = !!session?.memberships.some((m) => m.can_view_all);
+    const mine = (id: string | null) => !!id && myMemberIds.has(id);
+    setPlans(((p.data as Plan[]) || []).filter((x) => canViewAll || mine(x.created_by_member_id)));
+    setTodos(((t.data as Todo[]) || []).filter((x) => canViewAll || mine(x.created_by_member_id)));
     setLoading(false);
   };
 

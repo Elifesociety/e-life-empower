@@ -1,0 +1,1 @@
+ALTER TABLE public.department_members ADD COLUMN IF NOT EXISTS can_view_all boolean NOT NULL DEFAULT false;

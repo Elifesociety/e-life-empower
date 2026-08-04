@@ -29,7 +29,7 @@ type Log = { id: string; member_id: string; department_id: string; work_date: st
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
 
-interface Membership { member_id: string; department_id: string; member_role: string; department: Dept }
+interface Membership { member_id: string; department_id: string; member_role: string; can_view_all?: boolean; department: Dept }
 interface Session { token: string; agent: Agent; memberships: Membership[] }
 
 const SESSION_KEY = "elife_dept_session";
@@ -210,9 +210,14 @@ export function DepartmentWorkLogSection() {
   };
 
   const filterMatch = (deptId: string) => filterDept === "all" || deptId === filterDept;
-  const isVisible = (item: { is_public: boolean; created_by_member_id: string | null }) =>
-    item.is_public || canEditItem(item.created_by_member_id);
-  const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l) && (!filterDate || l.work_date === filterDate));
+  const canViewAll = !!session?.memberships.some((m) => m.can_view_all);
+  const isMine = (creatorId: string | null | undefined) => !!creatorId && myMemberIds.has(creatorId);
+  const isVisible = (item: { is_public: boolean; created_by_member_id: string | null; department_id: string }, ownerId?: string | null) => {
+    if (!session) return item.is_public;
+    if (canViewAll) return myDeptIds.has(item.department_id) || item.is_public;
+    return isMine(item.created_by_member_id) || isMine(ownerId);
+  };
+  const visibleLogs = logs.filter((l) => filterMatch(l.department_id) && isVisible(l, l.member_id) && (!filterDate || l.work_date === filterDate));
   const visiblePlansAll = plans.filter((p) => filterMatch(p.department_id) && isVisible(p));
   const visiblePlans = visiblePlansAll.filter((p) => showPlanCompleted ? p.status === "completed" : p.status !== "completed");
   const visibleTodosAll = todos.filter((t) => filterMatch(t.department_id) && isVisible(t));

@@ -582,6 +582,7 @@ export type Database = {
       department_members: {
         Row: {
           agent_id: string
+          can_view_all: boolean
           created_at: string
           department_id: string
           id: string
@@ -592,6 +593,7 @@ export type Database = {
         }
         Insert: {
           agent_id: string
+          can_view_all?: boolean
           created_at?: string
           department_id: string
           id?: string
@@ -602,6 +604,7 @@ export type Database = {
         }
         Update: {
           agent_id?: string
+          can_view_all?: boolean
           created_at?: string
           department_id?: string
           id?: string

@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     const action = body.action as string;
 
     // ---- Admin actions: require super_admin (validated via Authorization header)
-    if (action === "admin_upsert_member" || action === "admin_remove_member") {
+    if (action === "admin_upsert_member" || action === "admin_remove_member" || action === "admin_set_member_permission") {
       const authHeader = req.headers.get("Authorization") || "";
       const jwt = authHeader.replace("Bearer ", "");
       if (!jwt) return json({ error: "Unauthorized" }, 401);
@@ -60,18 +60,33 @@ Deno.serve(async (req) => {
         if (pin) pin_hash = await hashPin(pin);
         if (!pin_hash) return json({ error: "PIN required for new member" }, 400);
 
+        const can_view_all = body.can_view_all === undefined ? undefined : !!body.can_view_all;
+
         if (existing) {
+          const patch: any = { pin_hash, member_role, is_active: true };
+          if (can_view_all !== undefined) patch.can_view_all = can_view_all;
           const { error } = await supabase
             .from("department_members")
-            .update({ pin_hash, member_role, is_active: true })
+            .update(patch)
             .eq("id", existing.id);
           if (error) return json({ error: error.message }, 500);
         } else {
           const { error } = await supabase
             .from("department_members")
-            .insert({ department_id, agent_id, pin_hash, member_role });
+            .insert({ department_id, agent_id, pin_hash, member_role, can_view_all: can_view_all ?? false });
           if (error) return json({ error: error.message }, 500);
         }
+        return json({ success: true });
+      }
+
+      if (action === "admin_set_member_permission") {
+        const id = String(body.id || "");
+        if (!id) return json({ error: "Missing id" }, 400);
+        const { error } = await supabase
+          .from("department_members")
+          .update({ can_view_all: !!body.can_view_all })
+          .eq("id", id);
+        if (error) return json({ error: error.message }, 500);
         return json({ success: true });
       }
 
@@ -100,7 +115,7 @@ Deno.serve(async (req) => {
       const agentIds = agents.map((a) => a.id);
       const { data: members } = await supabase
         .from("department_members")
-        .select("id, department_id, agent_id, member_role, pin_hash, is_active, departments(id, name, color, icon)")
+        .select("id, department_id, agent_id, member_role, can_view_all, pin_hash, is_active, departments(id, name, color, icon)")
         .in("agent_id", agentIds)
         .eq("is_active", true);
 
@@ -119,6 +134,7 @@ Deno.serve(async (req) => {
           department_id: m.department_id,
           department: m.departments,
           member_role: m.member_role,
+          can_view_all: !!m.can_view_all,
         })),
         token: `${mobile}:${pinHash}`,
       });
