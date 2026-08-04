@@ -176,10 +176,14 @@ export default function DepartmentsManagement() {
                             {deptMembers.map((m) => {
                               const a = agentMap.get(m.agent_id);
                               return (
-                                <div key={m.id} className="flex items-center justify-between p-2 rounded border text-sm">
+                                <div key={m.id} className="flex items-center justify-between gap-2 p-2 rounded border text-sm">
                                   <div className="min-w-0">
                                     <p className="font-medium truncate">{a?.name || "Unknown"} <span className="text-xs text-muted-foreground">({a?.mobile})</span></p>
                                     <p className="text-xs text-muted-foreground">{a?.role.replace(/_/g, " ")} • {m.member_role}</p>
+                                    <label className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+                                      <Switch checked={!!m.can_view_all} onCheckedChange={(c) => setMemberPermission(m.id, c)} />
+                                      Can view all members' records
+                                    </label>
                                   </div>
                                   <div className="flex gap-1">
                                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setMemberDialog({ open: true, deptId: d.id, memberId: m.id, agentId: m.agent_id, role: m.member_role })}><Pencil className="h-3.5 w-3.5" /></Button>
