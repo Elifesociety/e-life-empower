@@ -1,42 +1,36 @@
+# Departments: personal view by default, with a super-admin "view all" permission
+
 ## Goal
-Enhance the "Add Customer" flow on `/admin/pennyekart-agents` so each direct customer is tagged with a Panchayath + Ward, defaulting to the agent's own location, with an optional "Outside Location" mode that lets the user pick any panchayath/ward and marks the record as a separate head.
 
-## Database (migration)
-Add columns to `agent_direct_customers`:
-- `panchayath_id uuid null` (FK → `panchayaths.id`)
-- `ward text null` — replaces/repurposes existing `ward` (already exists as text; keep)
-- `is_outside boolean not null default false` — flag for "Outside Location" customers
+When a department member logs in on the home page, they see only the work logs, plans and todos **they created**. A super admin can grant a specific member permission to see everything from all members of their department(s).
 
-Index: `(agent_id, is_outside)` for quick grouping.
-No RLS change needed (existing policy via edge function stays).
+## Behaviour
 
-## Edge function (`pennyekart-agents`)
-- `add_customer` / `update_customer`: accept `panchayath_id`, `ward`, `is_outside` in the `customer` payload and persist them.
-- `list_customers`: return the new fields plus a joined `panchayath_name` (simple select via view or a second query keyed by panchayath_id).
+Logged-in department member (default):
+- Logs tab: only logs created by them
+- Planning tab: only plans they created
+- Todos/Tasks tab: only todos they created
+- The pending slider on the home page follows the same rule
 
-## Frontend
+Member with "View all department records" permission granted:
+- Sees all logs, plans and todos of every member in their department(s)
+- Editing/deleting stays restricted to the creator (unchanged)
 
-### `useAgentDirectCustomers.ts`
-Extend `AgentDirectCustomer` and `DirectCustomerInput` with `panchayath_id`, `is_outside`, and derived `panchayath_name`.
+Visitors who are not logged in: unchanged — they keep seeing the public (non-private) items.
 
-### `DirectCustomerFormDialog.tsx`
-New props: `defaultPanchayathId`, `defaultPanchayathName`, `defaultWard` (passed from the parent, sourced from the agent).
+## Admin panel
 
-UI additions:
-- Toggle/checkbox: **"Outside Location"** (default off).
-- When OFF: show read-only Panchayath (agent's) and a Ward input pre-filled with the agent's ward but editable.
-- When ON: show a searchable Panchayath select (fetch from `panchayaths` table) and a Ward input. Submitted record gets `is_outside = true` and uses the chosen panchayath/ward.
+On `/super-admin/departments`, each member row gets a toggle: **"Can view all members' records"**. Super admin turns it on/off per member; it is saved immediately and reflected on next login/refresh of that member.
 
-Validation: panchayath_id required in both modes; ward required.
+## Technical notes
 
-### `AgentDirectCustomersDialog.tsx`
-- Pass agent's `panchayath_id`, `panchayath.name`, and `ward` as defaults to the form dialog.
-- Group the customer list into two sections: **"Local (Agent's Panchayath)"** and **"Outside Location"**, each with its own count badge. Search still filters across both.
-- Each list item shows the panchayath + ward chip so outside entries are visually distinct (badge with different color).
-
-### Optional (small)
-- Add an `Outside` filter/badge on `AgentRanksTab` / rank calc? **No** — outside customers are a "separate head" and should NOT contribute to the agent's PRO rank fulfillment. Update `src/lib/agentRank.ts` PRO counting to filter `is_outside = false` when counting direct customers so ranks stay honest.
-
-## Out of scope
-- No changes to bulk import, sales report, or payouts.
-- No new page — everything stays inside the existing Direct Customers dialog.
+- Migration: add `can_view_all boolean not null default false` to `public.department_members`.
+- Edge function `department-worklog`:
+  - `upsert_member` accepts and stores `can_view_all`; add a `set_member_permission` action (super-admin path already used by the management page) to toggle it.
+  - `login` response includes `can_view_all` per membership.
+- `src/components/home/DepartmentWorkLogSection.tsx`: filtering currently uses `is_public || canEditItem(...)`. Add a session-aware rule:
+  - not logged in → public items only
+  - logged in without permission → only items whose `created_by_member_id` (or `member_id` for logs) is one of the member's own ids
+  - logged in with `can_view_all` → all items in their departments
+- `src/components/home/DepartmentPendingSlider.tsx`: apply the same visibility helper.
+- `src/pages/admin/DepartmentsManagement.tsx`: add the toggle in the member list and call the edge function action.
