@@ -28,7 +28,7 @@ Deno.serve(async (req) => {
     const action = body.action as string;
 
     // ---- Admin actions: require super_admin (validated via Authorization header)
-    if (action === "admin_upsert_member" || action === "admin_remove_member") {
+    if (action === "admin_upsert_member" || action === "admin_remove_member" || action === "admin_set_member_permission") {
       const authHeader = req.headers.get("Authorization") || "";
       const jwt = authHeader.replace("Bearer ", "");
       if (!jwt) return json({ error: "Unauthorized" }, 401);
