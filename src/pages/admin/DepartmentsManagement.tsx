@@ -12,13 +12,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Switch } from "@/components/ui/switch";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Plus, Trash2, Pencil, UserPlus, Loader2, Users, Building2, FileText, Target, ListTodo, Calendar as CalendarIcon } from "lucide-react";
 
 type Department = { id: string; name: string; description: string | null; color: string | null; icon: string | null; is_active: boolean };
 type Agent = { id: string; name: string; mobile: string; role: string };
-type Member = { id: string; department_id: string; agent_id: string; member_role: string; is_active: boolean };
+type Member = { id: string; department_id: string; agent_id: string; member_role: string; is_active: boolean; can_view_all?: boolean };
 type Log = { id: string; member_id: string; department_id: string; work_date: string; work_details: string };
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean };
