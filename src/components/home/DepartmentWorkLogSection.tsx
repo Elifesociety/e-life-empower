@@ -29,7 +29,7 @@ type Log = { id: string; member_id: string; department_id: string; work_date: st
 type Plan = { id: string; department_id: string; title: string; description: string | null; target_date: string | null; status: string; created_at: string; created_by_member_id: string | null; is_public: boolean };
 type Todo = { id: string; department_id: string; title: string; description: string | null; due_date: string | null; is_completed: boolean; completed_at: string | null; created_at: string; created_by_member_id: string | null; is_public: boolean };
 
-interface Membership { member_id: string; department_id: string; member_role: string; department: Dept }
+interface Membership { member_id: string; department_id: string; member_role: string; can_view_all?: boolean; department: Dept }
 interface Session { token: string; agent: Agent; memberships: Membership[] }
 
 const SESSION_KEY = "elife_dept_session";
