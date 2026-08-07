@@ -88,6 +88,9 @@ export default function Panchayaths() {
   const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set());
   const [sortBy, setSortBy] = useState<SortKey>("code");
   const [selected, setSelected] = useState<Panchayath | null>(null);
+  const [notesFor, setNotesFor] = useState<Panchayath | null>(null);
+  const [partnerFilter, setPartnerFilter] = useState<string>("all");
+  const [adminFilter, setAdminFilter] = useState<string>("all");
   const [myPanchayathIds, setMyPanchayathIds] = useState<Set<string> | null>(null);
   const [myOnly, setMyOnly] = useState(false);
   const [myAgentName, setMyAgentName] = useState<string | null>(null);
