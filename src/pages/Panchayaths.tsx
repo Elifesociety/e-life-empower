@@ -87,12 +87,17 @@ const daysAgo = (dateStr: string) => {
 };
 
 const updateBadge = (dateStr?: string) => {
-  if (!dateStr) return { text: "No updates yet", cls: "bg-muted text-muted-foreground" };
+  if (!dateStr)
+    return {
+      text: "No updates yet",
+      cls: "bg-slate-500 text-white ring-slate-300/60 dark:ring-slate-600/60",
+      pulse: true,
+    };
   const n = daysAgo(dateStr);
-  if (n <= 0) return { text: "Updated today", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
-  if (n === 1) return { text: "Updated yesterday", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
-  if (n <= 7) return { text: `Updated ${n} days ago`, cls: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" };
-  return { text: `Updated ${n} days ago`, cls: "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300" };
+  if (n <= 0) return { text: "Updated today", cls: "bg-emerald-600 text-white ring-emerald-300/60", pulse: false };
+  if (n === 1) return { text: "Updated yesterday", cls: "bg-emerald-600 text-white ring-emerald-300/60", pulse: false };
+  if (n <= 7) return { text: `Updated ${n} days ago`, cls: "bg-amber-500 text-white ring-amber-300/60", pulse: false };
+  return { text: `Not updated for ${n} days`, cls: "bg-rose-600 text-white ring-rose-300/60", pulse: true };
 };
 
 export default function Panchayaths() {
