@@ -87,12 +87,17 @@ const daysAgo = (dateStr: string) => {
 };
 
 const updateBadge = (dateStr?: string) => {
-  if (!dateStr) return { text: "No updates yet", cls: "bg-muted text-muted-foreground" };
+  if (!dateStr)
+    return {
+      text: "No updates yet",
+      cls: "bg-slate-500 text-white ring-slate-300/60 dark:ring-slate-600/60",
+      pulse: true,
+    };
   const n = daysAgo(dateStr);
-  if (n <= 0) return { text: "Updated today", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
-  if (n === 1) return { text: "Updated yesterday", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
-  if (n <= 7) return { text: `Updated ${n} days ago`, cls: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" };
-  return { text: `Updated ${n} days ago`, cls: "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300" };
+  if (n <= 0) return { text: "Updated today", cls: "bg-emerald-600 text-white ring-emerald-300/60", pulse: false };
+  if (n === 1) return { text: "Updated yesterday", cls: "bg-emerald-600 text-white ring-emerald-300/60", pulse: false };
+  if (n <= 7) return { text: `Updated ${n} days ago`, cls: "bg-amber-500 text-white ring-amber-300/60", pulse: false };
+  return { text: `Not updated for ${n} days`, cls: "bg-rose-600 text-white ring-rose-300/60", pulse: true };
 };
 
 export default function Panchayaths() {
@@ -437,8 +442,11 @@ export default function Panchayaths() {
                         {[p.district, p.state].filter(Boolean).join(", ")}
                       </p>
                     )}
-                    <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium w-fit ${upd.cls}`}>
-                      <CalendarDays className="w-3 h-3" /> {upd.text}
+                    <div
+                      className={`mt-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide shadow-sm ring-2 w-full justify-center ${upd.cls}`}
+                    >
+                      {upd.pulse && <span className="h-2 w-2 rounded-full bg-white animate-pulse" />}
+                      <CalendarDays className="w-3.5 h-3.5" /> {upd.text}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-2 space-y-3">
