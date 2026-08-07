@@ -100,12 +100,18 @@ export default function Panchayaths() {
 
   useEffect(() => {
     (async () => {
-      const [{ data: pData }, { data: aData }, { data: cData }, { data: rData }] = await Promise.all([
+      const [{ data: pData }, { data: aData }, { data: cData }, { data: rData }, { data: nData }] = await Promise.all([
         supabase.from("panchayaths").select("id, name, name_ml, district, state, code").eq("is_active", true).order("name"),
         supabase.from("pennyekart_agents").select("id, name, mobile, role, panchayath_id, responsible_panchayath_ids").eq("is_active", true),
         supabase.from("cash_collections").select("panchayath_id"),
         supabase.from("program_registrations").select("answers"),
+        supabase.from("panchayath_notes").select("panchayath_id, note_date").order("note_date", { ascending: false }),
       ]);
+      const lastNotes: Record<string, string> = {};
+      (nData || []).forEach((n: any) => {
+        if (n.panchayath_id && !lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
+      });
+      setLastNoteMap(lastNotes);
       const map: Record<string, Metrics> = {};
       const ensure = (pid: string) => (map[pid] ||= emptyMetrics());
       const leaders: Record<string, AgentLite[]> = {};
