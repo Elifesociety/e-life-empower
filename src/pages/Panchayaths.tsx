@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { PanchayathAgentsDialog } from "@/components/panchayath/PanchayathAgentsDialog";
+import { PanchayathNotesDialog } from "@/components/panchayath/PanchayathNotesDialog";
 
 interface Panchayath {
   id: string;
