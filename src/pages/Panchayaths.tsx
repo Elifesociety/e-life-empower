@@ -479,6 +479,14 @@ export default function Panchayaths() {
                         </ul>
                       )}
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={(e) => { e.stopPropagation(); setNotesFor(p); }}
+                    >
+                      <CalendarDays className="w-3.5 h-3.5 mr-1.5" /> Updation Notes
+                    </Button>
                   </CardContent>
                 </Card>
               );
@@ -491,6 +499,13 @@ export default function Panchayaths() {
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
       />
+      <PanchayathNotesDialog
+        panchayathId={notesFor?.id ?? null}
+        panchayathName={notesFor?.name}
+        open={!!notesFor}
+        onOpenChange={(o) => !o && setNotesFor(null)}
+      />
+
     </Layout>
 
   );
