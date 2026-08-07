@@ -442,8 +442,11 @@ export default function Panchayaths() {
                         {[p.district, p.state].filter(Boolean).join(", ")}
                       </p>
                     )}
-                    <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium w-fit ${upd.cls}`}>
-                      <CalendarDays className="w-3 h-3" /> {upd.text}
+                    <div
+                      className={`mt-2 flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-bold uppercase tracking-wide shadow-sm ring-2 w-full justify-center ${upd.cls}`}
+                    >
+                      {upd.pulse && <span className="h-2 w-2 rounded-full bg-white animate-pulse" />}
+                      <CalendarDays className="w-3.5 h-3.5" /> {upd.text}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-2 space-y-3">
