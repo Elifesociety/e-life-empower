@@ -79,6 +79,22 @@ const emptyMetrics = (): Metrics => ({
   registrations: 0,
 });
 
+const daysAgo = (dateStr: string) => {
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - d.getTime()) / 86400000);
+};
+
+const updateBadge = (dateStr?: string) => {
+  if (!dateStr) return { text: "No updates yet", cls: "bg-muted text-muted-foreground" };
+  const n = daysAgo(dateStr);
+  if (n <= 0) return { text: "Updated today", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
+  if (n === 1) return { text: "Updated yesterday", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
+  if (n <= 7) return { text: `Updated ${n} days ago`, cls: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" };
+  return { text: `Updated ${n} days ago`, cls: "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300" };
+};
+
 export default function Panchayaths() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [metricsMap, setMetricsMap] = useState<Record<string, Metrics>>({});
@@ -95,16 +111,23 @@ export default function Panchayaths() {
   const [myPanchayathIds, setMyPanchayathIds] = useState<Set<string> | null>(null);
   const [myOnly, setMyOnly] = useState(false);
   const [myAgentName, setMyAgentName] = useState<string | null>(null);
+  const [lastNoteMap, setLastNoteMap] = useState<Record<string, string>>({});
 
 
   useEffect(() => {
     (async () => {
-      const [{ data: pData }, { data: aData }, { data: cData }, { data: rData }] = await Promise.all([
+      const [{ data: pData }, { data: aData }, { data: cData }, { data: rData }, { data: nData }] = await Promise.all([
         supabase.from("panchayaths").select("id, name, name_ml, district, state, code").eq("is_active", true).order("name"),
         supabase.from("pennyekart_agents").select("id, name, mobile, role, panchayath_id, responsible_panchayath_ids").eq("is_active", true),
         supabase.from("cash_collections").select("panchayath_id"),
         supabase.from("program_registrations").select("answers"),
+        supabase.from("panchayath_notes").select("panchayath_id, note_date").order("note_date", { ascending: false }),
       ]);
+      const lastNotes: Record<string, string> = {};
+      (nData || []).forEach((n: any) => {
+        if (n.panchayath_id && !lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
+      });
+      setLastNoteMap(lastNotes);
       const map: Record<string, Metrics> = {};
       const ensure = (pid: string) => (map[pid] ||= emptyMetrics());
       const leaders: Record<string, AgentLite[]> = {};
@@ -386,6 +409,7 @@ export default function Panchayaths() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((p) => {
               const counts = metricsMap[p.id] || emptyMetrics();
+              const upd = updateBadge(lastNoteMap[p.id]);
               return (
                 <Card
                   key={p.id}
@@ -413,6 +437,9 @@ export default function Panchayaths() {
                         {[p.district, p.state].filter(Boolean).join(", ")}
                       </p>
                     )}
+                    <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium w-fit ${upd.cls}`}>
+                      <CalendarDays className="w-3 h-3" /> {upd.text}
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-2 space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-xs">
