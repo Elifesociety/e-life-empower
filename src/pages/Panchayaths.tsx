@@ -409,6 +409,7 @@ export default function Panchayaths() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {filtered.map((p) => {
               const counts = metricsMap[p.id] || emptyMetrics();
+              const upd = updateBadge(lastNoteMap[p.id]);
               return (
                 <Card
                   key={p.id}
