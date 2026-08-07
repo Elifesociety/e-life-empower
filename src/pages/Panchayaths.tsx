@@ -437,6 +437,9 @@ export default function Panchayaths() {
                         {[p.district, p.state].filter(Boolean).join(", ")}
                       </p>
                     )}
+                    <div className={`mt-1 inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium w-fit ${upd.cls}`}>
+                      <CalendarDays className="w-3 h-3" /> {upd.text}
+                    </div>
                   </CardHeader>
                   <CardContent className="pt-2 space-y-3">
                     <div className="grid grid-cols-2 gap-2 text-xs">
