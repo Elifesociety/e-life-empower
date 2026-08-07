@@ -262,7 +262,7 @@ export default function Panchayaths() {
     );
   }, [metricsMap]);
 
-  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly;
+  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly || partnerFilter !== "all" || adminFilter !== "all";
   const hasMy = !!(myPanchayathIds && myPanchayathIds.size > 0);
 
   return (
