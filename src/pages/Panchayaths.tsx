@@ -79,6 +79,22 @@ const emptyMetrics = (): Metrics => ({
   registrations: 0,
 });
 
+const daysAgo = (dateStr: string) => {
+  const d = new Date(dateStr + "T00:00:00");
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  return Math.round((today.getTime() - d.getTime()) / 86400000);
+};
+
+const updateBadge = (dateStr?: string) => {
+  if (!dateStr) return { text: "No updates yet", cls: "bg-muted text-muted-foreground" };
+  const n = daysAgo(dateStr);
+  if (n <= 0) return { text: "Updated today", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
+  if (n === 1) return { text: "Updated yesterday", cls: "bg-emerald-100 text-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300" };
+  if (n <= 7) return { text: `Updated ${n} days ago`, cls: "bg-amber-100 text-amber-800 dark:bg-amber-950/40 dark:text-amber-300" };
+  return { text: `Updated ${n} days ago`, cls: "bg-rose-100 text-rose-800 dark:bg-rose-950/40 dark:text-rose-300" };
+};
+
 export default function Panchayaths() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [metricsMap, setMetricsMap] = useState<Record<string, Metrics>>({});
