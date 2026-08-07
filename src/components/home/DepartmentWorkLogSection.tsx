@@ -461,6 +461,16 @@ export function DepartmentWorkLogSection() {
               })}
           </TabsContent>
         </Tabs>
+        </>
+        ) : (
+          <Card className="border-dashed">
+            <CardContent className="py-10 text-center space-y-3">
+              <Building2 className="h-8 w-8 mx-auto text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">Department details are private. Please log in as a department member to view logs, planning and todos.</p>
+              <Button size="sm" onClick={() => setLoginOpen(true)}><LogIn className="h-4 w-4 mr-1.5" /> Member Login</Button>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Login dialog */}
