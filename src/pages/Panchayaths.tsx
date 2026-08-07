@@ -328,6 +328,30 @@ export default function Panchayaths() {
           </Select>
         </div>
 
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+          <Select value={partnerFilter} onValueChange={setPartnerFilter}>
+            <SelectTrigger><SelectValue placeholder="Super Admin / Business Partner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Super Admins / Partners</SelectItem>
+              <SelectItem value="none">Not allocated</SelectItem>
+              {partnerOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={adminFilter} onValueChange={setAdminFilter}>
+            <SelectTrigger><SelectValue placeholder="Admin (Team Leader)" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Admins / Team Leaders</SelectItem>
+              <SelectItem value="none">Not allocated</SelectItem>
+              {adminOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+
 
         <div className="flex flex-wrap gap-2 items-center mb-4">
           {FILTER_CHIPS.map((c) => {
