@@ -262,6 +262,8 @@ export function DepartmentWorkLogSection() {
           </div>
         </div>
 
+        {session ? (
+        <>
         {/* Filter */}
         <div className="flex items-center gap-2 mb-3 flex-wrap">
           <Label className="text-sm">Department:</Label>
