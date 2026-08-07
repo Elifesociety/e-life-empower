@@ -185,12 +185,38 @@ export default function Panchayaths() {
     setSortBy("code");
     setSearch("");
     setMyOnly(false);
+    setPartnerFilter("all");
+    setAdminFilter("all");
   };
+
+  const partnerOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    Object.values(partnersMap).forEach((list) => list.forEach((a) => m.set(a.id, a.name)));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [partnersMap]);
+
+  const adminOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    Object.values(leadersMap).forEach((list) => list.forEach((a) => m.set(a.id, a.name)));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [leadersMap]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = panchayaths.filter((p) => {
       if (myOnly && myPanchayathIds && !myPanchayathIds.has(p.id)) return false;
+      if (partnerFilter !== "all") {
+        const list = partnersMap[p.id] || [];
+        if (partnerFilter === "none") {
+          if (list.length > 0) return false;
+        } else if (!list.some((a) => a.id === partnerFilter)) return false;
+      }
+      if (adminFilter !== "all") {
+        const list = leadersMap[p.id] || [];
+        if (adminFilter === "none") {
+          if (list.length > 0) return false;
+        } else if (!list.some((a) => a.id === adminFilter)) return false;
+      }
       if (q) {
         const matches =
           p.name.toLowerCase().includes(q) ||
@@ -216,7 +242,8 @@ export default function Panchayaths() {
       });
     }
     return list;
-  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds]);
+  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds, partnerFilter, adminFilter, partnersMap, leadersMap]);
+
 
   const totals = useMemo(() => {
     return Object.values(metricsMap).reduce(
