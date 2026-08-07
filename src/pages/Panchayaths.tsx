@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Search, Users, Crown, Shield, UserCheck, Briefcase, ShoppingCart, FileText, User } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Users, Crown, Shield, UserCheck, Briefcase, ShoppingCart, FileText, User, CalendarDays } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { PanchayathAgentsDialog } from "@/components/panchayath/PanchayathAgentsDialog";
+import { PanchayathNotesDialog } from "@/components/panchayath/PanchayathNotesDialog";
 
 interface Panchayath {
   id: string;
@@ -88,6 +89,9 @@ export default function Panchayaths() {
   const [activeFilters, setActiveFilters] = useState<Set<FilterKey>>(new Set());
   const [sortBy, setSortBy] = useState<SortKey>("code");
   const [selected, setSelected] = useState<Panchayath | null>(null);
+  const [notesFor, setNotesFor] = useState<Panchayath | null>(null);
+  const [partnerFilter, setPartnerFilter] = useState<string>("all");
+  const [adminFilter, setAdminFilter] = useState<string>("all");
   const [myPanchayathIds, setMyPanchayathIds] = useState<Set<string> | null>(null);
   const [myOnly, setMyOnly] = useState(false);
   const [myAgentName, setMyAgentName] = useState<string | null>(null);
@@ -182,12 +186,38 @@ export default function Panchayaths() {
     setSortBy("code");
     setSearch("");
     setMyOnly(false);
+    setPartnerFilter("all");
+    setAdminFilter("all");
   };
+
+  const partnerOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    Object.values(partnersMap).forEach((list) => list.forEach((a) => m.set(a.id, a.name)));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [partnersMap]);
+
+  const adminOptions = useMemo(() => {
+    const m = new Map<string, string>();
+    Object.values(leadersMap).forEach((list) => list.forEach((a) => m.set(a.id, a.name)));
+    return [...m.entries()].sort((a, b) => a[1].localeCompare(b[1]));
+  }, [leadersMap]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = panchayaths.filter((p) => {
       if (myOnly && myPanchayathIds && !myPanchayathIds.has(p.id)) return false;
+      if (partnerFilter !== "all") {
+        const list = partnersMap[p.id] || [];
+        if (partnerFilter === "none") {
+          if (list.length > 0) return false;
+        } else if (!list.some((a) => a.id === partnerFilter)) return false;
+      }
+      if (adminFilter !== "all") {
+        const list = leadersMap[p.id] || [];
+        if (adminFilter === "none") {
+          if (list.length > 0) return false;
+        } else if (!list.some((a) => a.id === adminFilter)) return false;
+      }
       if (q) {
         const matches =
           p.name.toLowerCase().includes(q) ||
@@ -213,7 +243,8 @@ export default function Panchayaths() {
       });
     }
     return list;
-  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds]);
+  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds, partnerFilter, adminFilter, partnersMap, leadersMap]);
+
 
   const totals = useMemo(() => {
     return Object.values(metricsMap).reduce(
@@ -231,7 +262,7 @@ export default function Panchayaths() {
     );
   }, [metricsMap]);
 
-  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly;
+  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly || partnerFilter !== "all" || adminFilter !== "all";
   const hasMy = !!(myPanchayathIds && myPanchayathIds.size > 0);
 
   return (
@@ -297,6 +328,30 @@ export default function Panchayaths() {
             </SelectContent>
           </Select>
         </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-3">
+          <Select value={partnerFilter} onValueChange={setPartnerFilter}>
+            <SelectTrigger><SelectValue placeholder="Super Admin / Business Partner" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Super Admins / Partners</SelectItem>
+              <SelectItem value="none">Not allocated</SelectItem>
+              {partnerOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select value={adminFilter} onValueChange={setAdminFilter}>
+            <SelectTrigger><SelectValue placeholder="Admin (Team Leader)" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Admins / Team Leaders</SelectItem>
+              <SelectItem value="none">Not allocated</SelectItem>
+              {adminOptions.map(([id, name]) => (
+                <SelectItem key={id} value={id}>{name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
 
 
         <div className="flex flex-wrap gap-2 items-center mb-4">
@@ -425,6 +480,14 @@ export default function Panchayaths() {
                         </ul>
                       )}
                     </div>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full text-xs"
+                      onClick={(e) => { e.stopPropagation(); setNotesFor(p); }}
+                    >
+                      <CalendarDays className="w-3.5 h-3.5 mr-1.5" /> Updation Notes
+                    </Button>
                   </CardContent>
                 </Card>
               );
@@ -437,6 +500,13 @@ export default function Panchayaths() {
         open={!!selected}
         onOpenChange={(o) => !o && setSelected(null)}
       />
+      <PanchayathNotesDialog
+        panchayathId={notesFor?.id ?? null}
+        panchayathName={notesFor?.name}
+        open={!!notesFor}
+        onOpenChange={(o) => !o && setNotesFor(null)}
+      />
+
     </Layout>
 
   );
