@@ -32,8 +32,14 @@ async function verifyToken(token: string, secret: string): Promise<Record<string
     const [b64, sig] = token.split(".");
     if (!b64 || !sig) return null;
     const data = atob(b64);
-    const expected = await sha256Hex(data + secret);
-    if (expected !== sig) return null;
+    // accept current secret, and legacy tokens signed with the service role key
+    const legacy = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+    const candidates = [secret, legacy].filter(Boolean);
+    let ok = false;
+    for (const c of candidates) {
+      if ((await sha256Hex(data + c)) === sig) { ok = true; break; }
+    }
+    if (!ok) return null;
     const payload = JSON.parse(data);
     if (payload.exp && payload.exp < Date.now()) return null;
     return payload;
