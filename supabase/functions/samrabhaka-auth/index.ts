@@ -56,7 +56,7 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
-    const secret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const secret = Deno.env.get("SAMRABHAKA_TOKEN_SECRET") || Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     const body = await req.json().catch(() => ({}));
     const action: string = body.action;
