@@ -323,6 +323,7 @@ export type Database = {
           elife_share: number
           entity: string
           id: string
+          logo_url: string | null
           model: string
           own_share: number
           plan_description: string | null
@@ -337,6 +338,7 @@ export type Database = {
           elife_share?: number
           entity: string
           id?: string
+          logo_url?: string | null
           model: string
           own_share?: number
           plan_description?: string | null
@@ -351,6 +353,7 @@ export type Database = {
           elife_share?: number
           entity?: string
           id?: string
+          logo_url?: string | null
           model?: string
           own_share?: number
           plan_description?: string | null

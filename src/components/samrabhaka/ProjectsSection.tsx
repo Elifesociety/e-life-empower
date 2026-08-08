@@ -7,7 +7,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Trash2, Briefcase, User, Users, Users2, Building2, Handshake, PieChart, Sparkles, Check, ChevronRight } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Briefcase, User, Users, Users2, Building2, Handshake, PieChart, Sparkles, Check, ChevronRight, ImagePlus, X } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 import { ProjectDashboard } from "./ProjectDashboard";
@@ -23,6 +24,7 @@ interface AgentProject {
   model: "individual" | "partnership" | "group";
   entity: "own_company" | "elife_affiliated";
   budget_plan: "own_100" | "80_20" | "50_50" | "20_80" | "samrambhini";
+  logo_url: string | null;
   own_share: number;
   elife_share: number;
   status: string;
@@ -71,6 +73,7 @@ export function ProjectsSection({ token }: { token: string }) {
   const [editing, setEditing] = useState<AgentProject | null>(null);
   const [saving, setSaving] = useState(false);
   const [openProjectId, setOpenProjectId] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
 
   const [form, setForm] = useState({
     project_name: "",
@@ -78,6 +81,7 @@ export function ProjectsSection({ token }: { token: string }) {
     model: "individual" as AgentProject["model"],
     entity: "own_company" as AgentProject["entity"],
     budget_plan: "own_100" as AgentProject["budget_plan"],
+    logo_url: "" as string,
   });
 
   const load = useCallback(async () => {
@@ -104,6 +108,7 @@ export function ProjectsSection({ token }: { token: string }) {
       model: "individual",
       entity: "own_company",
       budget_plan: "own_100",
+      logo_url: "",
     });
     setDialogOpen(true);
   };
@@ -116,8 +121,31 @@ export function ProjectsSection({ token }: { token: string }) {
       model: p.model,
       entity: p.entity,
       budget_plan: p.budget_plan,
+      logo_url: p.logo_url || "",
     });
     setDialogOpen(true);
+  };
+
+  const handleLogoUpload = async (file: File) => {
+    if (!file.type.startsWith("image/")) return toast.error("Please select an image file");
+    if (file.size > 3 * 1024 * 1024) return toast.error("Image must be under 3MB");
+    setUploading(true);
+    try {
+      const ext = file.name.split(".").pop() || "png";
+      const path = `samrambhaka-logos/${crypto.randomUUID()}.${ext}`;
+      const { error } = await supabase.storage.from("program-media").upload(path, file, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+      if (error) throw error;
+      const { data } = supabase.storage.from("program-media").getPublicUrl(path);
+      setForm((f) => ({ ...f, logo_url: data.publicUrl }));
+      toast.success("Logo uploaded");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+    }
   };
 
   const handleSave = async (e: React.FormEvent) => {
@@ -197,6 +225,14 @@ export function ProjectsSection({ token }: { token: string }) {
                 className="rounded-lg border p-4 bg-gradient-to-br from-pink-50/50 to-transparent hover:shadow-md hover:border-pink-400 transition-all cursor-pointer group"
               >
                 <div className="flex items-start justify-between gap-3">
+                  {p.logo_url && (
+                    <img
+                      src={p.logo_url}
+                      alt={`${p.project_name} logo`}
+                      loading="lazy"
+                      className="h-12 w-12 rounded-lg object-cover border bg-background shrink-0"
+                    />
+                  )}
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-1.5">
                       <h4 className="font-semibold text-base group-hover:text-pink-700 transition-colors">{p.project_name}</h4>
@@ -246,6 +282,56 @@ export function ProjectsSection({ token }: { token: string }) {
                 placeholder="e.g. Organic Grocery Store"
                 required
               />
+            </div>
+            <div className="space-y-2">
+              <Label>Project Logo</Label>
+              <div className="flex items-center gap-3">
+                {form.logo_url ? (
+                  <div className="relative">
+                    <img
+                      src={form.logo_url}
+                      alt="Project logo preview"
+                      className="h-16 w-16 rounded-lg object-cover border"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setForm((f) => ({ ...f, logo_url: "" }))}
+                      className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-destructive text-destructive-foreground flex items-center justify-center"
+                      aria-label="Remove logo"
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-16 w-16 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground">
+                    <ImagePlus className="h-6 w-6" />
+                  </div>
+                )}
+                <div>
+                  <Input
+                    id="logo_file"
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) handleLogoUpload(file);
+                      e.target.value = "";
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={uploading}
+                    onClick={() => document.getElementById("logo_file")?.click()}
+                  >
+                    {uploading && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                    {form.logo_url ? "Change logo" : "Upload logo"}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">PNG or JPG, max 3MB</p>
+                </div>
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="plan_description">Plan Details (Description)</Label>

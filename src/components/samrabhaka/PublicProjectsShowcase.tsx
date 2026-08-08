@@ -18,6 +18,7 @@ interface PublicProject {
   id: string;
   project_name: string;
   plan_description: string | null;
+  logo_url: string | null;
   created_at: string;
   updates: PublicUpdate[];
 }
@@ -72,7 +73,17 @@ export function PublicProjectsShowcase() {
         {projects.map((p) => (
           <Card key={p.id} className="border-2 hover:border-pink-300 hover:shadow-md transition-all">
             <CardHeader className="pb-2">
-              <CardTitle className="text-base">{p.project_name}</CardTitle>
+              <div className="flex items-center gap-3">
+                {p.logo_url && (
+                  <img
+                    src={p.logo_url}
+                    alt={`${p.project_name} logo`}
+                    loading="lazy"
+                    className="h-10 w-10 rounded-lg object-cover border bg-background shrink-0"
+                  />
+                )}
+                <CardTitle className="text-base">{p.project_name}</CardTitle>
+              </div>
             </CardHeader>
             <CardContent className="space-y-3">
               {p.plan_description ? (
