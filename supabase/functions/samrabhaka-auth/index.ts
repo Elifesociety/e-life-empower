@@ -55,6 +55,35 @@ serve(async (req) => {
     const body = await req.json().catch(() => ({}));
     const action: string = body.action;
 
+    // ---- public_projects (no auth) ----
+    if (action === "public_projects") {
+      const { data: projects, error } = await supabase
+        .from("agent_projects")
+        .select("id, project_name, plan_description, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (error) return json({ error: error.message }, 500);
+      const ids = (projects || []).map((p: any) => p.id);
+      let notesByProject: Record<string, any[]> = {};
+      if (ids.length) {
+        const { data: notes } = await supabase
+          .from("agent_project_notes")
+          .select("id, project_id, title, body, created_at")
+          .in("project_id", ids)
+          .order("created_at", { ascending: false });
+        for (const n of notes || []) {
+          (notesByProject[n.project_id] ||= []).push(n);
+        }
+      }
+      return json({
+        success: true,
+        projects: (projects || []).map((p: any) => ({
+          ...p,
+          updates: (notesByProject[p.id] || []).slice(0, 5),
+        })),
+      });
+    }
+
     // ---- check_mobile ----
     if (action === "check_mobile") {
       const mobile = normalizeMobile(body.mobile || "");
