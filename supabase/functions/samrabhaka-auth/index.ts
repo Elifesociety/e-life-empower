@@ -59,7 +59,7 @@ serve(async (req) => {
     if (action === "public_projects") {
       const { data: projects, error } = await supabase
         .from("agent_projects")
-        .select("id, project_name, plan_description, created_at")
+        .select("id, project_name, plan_description, logo_url, created_at")
         .order("created_at", { ascending: false })
         .limit(100);
       if (error) return json({ error: error.message }, 500);
@@ -284,6 +284,7 @@ serve(async (req) => {
           model: p.model,
           entity: p.entity,
           budget_plan: p.budget_plan,
+          logo_url: p.logo_url || null,
           own_share: shares.own,
           elife_share: shares.elife,
         })
@@ -304,6 +305,7 @@ serve(async (req) => {
       const patch: Record<string, unknown> = {};
       if (p.project_name !== undefined) patch.project_name = String(p.project_name).slice(0, 200);
       if (p.plan_description !== undefined) patch.plan_description = p.plan_description || null;
+      if (p.logo_url !== undefined) patch.logo_url = p.logo_url || null;
       if (p.model !== undefined) {
         if (!["individual", "partnership", "group"].includes(p.model)) return json({ error: "Invalid model" }, 400);
         patch.model = p.model;
