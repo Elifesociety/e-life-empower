@@ -305,7 +305,11 @@ export default function Samrabhaka() {
           </CardContent>
         </Card>
       </div>
+      <div className="container max-w-6xl pb-16">
+        <PublicProjectsShowcase />
+      </div>
     </Layout>
+
   );
 }
 
