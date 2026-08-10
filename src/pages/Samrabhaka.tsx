@@ -8,6 +8,8 @@ import { useSamrabhakaAuth } from "@/hooks/useSamrabhakaAuth";
 import { toast } from "sonner";
 import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight, ChevronDown } from "lucide-react";
 import { ProjectsSection } from "@/components/samrabhaka/ProjectsSection";
+import { MyTasksSection } from "@/components/samrabhaka/MyTasksSection";
+
 import { PublicProjectsShowcase } from "@/components/samrabhaka/PublicProjectsShowcase";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
@@ -168,11 +170,10 @@ export default function Samrabhaka() {
                 <DialogTitle className="flex items-center gap-2">
                   <ListChecks className="h-5 w-5 text-pink-600" /> Your Tasks
                 </DialogTitle>
-                <DialogDescription>Tasks assigned to you</DialogDescription>
+                <DialogDescription>Tasks from all your projects</DialogDescription>
               </DialogHeader>
-              <div className="py-10 text-center text-sm text-muted-foreground">
-                No tasks assigned yet. Check back soon.
-              </div>
+              {token && <MyTasksSection token={token} />}
+
             </DialogContent>
           </Dialog>
         </div>
