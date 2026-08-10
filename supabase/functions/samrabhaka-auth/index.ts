@@ -173,10 +173,21 @@ serve(async (req) => {
 
       if (!auth) return json({ error: "Invalid mobile or password" }, 401);
 
+      const legacySecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
       const password_hash = await sha256Hex(password + ":" + secret.slice(0, 16));
-      if (password_hash !== auth.password_hash) {
+      let ok = password_hash === auth.password_hash;
+      if (!ok && legacySecret && legacySecret !== secret) {
+        const legacyHash = await sha256Hex(password + ":" + legacySecret.slice(0, 16));
+        if (legacyHash === auth.password_hash) {
+          ok = true;
+          // migrate to the stable secret
+          await supabase.from("agent_auth").update({ password_hash }).eq("id", auth.id);
+        }
+      }
+      if (!ok) {
         return json({ error: "Invalid mobile or password" }, 401);
       }
+
 
       const { data: agent } = await supabase
         .from("pennyekart_agents")
@@ -231,7 +242,14 @@ serve(async (req) => {
       if (!auth) return json({ error: "Not found" }, 404);
 
       const oldHash = await sha256Hex(oldPw + ":" + secret.slice(0, 16));
-      if (oldHash !== auth.password_hash) return json({ error: "Current password is incorrect" }, 401);
+      const legacySecret2 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const oldLegacyHash = legacySecret2
+        ? await sha256Hex(oldPw + ":" + legacySecret2.slice(0, 16))
+        : "";
+      if (oldHash !== auth.password_hash && oldLegacyHash !== auth.password_hash) {
+        return json({ error: "Current password is incorrect" }, 401);
+      }
+
 
       const newHash = await sha256Hex(newPw + ":" + secret.slice(0, 16));
       await supabase.from("agent_auth").update({ password_hash: newHash }).eq("id", auth.id);
