@@ -286,6 +286,45 @@ serve(async (req) => {
       return json({ success: true, projects: data || [] });
     }
 
+    // ---- my_todos: all tasks across owned + member projects ----
+    if (action === "my_todos") {
+      const auth = await requireAuth();
+      if ("error" in auth) return auth.error;
+
+      const [{ data: owned }, { data: memberships }] = await Promise.all([
+        supabase.from("agent_projects").select("id, project_name").eq("agent_id", auth.agent_id),
+        supabase.from("agent_project_members").select("project_id").eq("agent_id", auth.agent_id),
+      ]);
+
+      const memberIds = (memberships || []).map((m: { project_id: string }) => m.project_id);
+      let memberProjects: { id: string; project_name: string }[] = [];
+      if (memberIds.length) {
+        const { data } = await supabase.from("agent_projects").select("id, project_name").in("id", memberIds);
+        memberProjects = data || [];
+      }
+
+      const projectMap = new Map<string, string>();
+      for (const p of [...(owned || []), ...memberProjects]) projectMap.set(p.id, p.project_name);
+      const ids = Array.from(projectMap.keys());
+      if (!ids.length) return json({ success: true, todos: [] });
+
+      const { data: todos, error } = await supabase
+        .from("agent_project_todos")
+        .select("*")
+        .in("project_id", ids)
+        .order("created_at", { ascending: false });
+      if (error) return json({ error: error.message }, 500);
+
+      return json({
+        success: true,
+        todos: (todos || []).map((t: Record<string, unknown>) => ({
+          ...t,
+          project_name: projectMap.get(t.project_id as string) || "",
+        })),
+      });
+    }
+
+
     // ---- create_project ----
     if (action === "create_project") {
       const auth = await requireAuth();
