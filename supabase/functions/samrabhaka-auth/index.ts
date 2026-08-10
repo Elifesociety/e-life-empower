@@ -242,7 +242,14 @@ serve(async (req) => {
       if (!auth) return json({ error: "Not found" }, 404);
 
       const oldHash = await sha256Hex(oldPw + ":" + secret.slice(0, 16));
-      if (oldHash !== auth.password_hash) return json({ error: "Current password is incorrect" }, 401);
+      const legacySecret2 = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      const oldLegacyHash = legacySecret2
+        ? await sha256Hex(oldPw + ":" + legacySecret2.slice(0, 16))
+        : "";
+      if (oldHash !== auth.password_hash && oldLegacyHash !== auth.password_hash) {
+        return json({ error: "Current password is incorrect" }, 401);
+      }
+
 
       const newHash = await sha256Hex(newPw + ":" + secret.slice(0, 16));
       await supabase.from("agent_auth").update({ password_hash: newHash }).eq("id", auth.id);
