@@ -8,6 +8,8 @@ import { useSamrabhakaAuth } from "@/hooks/useSamrabhakaAuth";
 import { toast } from "sonner";
 import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight, ChevronDown } from "lucide-react";
 import { ProjectsSection } from "@/components/samrabhaka/ProjectsSection";
+import { MyTasksSection } from "@/components/samrabhaka/MyTasksSection";
+
 import { PublicProjectsShowcase } from "@/components/samrabhaka/PublicProjectsShowcase";
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
