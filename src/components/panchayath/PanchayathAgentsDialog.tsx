@@ -122,7 +122,7 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
   if (!panchayath) return null;
 
   const canManage = access?.canManage ?? false;
-  const callerMobile = canManage ? access?.mobile ?? undefined : undefined;
+  const callerMobile = canManage && access?.role !== "admin" ? access?.mobile ?? undefined : undefined;
 
   return (
     <>
