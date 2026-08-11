@@ -214,6 +214,7 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
                                   size="icon"
                                   variant="ghost"
                                   className="h-7 w-7"
+                                  title="Edit agent"
                                   onClick={() => {
                                     setEditing(a);
                                     setFormOpen(true);
@@ -221,8 +222,23 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  title="Delete agent"
+                                  disabled={deletingId === a.id}
+                                  onClick={() => setDeleteTarget(a)}
+                                >
+                                  {deletingId === a.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
                               </div>
                             )}
+
                           </div>
                         </div>
                       ))}
