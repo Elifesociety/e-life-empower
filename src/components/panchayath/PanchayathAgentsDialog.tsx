@@ -59,6 +59,10 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PennyekartAgent | null>(null);
   const [customersFor, setCustomersFor] = useState<PennyekartAgent | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PennyekartAgent | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { toast } = useToast();
+
 
   const fetchAgents = async (panchayathId: string) => {
     setLoading(true);
