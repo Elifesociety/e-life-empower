@@ -2,7 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Phone, Crown, Shield, UserCheck, Briefcase, Users, Lock, ShoppingCart } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Phone, Crown, Shield, UserCheck, Briefcase, Users, Lock, ShoppingCart } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 import { supabase } from "@/integrations/supabase/client";
 import { AgentFormDialog } from "@/components/pennyekart/AgentFormDialog";
 import { AgentDirectCustomersDialog } from "@/components/pennyekart/AgentDirectCustomersDialog";
