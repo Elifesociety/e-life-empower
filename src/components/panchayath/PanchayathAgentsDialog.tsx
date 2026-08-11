@@ -2,7 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Plus, Pencil, Phone, Crown, Shield, UserCheck, Briefcase, Users, Lock, ShoppingCart } from "lucide-react";
+import { Loader2, Plus, Pencil, Trash2, Phone, Crown, Shield, UserCheck, Briefcase, Users, Lock, ShoppingCart } from "lucide-react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { useToast } from "@/hooks/use-toast";
+
 import { supabase } from "@/integrations/supabase/client";
 import { AgentFormDialog } from "@/components/pennyekart/AgentFormDialog";
 import { AgentDirectCustomersDialog } from "@/components/pennyekart/AgentDirectCustomersDialog";
@@ -10,7 +22,9 @@ import {
   PennyekartAgent,
   AgentRole,
   ROLE_LABELS,
+  useAgentMutations,
 } from "@/hooks/usePennyekartAgents";
+
 import { checkPanchayathAccess, PanchayathAccess } from "@/lib/panchayathAccess";
 import { resetMobileGate } from "@/components/MobileGate";
 
@@ -45,6 +59,28 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<PennyekartAgent | null>(null);
   const [customersFor, setCustomersFor] = useState<PennyekartAgent | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<PennyekartAgent | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { deleteAgent } = useAgentMutations(
+    access?.canManage && access.role !== "admin" ? access.mobile ?? undefined : undefined,
+  );
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !panchayath) return;
+    setDeletingId(deleteTarget.id);
+    const { error } = await deleteAgent(deleteTarget.id);
+    setDeletingId(null);
+    setDeleteTarget(null);
+    if (error) {
+      toast({ title: "Delete failed", description: error, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Agent deleted" });
+    fetchAgents(panchayath.id);
+  };
+
+
 
   const fetchAgents = async (panchayathId: string) => {
     setLoading(true);
@@ -86,7 +122,7 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
   if (!panchayath) return null;
 
   const canManage = access?.canManage ?? false;
-  const callerMobile = canManage ? access?.mobile ?? undefined : undefined;
+  const callerMobile = canManage && access?.role !== "admin" ? access?.mobile ?? undefined : undefined;
 
   return (
     <>
@@ -214,6 +250,7 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
                                   size="icon"
                                   variant="ghost"
                                   className="h-7 w-7"
+                                  title="Edit agent"
                                   onClick={() => {
                                     setEditing(a);
                                     setFormOpen(true);
@@ -221,8 +258,23 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
                                 >
                                   <Pencil className="h-3.5 w-3.5" />
                                 </Button>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  className="h-7 w-7 text-destructive hover:text-destructive"
+                                  title="Delete agent"
+                                  disabled={deletingId === a.id}
+                                  onClick={() => setDeleteTarget(a)}
+                                >
+                                  {deletingId === a.id ? (
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                  ) : (
+                                    <Trash2 className="h-3.5 w-3.5" />
+                                  )}
+                                </Button>
                               </div>
                             )}
+
                           </div>
                         </div>
                       ))}
@@ -256,6 +308,31 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
           callerMobile={callerMobile}
         />
       )}
+
+      <AlertDialog open={!!deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete agent?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteTarget
+                ? `${deleteTarget.name} (${ROLE_LABELS[deleteTarget.role]}) will be removed. Any agents reporting to them will be unlinked.`
+                : ""}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                handleDelete();
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
+
   );
 }
