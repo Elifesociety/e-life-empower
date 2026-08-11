@@ -100,6 +100,71 @@ const updateBadge = (dateStr?: string) => {
   return { text: `Not updated for ${n} days`, cls: "bg-rose-600 text-white ring-rose-300/60", pulse: true };
 };
 
+const PODIUM = [
+  { badge: "bg-gradient-to-br from-yellow-300 to-amber-500 text-amber-950", label: "1st", ring: "ring-amber-400/60", prize: "Gold Reward" },
+  { badge: "bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800", label: "2nd", ring: "ring-slate-400/60", prize: "Silver Reward" },
+  { badge: "bg-gradient-to-br from-orange-300 to-amber-700 text-amber-50", label: "3rd", ring: "ring-orange-500/60", prize: "Bronze Reward" },
+];
+
+function RewardBoard({
+  title,
+  subtitle,
+  icon: Icon,
+  accent,
+  unit,
+  entries,
+  onSelect,
+}: {
+  title: string;
+  subtitle: string;
+  icon: any;
+  accent: string;
+  unit: string;
+  entries: { p: Panchayath; value: number }[];
+  onSelect: (p: Panchayath) => void;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className={`bg-gradient-to-r ${accent} text-white px-4 py-2.5 flex items-center gap-2`}>
+        <Trophy className="w-4 h-4" />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight">{title}</div>
+          <div className="text-[11px] opacity-90 leading-tight">{subtitle}</div>
+        </div>
+        <Icon className="w-4 h-4 ml-auto opacity-80" />
+      </div>
+      <CardContent className="p-3 space-y-2">
+        {entries.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-3 text-center">No data yet.</p>
+        ) : (
+          entries.map((e, i) => (
+            <button
+              key={e.p.id}
+              onClick={() => onSelect(e.p)}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 bg-muted/40 hover:bg-muted transition-colors text-left ring-1 ${PODIUM[i].ring}`}
+            >
+              <span className={`shrink-0 w-9 h-9 rounded-full grid place-items-center text-xs font-bold shadow ${PODIUM[i].badge}`}>
+                {PODIUM[i].label}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold truncate">{e.p.name}</span>
+                <span className="block text-[11px] text-muted-foreground truncate">
+                  {PODIUM[i].prize}
+                  {e.p.district ? ` · ${e.p.district}` : ""}
+                </span>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block text-lg font-bold leading-none">{e.value}</span>
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">{unit}</span>
+              </span>
+            </button>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Panchayaths() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [metricsMap, setMetricsMap] = useState<Record<string, Metrics>>({});
