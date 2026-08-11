@@ -295,6 +295,20 @@ export default function Panchayaths() {
     );
   }, [metricsMap]);
 
+  // 🏆 Rewards: top 3 panchayaths by agent count and by updates count
+  const rewards = useMemo(() => {
+    const rank = (getter: (p: Panchayath) => number) =>
+      panchayaths
+        .map((p) => ({ p, value: getter(p) }))
+        .filter((x) => x.value > 0)
+        .sort((a, b) => b.value - a.value || a.p.name.localeCompare(b.p.name))
+        .slice(0, 3);
+    return {
+      agents: rank((p) => metricsMap[p.id]?.total || 0),
+      updates: rank((p) => noteCountMap[p.id] || 0),
+    };
+  }, [panchayaths, metricsMap, noteCountMap]);
+
   const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly || partnerFilter !== "all" || adminFilter !== "all";
   const hasMy = !!(myPanchayathIds && myPanchayathIds.size > 0);
 
