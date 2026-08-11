@@ -382,9 +382,10 @@ serve(async (req) => {
       });
     }
 
-    // Caller-mobile sessions may only create / update agents
+    // Caller-mobile sessions may create / update / delete agents in their scope
     if (caller && !admin) {
-      const allowed = (req.method === "POST" && action === "create") || req.method === "PUT";
+      const allowed = (req.method === "POST" && action === "create") || req.method === "PUT" || req.method === "DELETE";
+
       if (!allowed) {
         return new Response(
           JSON.stringify({ error: "Forbidden - This action requires an admin session" }),
