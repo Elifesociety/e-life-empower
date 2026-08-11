@@ -576,7 +576,35 @@ serve(async (req) => {
 
     // DELETE - Delete agent (cascade: reassign or delete children first)
     if (req.method === "DELETE" && agentId) {
+      // Caller-mobile scope checks (public TL / Super Admin)
+      if (caller && !admin) {
+        const { data: target } = await supabase
+          .from("pennyekart_agents")
+          .select("panchayath_id, role")
+          .eq("id", agentId)
+          .maybeSingle();
+        if (!target) {
+          return new Response(
+            JSON.stringify({ error: "Agent not found" }),
+            { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (!callerHasPanchayathScope(caller, target.panchayath_id)) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden - Agent is outside your allocated panchayath" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+        if (caller.role === "team_leader" && (target.role === "super_admin_partner" || target.role === "team_leader")) {
+          return new Response(
+            JSON.stringify({ error: "Forbidden - Team Leaders cannot delete this role" }),
+            { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
+
       // First, remove references from child agents by setting their parent_agent_id to null
+
       const { error: childError } = await supabase
         .from("pennyekart_agents")
         .update({ parent_agent_id: null })
