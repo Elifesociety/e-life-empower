@@ -345,6 +345,30 @@ export default function Panchayaths() {
           ))}
         </div>
 
+        {/* 🏆 Rewards — Best performers */}
+        {!loading && (rewards.agents.length > 0 || rewards.updates.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+            <RewardBoard
+              title="Top Agent Strength"
+              subtitle="Most agents in the hierarchy"
+              icon={Users}
+              accent="from-emerald-600 to-green-700"
+              unit="agents"
+              entries={rewards.agents}
+              onSelect={setSelected}
+            />
+            <RewardBoard
+              title="Top Update Activity"
+              subtitle="Most panchayath updates posted"
+              icon={FileText}
+              accent="from-amber-500 to-orange-600"
+              unit="updates"
+              entries={rewards.updates}
+              onSelect={setSelected}
+            />
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
