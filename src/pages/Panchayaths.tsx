@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArrowLeft, MapPin, Search, Users, Crown, Shield, UserCheck, Briefcase, ShoppingCart, FileText, User, CalendarDays } from "lucide-react";
+import { ArrowLeft, MapPin, Search, Users, Crown, Shield, UserCheck, Briefcase, ShoppingCart, FileText, User, CalendarDays, Trophy } from "lucide-react";
 import { Layout } from "@/components/layout/Layout";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -100,6 +100,71 @@ const updateBadge = (dateStr?: string) => {
   return { text: `Not updated for ${n} days`, cls: "bg-rose-600 text-white ring-rose-300/60", pulse: true };
 };
 
+const PODIUM = [
+  { badge: "bg-gradient-to-br from-yellow-300 to-amber-500 text-amber-950", label: "1st", ring: "ring-amber-400/60", prize: "Gold Reward" },
+  { badge: "bg-gradient-to-br from-slate-200 to-slate-400 text-slate-800", label: "2nd", ring: "ring-slate-400/60", prize: "Silver Reward" },
+  { badge: "bg-gradient-to-br from-orange-300 to-amber-700 text-amber-50", label: "3rd", ring: "ring-orange-500/60", prize: "Bronze Reward" },
+];
+
+function RewardBoard({
+  title,
+  subtitle,
+  icon: Icon,
+  accent,
+  unit,
+  entries,
+  onSelect,
+}: {
+  title: string;
+  subtitle: string;
+  icon: any;
+  accent: string;
+  unit: string;
+  entries: { p: Panchayath; value: number }[];
+  onSelect: (p: Panchayath) => void;
+}) {
+  return (
+    <Card className="overflow-hidden">
+      <div className={`bg-gradient-to-r ${accent} text-white px-4 py-2.5 flex items-center gap-2`}>
+        <Trophy className="w-4 h-4" />
+        <div className="min-w-0">
+          <div className="text-sm font-semibold leading-tight">{title}</div>
+          <div className="text-[11px] opacity-90 leading-tight">{subtitle}</div>
+        </div>
+        <Icon className="w-4 h-4 ml-auto opacity-80" />
+      </div>
+      <CardContent className="p-3 space-y-2">
+        {entries.length === 0 ? (
+          <p className="text-xs text-muted-foreground py-3 text-center">No data yet.</p>
+        ) : (
+          entries.map((e, i) => (
+            <button
+              key={e.p.id}
+              onClick={() => onSelect(e.p)}
+              className={`w-full flex items-center gap-3 rounded-lg px-3 py-2 bg-muted/40 hover:bg-muted transition-colors text-left ring-1 ${PODIUM[i].ring}`}
+            >
+              <span className={`shrink-0 w-9 h-9 rounded-full grid place-items-center text-xs font-bold shadow ${PODIUM[i].badge}`}>
+                {PODIUM[i].label}
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold truncate">{e.p.name}</span>
+                <span className="block text-[11px] text-muted-foreground truncate">
+                  {PODIUM[i].prize}
+                  {e.p.district ? ` · ${e.p.district}` : ""}
+                </span>
+              </span>
+              <span className="shrink-0 text-right">
+                <span className="block text-lg font-bold leading-none">{e.value}</span>
+                <span className="block text-[10px] uppercase tracking-wide text-muted-foreground">{unit}</span>
+              </span>
+            </button>
+          ))
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export default function Panchayaths() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
   const [metricsMap, setMetricsMap] = useState<Record<string, Metrics>>({});
@@ -117,6 +182,7 @@ export default function Panchayaths() {
   const [myOnly, setMyOnly] = useState(false);
   const [myAgentName, setMyAgentName] = useState<string | null>(null);
   const [lastNoteMap, setLastNoteMap] = useState<Record<string, string>>({});
+  const [noteCountMap, setNoteCountMap] = useState<Record<string, number>>({});
 
 
   useEffect(() => {
@@ -129,10 +195,14 @@ export default function Panchayaths() {
         supabase.from("panchayath_notes").select("panchayath_id, note_date").order("note_date", { ascending: false }),
       ]);
       const lastNotes: Record<string, string> = {};
+      const noteCounts: Record<string, number> = {};
       (nData || []).forEach((n: any) => {
-        if (n.panchayath_id && !lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
+        if (!n.panchayath_id) return;
+        if (!lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
+        noteCounts[n.panchayath_id] = (noteCounts[n.panchayath_id] || 0) + 1;
       });
       setLastNoteMap(lastNotes);
+      setNoteCountMap(noteCounts);
       const map: Record<string, Metrics> = {};
       const ensure = (pid: string) => (map[pid] ||= emptyMetrics());
       const leaders: Record<string, AgentLite[]> = {};
@@ -290,6 +360,20 @@ export default function Panchayaths() {
     );
   }, [metricsMap]);
 
+  // 🏆 Rewards: top 3 panchayaths by agent count and by updates count
+  const rewards = useMemo(() => {
+    const rank = (getter: (p: Panchayath) => number) =>
+      panchayaths
+        .map((p) => ({ p, value: getter(p) }))
+        .filter((x) => x.value > 0)
+        .sort((a, b) => b.value - a.value || a.p.name.localeCompare(b.p.name))
+        .slice(0, 3);
+    return {
+      agents: rank((p) => metricsMap[p.id]?.total || 0),
+      updates: rank((p) => noteCountMap[p.id] || 0),
+    };
+  }, [panchayaths, metricsMap, noteCountMap]);
+
   const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly || partnerFilter !== "all" || adminFilter !== "all";
   const hasMy = !!(myPanchayathIds && myPanchayathIds.size > 0);
 
@@ -325,6 +409,30 @@ export default function Panchayaths() {
             </div>
           ))}
         </div>
+
+        {/* 🏆 Rewards — Best performers */}
+        {!loading && (rewards.agents.length > 0 || rewards.updates.length > 0) && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-3 mb-6">
+            <RewardBoard
+              title="Top Agent Strength"
+              subtitle="Most agents in the hierarchy"
+              icon={Users}
+              accent="from-emerald-600 to-green-700"
+              unit="agents"
+              entries={rewards.agents}
+              onSelect={setSelected}
+            />
+            <RewardBoard
+              title="Top Update Activity"
+              subtitle="Most panchayath updates posted"
+              icon={FileText}
+              accent="from-amber-500 to-orange-600"
+              unit="updates"
+              entries={rewards.updates}
+              onSelect={setSelected}
+            />
+          </div>
+        )}
 
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <div className="relative flex-1">
