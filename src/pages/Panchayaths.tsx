@@ -117,6 +117,7 @@ export default function Panchayaths() {
   const [myOnly, setMyOnly] = useState(false);
   const [myAgentName, setMyAgentName] = useState<string | null>(null);
   const [lastNoteMap, setLastNoteMap] = useState<Record<string, string>>({});
+  const [noteCountMap, setNoteCountMap] = useState<Record<string, number>>({});
 
 
   useEffect(() => {
