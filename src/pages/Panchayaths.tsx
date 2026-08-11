@@ -130,10 +130,14 @@ export default function Panchayaths() {
         supabase.from("panchayath_notes").select("panchayath_id, note_date").order("note_date", { ascending: false }),
       ]);
       const lastNotes: Record<string, string> = {};
+      const noteCounts: Record<string, number> = {};
       (nData || []).forEach((n: any) => {
-        if (n.panchayath_id && !lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
+        if (!n.panchayath_id) return;
+        if (!lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
+        noteCounts[n.panchayath_id] = (noteCounts[n.panchayath_id] || 0) + 1;
       });
       setLastNoteMap(lastNotes);
+      setNoteCountMap(noteCounts);
       const map: Record<string, Metrics> = {};
       const ensure = (pid: string) => (map[pid] ||= emptyMetrics());
       const leaders: Record<string, AgentLite[]> = {};
