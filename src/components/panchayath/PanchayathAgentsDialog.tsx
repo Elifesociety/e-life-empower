@@ -62,6 +62,24 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
   const [deleteTarget, setDeleteTarget] = useState<PennyekartAgent | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const { toast } = useToast();
+  const { deleteAgent } = useAgentMutations(
+    access?.canManage && access.role !== "admin" ? access.mobile ?? undefined : undefined,
+  );
+
+  const handleDelete = async () => {
+    if (!deleteTarget || !panchayath) return;
+    setDeletingId(deleteTarget.id);
+    const { error } = await deleteAgent(deleteTarget.id);
+    setDeletingId(null);
+    setDeleteTarget(null);
+    if (error) {
+      toast({ title: "Delete failed", description: error, variant: "destructive" });
+      return;
+    }
+    toast({ title: "Agent deleted" });
+    fetchAgents(panchayath.id);
+  };
+
 
 
   const fetchAgents = async (panchayathId: string) => {
