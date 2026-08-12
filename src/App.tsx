@@ -38,6 +38,9 @@ import DepartmentsManagement from "./pages/admin/DepartmentsManagement";
 import RegisterAgent from "./pages/RegisterAgent";
 import Panchayaths from "./pages/Panchayaths";
 import Samrabhaka from "./pages/Samrabhaka";
+import Trainings from "./pages/Trainings";
+import TrainingDetail from "./pages/TrainingDetail";
+import TrainingsManagement from "./pages/admin/TrainingsManagement";
 import { MobileGate } from "./components/MobileGate";
 
 const queryClient = new QueryClient();
