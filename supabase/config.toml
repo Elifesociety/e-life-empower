@@ -30,3 +30,6 @@ verify_jwt = false
 [functions.admin-samrambhaka]
 verify_jwt = false
 
+[functions.admin-trainings]
+verify_jwt = false
+
