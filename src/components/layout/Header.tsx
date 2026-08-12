@@ -12,6 +12,7 @@ const navLinks = [
   { href: "/about", label: "About", labelMl: "ഞങ്ങളെക്കുറിച്ച്" },
   { href: "/divisions", label: "Divisions", labelMl: "വിഭാഗങ്ങൾ" },
   { href: "/programs", label: "Programs", labelMl: "പരിപാടികൾ" },
+  { href: "/trainings", label: "Trainings", labelMl: "പരിശീലനം" },
   { href: "/contact", label: "Contact", labelMl: "ബന്ധപ്പെടുക" },
 ];
 

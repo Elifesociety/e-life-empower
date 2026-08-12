@@ -38,6 +38,9 @@ import DepartmentsManagement from "./pages/admin/DepartmentsManagement";
 import RegisterAgent from "./pages/RegisterAgent";
 import Panchayaths from "./pages/Panchayaths";
 import Samrabhaka from "./pages/Samrabhaka";
+import Trainings from "./pages/Trainings";
+import TrainingDetail from "./pages/TrainingDetail";
+import TrainingsManagement from "./pages/admin/TrainingsManagement";
 import { MobileGate } from "./components/MobileGate";
 
 const queryClient = new QueryClient();
@@ -65,8 +68,19 @@ const App = () => (
             <Route path="/panchayaths" element={<Panchayaths />} />
             <Route path="/samrambhaka" element={<Samrabhaka />} />
             <Route path="/samrabhaka" element={<Samrabhaka />} />
+            <Route path="/trainings" element={<Trainings />} />
+            <Route path="/trainings/:id" element={<TrainingDetail />} />
+            <Route
+              path="/admin/trainings"
+              element={
+                <ProtectedRoute requiredRoles={["admin", "super_admin"]}>
+                  <TrainingsManagement />
+                </ProtectedRoute>
+              }
+            />
 
             {/* Protected routes - Dashboard redirect */}
+
             <Route
               path="/dashboard"
               element={
