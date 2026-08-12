@@ -1817,6 +1817,145 @@ export type Database = {
         }
         Relationships: []
       }
+      training_lessons: {
+        Row: {
+          content: Json
+          created_at: string
+          duration_minutes: number
+          id: string
+          lesson_type: string
+          sort_order: number
+          title: string
+          training_id: string
+          updated_at: string
+        }
+        Insert: {
+          content?: Json
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          lesson_type?: string
+          sort_order?: number
+          title: string
+          training_id: string
+          updated_at?: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          lesson_type?: string
+          sort_order?: number
+          title?: string
+          training_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_lessons_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      training_progress: {
+        Row: {
+          completed_at: string
+          id: string
+          learner_key: string
+          lesson_id: string
+          training_id: string
+        }
+        Insert: {
+          completed_at?: string
+          id?: string
+          learner_key: string
+          lesson_id: string
+          training_id: string
+        }
+        Update: {
+          completed_at?: string
+          id?: string
+          learner_key?: string
+          lesson_id?: string
+          training_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_progress_lesson_id_fkey"
+            columns: ["lesson_id"]
+            isOneToOne: false
+            referencedRelation: "training_lessons"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "training_progress_training_id_fkey"
+            columns: ["training_id"]
+            isOneToOne: false
+            referencedRelation: "trainings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      trainings: {
+        Row: {
+          category: string
+          cover_url: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          division_id: string | null
+          id: string
+          is_public: boolean
+          is_published: boolean
+          sort_order: number
+          title: string
+          title_ml: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          division_id?: string | null
+          id?: string
+          is_public?: boolean
+          is_published?: boolean
+          sort_order?: number
+          title: string
+          title_ml?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          cover_url?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          division_id?: string | null
+          id?: string
+          is_public?: boolean
+          is_published?: boolean
+          sort_order?: number
+          title?: string
+          title_ml?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "trainings_division_id_fkey"
+            columns: ["division_id"]
+            isOneToOne: false
+            referencedRelation: "divisions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           id: string
