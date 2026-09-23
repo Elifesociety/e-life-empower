@@ -348,6 +348,38 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
               </div>
             )}
 
+            {questionType === "yes_no" && (
+              <div className="space-y-3 rounded-md border p-3 bg-muted/40">
+                <Label htmlFor="followup" className="text-sm font-medium">
+                  Options shown when "Yes" is selected (one per line, optional)
+                </Label>
+                <Textarea
+                  id="followup"
+                  value={options}
+                  onChange={(e) => setOptions(e.target.value)}
+                  placeholder="Option 1&#10;Option 2"
+                  rows={4}
+                  className="text-base resize-none"
+                />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Follow-up answer type</Label>
+                  <Select value={followupType} onValueChange={(v) => setFollowupType(v as "checkbox" | "radio")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="checkbox">Multiple choice (checkbox)</SelectItem>
+                      <SelectItem value="radio">Single choice (radio)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch id="followupRequired" checked={followupRequired} onCheckedChange={setFollowupRequired} />
+                  <Label htmlFor="followupRequired" className="text-sm cursor-pointer">
+                    Follow-up required when "Yes"
+                  </Label>
+                </div>
+              </div>
+            )}
+
             <div className="flex items-center gap-3 py-2">
               <Switch
                 id="isRequired"
