@@ -29,6 +29,11 @@ async function call(action: string, payload: Record<string, unknown> = {}, token
     body: JSON.stringify({ action, ...payload }),
   });
   const json = await res.json();
+  if (res.status === 401 && /token/i.test(json.error || "")) {
+    localStorage.removeItem("samrabhaka_token");
+    window.dispatchEvent(new Event("samrabhaka:expired"));
+    throw new Error("Session expired. Please log in again.");
+  }
   if (!res.ok) throw new Error(json.error || "Request failed");
   return json;
 }
@@ -50,6 +55,16 @@ export function useSamrabhakaAuth() {
     } finally {
       setIsLoading(false);
     }
+  }, []);
+
+  useEffect(() => {
+    const onExpired = () => {
+      setToken(null);
+      setAgent(null);
+      setIsLoading(false);
+    };
+    window.addEventListener("samrabhaka:expired", onExpired);
+    return () => window.removeEventListener("samrabhaka:expired", onExpired);
   }, []);
 
   useEffect(() => {
