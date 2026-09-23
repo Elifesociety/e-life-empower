@@ -57,6 +57,8 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   const [questionType, setQuestionType] = useState("text");
   const [isRequired, setIsRequired] = useState(false);
   const [options, setOptions] = useState("");
+  const [followupType, setFollowupType] = useState<"checkbox" | "radio">("checkbox");
+  const [followupRequired, setFollowupRequired] = useState(false);
 
   const { toast } = useToast();
   const { adminToken } = useAuth();
@@ -68,6 +70,8 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setQuestionType("text");
     setIsRequired(false);
     setOptions("");
+    setFollowupType("checkbox");
+    setFollowupRequired(false);
     setEditingQuestion(null);
   };
 
@@ -76,9 +80,14 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setQuestionText(question.question_text);
     setQuestionType(question.question_type);
     setIsRequired(question.is_required);
-    setOptions(
-      question.options ? (question.options as string[]).join("\n") : ""
-    );
+    const o: any = question.options;
+    if (question.question_type === "yes_no") {
+      setOptions((o?.followup_options ?? []).join("\n"));
+      setFollowupType(o?.followup_type === "radio" ? "radio" : "checkbox");
+      setFollowupRequired(!!o?.followup_required);
+    } else {
+      setOptions(Array.isArray(o) ? o.join("\n") : "");
+    }
     setIsDialogOpen(true);
   };
 
@@ -100,8 +109,13 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
         question_text: questionText.trim(),
         question_type: questionType,
         is_required: isRequired,
-        options:
-          ["select", "radio", "checkbox"].includes(questionType) && options.trim()
+        options: questionType === "yes_no"
+          ? {
+              followup_type: followupType,
+              followup_required: followupRequired,
+              followup_options: options.split("\n").map((o) => o.trim()).filter(Boolean),
+            }
+          : ["select", "radio", "checkbox"].includes(questionType) && options.trim()
             ? options
                 .split("\n")
                 .map((o) => o.trim())
@@ -249,8 +263,9 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                         <span className="text-xs text-destructive">*Required</span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {question.question_type.replace("_", " ")}
+                    <span className="text-xs text-muted-foreground">
+                      {typeLabel(question.question_type)}
+                      {question.question_type === "yes_no" && (question.options as any)?.followup_options?.length ? " · Yes → follow-up" : ""}
                     </span>
                   </div>
                   <Button
