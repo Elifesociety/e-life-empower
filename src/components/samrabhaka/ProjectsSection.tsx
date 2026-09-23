@@ -62,6 +62,11 @@ async function call(token: string, action: string, payload: Record<string, unkno
     body: JSON.stringify({ action, ...payload }),
   });
   const json = await res.json();
+  if (res.status === 401 && /token/i.test(json.error || "")) {
+    localStorage.removeItem("samrabhaka_token");
+    window.dispatchEvent(new Event("samrabhaka:expired"));
+    throw new Error("Session expired. Please log in again.");
+  }
   if (!res.ok) throw new Error(json.error || "Request failed");
   return json;
 }
