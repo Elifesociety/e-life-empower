@@ -100,8 +100,20 @@ export default function ProgramPublicPage() {
     );
 
     for (const question of sortedQuestions) {
+      const answer = answers[question.id];
+      if (question.question_type === "yes_no") {
+        const cfg = (question.options as any) || {};
+        const missingMain = question.is_required && !answer?.value;
+        const missingFollow =
+          answer?.value === "yes" && cfg.followup_required &&
+          (cfg.followup_options?.length ?? 0) > 0 && !(answer.followup?.length > 0);
+        if (missingMain || missingFollow) {
+          toast({ title: "Required field", description: `Please fill in: ${question.question_text}`, variant: "destructive" });
+          return;
+        }
+        continue;
+      }
       if (question.is_required) {
-        const answer = answers[question.id];
         // For multi_text, check if at least one non-empty value exists
         const isEmpty =
           answer === undefined ||
@@ -325,6 +337,63 @@ export default function ProgramPublicPage() {
             >
               + Add Another Answer
             </Button>
+          </div>
+        );
+      }
+
+      case "yes_no": {
+        const cfg = (question.options as any) || {};
+        const fOpts: string[] = Array.isArray(cfg.followup_options) ? cfg.followup_options : [];
+        const cur = (value as { value?: string; followup?: string[] }) || {};
+        const picked = cur.followup || [];
+        return (
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-2">
+              {(["yes", "no"] as const).map((v) => (
+                <Button
+                  key={v}
+                  type="button"
+                  variant={cur.value === v ? "default" : "outline"}
+                  onClick={() => updateAnswer(question.id, { value: v, followup: v === "yes" ? picked : [] })}
+                >
+                  {v === "yes" ? "Yes / അതെ" : "No / ഇല്ല"}
+                </Button>
+              ))}
+            </div>
+            {cur.value === "yes" && fOpts.length > 0 && (
+              <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+                {cfg.followup_type === "radio" ? (
+                  <RadioGroup
+                    value={picked[0] || ""}
+                    onValueChange={(o) => updateAnswer(question.id, { value: "yes", followup: [o] })}
+                    className="space-y-2"
+                  >
+                    {fOpts.map((o, i) => (
+                      <div key={i} className="flex items-center gap-2">
+                        <RadioGroupItem value={o} id={`${question.id}-f${i}`} />
+                        <Label htmlFor={`${question.id}-f${i}`}>{o}</Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                ) : (
+                  fOpts.map((o, i) => (
+                    <div key={i} className="flex items-center gap-2">
+                      <Checkbox
+                        id={`${question.id}-f${i}`}
+                        checked={picked.includes(o)}
+                        onCheckedChange={(c) =>
+                          updateAnswer(question.id, {
+                            value: "yes",
+                            followup: c ? [...picked, o] : picked.filter((x) => x !== o),
+                          })
+                        }
+                      />
+                      <Label htmlFor={`${question.id}-f${i}`}>{o}</Label>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
           </div>
         );
       }
