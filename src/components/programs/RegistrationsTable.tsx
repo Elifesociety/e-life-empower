@@ -220,6 +220,11 @@ export function RegistrationsTable({
 
     if (answer === undefined || answer === null || answer === "") return "-";
     if (Array.isArray(answer)) return answer.join(", ");
+    if (typeof answer === "object" && "value" in answer) {
+      const f = Array.isArray(answer.followup) && answer.followup.length ? ` — ${answer.followup.join(", ")}` : "";
+      return answer.value === "yes" ? `Yes${f}` : answer.value === "no" ? "No" : "-";
+    }
+    if (typeof answer === "string" && /^\d{4}-\d{2}-\d{2}$/.test(answer)) return new Date(answer).toLocaleDateString("en-IN");
     return String(answer);
   };
 
