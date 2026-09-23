@@ -34,12 +34,18 @@ interface FormBuilderProps {
 
 const QUESTION_TYPES = [
   { value: "text", label: "Short Text" },
+  { value: "textarea", label: "Long Text (Paragraph)" },
+  { value: "number", label: "Number" },
+  { value: "email", label: "Email" },
   { value: "phone", label: "Phone" },
+  { value: "date", label: "Date" },
   { value: "select", label: "Dropdown" },
   { value: "radio", label: "Single Choice (Radio)" },
   { value: "checkbox", label: "Multiple Choice (Checkbox)" },
   { value: "multi_text", label: "Multiple Answers (Add More)" },
+  { value: "yes_no", label: "Yes / No (with follow-up)" },
 ];
+const typeLabel = (v: string) => QUESTION_TYPES.find((t) => t.value === v)?.label ?? v.replace("_", " ");
 
 export function FormBuilder({ programId, questions, onQuestionsChange }: FormBuilderProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -51,6 +57,8 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   const [questionType, setQuestionType] = useState("text");
   const [isRequired, setIsRequired] = useState(false);
   const [options, setOptions] = useState("");
+  const [followupType, setFollowupType] = useState<"checkbox" | "radio">("checkbox");
+  const [followupRequired, setFollowupRequired] = useState(false);
 
   const { toast } = useToast();
   const { adminToken } = useAuth();
@@ -62,6 +70,8 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setQuestionType("text");
     setIsRequired(false);
     setOptions("");
+    setFollowupType("checkbox");
+    setFollowupRequired(false);
     setEditingQuestion(null);
   };
 
@@ -70,9 +80,14 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setQuestionText(question.question_text);
     setQuestionType(question.question_type);
     setIsRequired(question.is_required);
-    setOptions(
-      question.options ? (question.options as string[]).join("\n") : ""
-    );
+    const o: any = question.options;
+    if (question.question_type === "yes_no") {
+      setOptions((o?.followup_options ?? []).join("\n"));
+      setFollowupType(o?.followup_type === "radio" ? "radio" : "checkbox");
+      setFollowupRequired(!!o?.followup_required);
+    } else {
+      setOptions(Array.isArray(o) ? o.join("\n") : "");
+    }
     setIsDialogOpen(true);
   };
 
@@ -94,8 +109,13 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
         question_text: questionText.trim(),
         question_type: questionType,
         is_required: isRequired,
-        options:
-          ["select", "radio", "checkbox"].includes(questionType) && options.trim()
+        options: questionType === "yes_no"
+          ? {
+              followup_type: followupType,
+              followup_required: followupRequired,
+              followup_options: options.split("\n").map((o) => o.trim()).filter(Boolean),
+            }
+          : ["select", "radio", "checkbox"].includes(questionType) && options.trim()
             ? options
                 .split("\n")
                 .map((o) => o.trim())
@@ -243,8 +263,9 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                         <span className="text-xs text-destructive">*Required</span>
                       )}
                     </div>
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {question.question_type.replace("_", " ")}
+                    <span className="text-xs text-muted-foreground">
+                      {typeLabel(question.question_type)}
+                      {question.question_type === "yes_no" && (question.options as any)?.followup_options?.length ? " · Yes → follow-up" : ""}
                     </span>
                   </div>
                   <Button
@@ -324,6 +345,38 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                   rows={4}
                   className="text-base resize-none"
                 />
+              </div>
+            )}
+
+            {questionType === "yes_no" && (
+              <div className="space-y-3 rounded-md border p-3 bg-muted/40">
+                <Label htmlFor="followup" className="text-sm font-medium">
+                  Options shown when "Yes" is selected (one per line, optional)
+                </Label>
+                <Textarea
+                  id="followup"
+                  value={options}
+                  onChange={(e) => setOptions(e.target.value)}
+                  placeholder="Option 1&#10;Option 2"
+                  rows={4}
+                  className="text-base resize-none"
+                />
+                <div className="space-y-2">
+                  <Label className="text-sm font-medium">Follow-up answer type</Label>
+                  <Select value={followupType} onValueChange={(v) => setFollowupType(v as "checkbox" | "radio")}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="checkbox">Multiple choice (checkbox)</SelectItem>
+                      <SelectItem value="radio">Single choice (radio)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-center gap-3">
+                  <Switch id="followupRequired" checked={followupRequired} onCheckedChange={setFollowupRequired} />
+                  <Label htmlFor="followupRequired" className="text-sm cursor-pointer">
+                    Follow-up required when "Yes"
+                  </Label>
+                </div>
               </div>
             )}
 

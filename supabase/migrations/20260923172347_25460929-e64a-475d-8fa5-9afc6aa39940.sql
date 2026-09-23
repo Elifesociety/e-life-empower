@@ -1,0 +1,2 @@
+ALTER TABLE public.program_form_questions DROP CONSTRAINT IF EXISTS program_form_questions_question_type_check;
+ALTER TABLE public.program_form_questions ADD CONSTRAINT program_form_questions_question_type_check CHECK (question_type IN ('text','textarea','number','email','phone','date','select','radio','checkbox','multi_text','yes_no','multiple_choice'));
