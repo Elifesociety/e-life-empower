@@ -34,12 +34,18 @@ interface FormBuilderProps {
 
 const QUESTION_TYPES = [
   { value: "text", label: "Short Text" },
+  { value: "textarea", label: "Long Text (Paragraph)" },
+  { value: "number", label: "Number" },
+  { value: "email", label: "Email" },
   { value: "phone", label: "Phone" },
+  { value: "date", label: "Date" },
   { value: "select", label: "Dropdown" },
   { value: "radio", label: "Single Choice (Radio)" },
   { value: "checkbox", label: "Multiple Choice (Checkbox)" },
   { value: "multi_text", label: "Multiple Answers (Add More)" },
+  { value: "yes_no", label: "Yes / No (with follow-up)" },
 ];
+const typeLabel = (v: string) => QUESTION_TYPES.find((t) => t.value === v)?.label ?? v.replace("_", " ");
 
 export function FormBuilder({ programId, questions, onQuestionsChange }: FormBuilderProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
