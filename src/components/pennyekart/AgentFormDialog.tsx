@@ -125,6 +125,42 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
   const selectedPanchayath = form.watch("panchayath_id");
   const selectedResponsiblePanchayaths = form.watch("responsible_panchayath_ids");
 
+  // Panchayaths already allocated to other agents of the same role
+  const [takenMap, setTakenMap] = useState<Record<string, string[]>>({});
+  useEffect(() => {
+    const exclusiveRoles = ["super_admin_partner", "team_leader", "coordinator"];
+    if (!open || !exclusiveRoles.includes(selectedRole)) {
+      setTakenMap({});
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from("pennyekart_agents")
+        .select("id, name, panchayath_id, responsible_panchayath_ids")
+        .eq("role", selectedRole)
+        .eq("is_active", true);
+      if (cancelled) return;
+      const map: Record<string, string[]> = {};
+      (data || []).forEach((a: any) => {
+        if (a.id === agent?.id) return;
+        const ids = new Set<string>([a.panchayath_id, ...(a.responsible_panchayath_ids || [])].filter(Boolean));
+        ids.forEach((pid) => {
+          (map[pid] ||= []).push(a.name);
+        });
+      });
+      setTakenMap(map);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, selectedRole, agent?.id]);
+
+  const sortedPanchayaths = [...panchayaths].sort(
+    (a, b) => Number(!!takenMap[a.id]) - Number(!!takenMap[b.id])
+  );
+
+
   // Load panchayaths
   useEffect(() => {
     const fetchPanchayaths = async () => {
@@ -402,7 +438,10 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                       <FormItem>
                         <FormLabel className="text-sm font-medium">Panchayath</FormLabel>
                         <SearchableSelect
-                          options={panchayaths.map((p) => ({ value: p.id, label: p.name }))}
+                          options={sortedPanchayaths.map((p) => ({
+                            value: p.id,
+                            label: takenMap[p.id] ? `${p.name} (Already selected – ${takenMap[p.id].join(", ")})` : p.name,
+                          }))}
                           value={field.value}
                           onValueChange={field.onChange}
                           placeholder={isLoadingPanchayaths ? "Loading..." : "Select"}
@@ -557,8 +596,9 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                                 ) : panchayaths.length === 0 ? (
                                   <p className="text-sm text-muted-foreground text-center py-4">No panchayaths</p>
                                 ) : (
-                                  panchayaths.map((p) => {
+                                  sortedPanchayaths.map((p) => {
                                     const isSelected = (field.value || []).includes(p.id);
+                                    const takenBy = takenMap[p.id];
                                     return (
                                       <div
                                         key={p.id}
@@ -574,7 +614,14 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                                         )}>
                                           {isSelected && <Check className="h-3 w-3 text-primary-foreground" />}
                                         </div>
-                                        <span className="text-sm flex-1">{p.name}</span>
+                                        <span className="text-sm flex-1">
+                                          {p.name}
+                                          {takenBy && (
+                                            <span className="block text-[11px] text-destructive">
+                                              Already selected – {takenBy.join(", ")}
+                                            </span>
+                                          )}
+                                        </span>
                                       </div>
                                     );
                                   })
