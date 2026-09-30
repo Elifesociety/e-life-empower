@@ -19,6 +19,7 @@ import {
 export interface SearchableSelectOption {
   value: string;
   label: string;
+  disabled?: boolean;
 }
 
 interface SearchableSelectProps {
@@ -81,7 +82,9 @@ export function SearchableSelect({
                 <CommandItem
                   key={option.value}
                   value={option.label}
+                  disabled={option.disabled}
                   onSelect={() => {
+                    if (option.disabled) return;
                     onValueChange(option.value === value ? "" : option.value);
                     setOpen(false);
                   }}
