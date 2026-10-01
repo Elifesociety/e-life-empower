@@ -89,7 +89,16 @@ export function usePennyekartAgents(filters?: AgentFilters) {
 
       if (fetchError) throw fetchError;
 
-      const agentsData = (data || []) as unknown as PennyekartAgent[];
+      let agentsData = (data || []) as unknown as PennyekartAgent[];
+      // Leaders with allocated panchayaths belong only to those (home is just an indicator).
+      if (filters?.panchayath_id) {
+        const pid = filters.panchayath_id;
+        agentsData = agentsData.filter((a) => {
+          const r = a.responsible_panchayath_ids || [];
+          const scoped = (a.role === "super_admin_partner" || a.role === "team_leader") && r.length > 0;
+          return scoped ? r.includes(pid) : true;
+        });
+      }
       setAgents(agentsData);
       
       // Build hierarchy tree
