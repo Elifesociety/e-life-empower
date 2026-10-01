@@ -684,8 +684,12 @@ function SingleFormContent({
   getWardsForPanchayath,
 }: SingleFormContentProps) {
   const selectedResponsibleWards = form.watch("responsible_wards") || [];
+  const [respSearch, setRespSearch] = useState("");
   const sortedPanchayaths = [...panchayaths].sort(
     (a, b) => Number(!!takenMap[a.id]) - Number(!!takenMap[b.id])
+  );
+  const filteredResponsiblePanchayaths = sortedPanchayaths.filter((p) =>
+    p.name.toLowerCase().includes(respSearch.trim().toLowerCase())
   );
 
   return (
@@ -892,9 +896,15 @@ function SingleFormContent({
                     <FormDescription>
                       Select the panchayaths this Team Leader manages (all wards under selected panchayaths will be their responsibility)
                     </FormDescription>
+                    <Input
+                      placeholder="Search panchayath..."
+                      className="h-9"
+                      value={respSearch}
+                      onChange={(e) => setRespSearch(e.target.value)}
+                    />
                     <div className="border rounded-lg p-3 max-h-[200px] overflow-y-auto">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        {sortedPanchayaths.map((p) => (
+                        {filteredResponsiblePanchayaths.map((p) => (
                           <div key={p.id} className="flex items-start space-x-2">
                             <Checkbox
                               id={`panchayath-${p.id}`}
@@ -914,6 +924,9 @@ function SingleFormContent({
                             </label>
                           </div>
                         ))}
+                        {filteredResponsiblePanchayaths.length === 0 && (
+                          <p className="text-sm text-muted-foreground col-span-full">No panchayaths match your search</p>
+                        )}
                       </div>
                     </div>
                     {selectedResponsiblePanchayaths?.length > 0 && (
