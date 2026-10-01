@@ -3,10 +3,13 @@ import { supabase } from "@/integrations/supabase/client";
 
 // Super Admin / Business Partner scope: allocated panchayaths only; home
 // panchayath is just an indicator (used only when nothing is allocated).
-export function sabpScope(a: { panchayath_id: string; responsible_panchayath_ids?: string[] | null }): string[] {
+export function leaderScope(a: { role?: string; panchayath_id: string; responsible_panchayath_ids?: string[] | null }): string[] {
   const r = a.responsible_panchayath_ids || [];
   return r.length ? r : [a.panchayath_id];
 }
+export const sabpScope = leaderScope;
+export const isScopedLeader = (a: { role?: string; responsible_panchayath_ids?: string[] | null }) =>
+  (a.role === "super_admin_partner" || a.role === "team_leader") && !!a.responsible_panchayath_ids?.length;
 import { ChevronRight, ChevronDown, Users, User, Phone, MapPin, Building2, Star, Trophy, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -194,7 +197,7 @@ function PanchayathGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHie
   const missingKey = Array.from(
     new Set(
       agents
-        .filter((a) => a.role === "super_admin_partner")
+        .filter(isScopedLeader)
         .flatMap((a) => a.responsible_panchayath_ids || [])
         .filter((id) => !panchayathNameById.has(id)),
     ),
@@ -226,7 +229,7 @@ function PanchayathGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHie
 
   for (const agent of agents) {
     const homeName = agent.panchayath?.name || "Unknown Panchayath";
-    if (agent.role === "super_admin_partner" && agent.responsible_panchayath_ids?.length) {
+    if (isScopedLeader(agent)) {
       for (const pid of agent.responsible_panchayath_ids) {
         const name = panchayathNameById.get(pid);
         if (name) push(name, agent);
