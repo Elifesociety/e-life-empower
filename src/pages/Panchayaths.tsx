@@ -168,6 +168,7 @@ function RewardBoard({
 
 export default function Panchayaths() {
   const [panchayaths, setPanchayaths] = useState<Panchayath[]>([]);
+  const [myTeamOpen, setMyTeamOpen] = useState(false);
   const [metricsMap, setMetricsMap] = useState<Record<string, Metrics>>({});
   const [leadersMap, setLeadersMap] = useState<Record<string, AgentLite[]>>({});
   const [partnersMap, setPartnersMap] = useState<Record<string, AgentLite[]>>({});
