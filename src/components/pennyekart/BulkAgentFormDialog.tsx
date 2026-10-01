@@ -684,8 +684,12 @@ function SingleFormContent({
   getWardsForPanchayath,
 }: SingleFormContentProps) {
   const selectedResponsibleWards = form.watch("responsible_wards") || [];
+  const [respSearch, setRespSearch] = useState("");
   const sortedPanchayaths = [...panchayaths].sort(
     (a, b) => Number(!!takenMap[a.id]) - Number(!!takenMap[b.id])
+  );
+  const filteredResponsiblePanchayaths = sortedPanchayaths.filter((p) =>
+    p.name.toLowerCase().includes(respSearch.trim().toLowerCase())
   );
 
   return (
