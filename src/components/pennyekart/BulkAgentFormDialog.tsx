@@ -45,6 +45,7 @@ import {
   useAgentMutations,
 } from "@/hooks/usePennyekartAgents";
 import { toast } from "sonner";
+import { useTakenPanchayaths } from "@/hooks/useTakenPanchayaths";
 
 // Single agent schema with responsibility fields
 const singleAgentSchema = z.object({
@@ -183,6 +184,10 @@ export function BulkAgentFormDialog({
   const selectedResponsiblePanchayaths = singleForm.watch("responsible_panchayath_ids");
   const selectedBulkRole = bulkForm.watch("role");
   const selectedBulkPanchayath = bulkForm.watch("panchayath_id");
+
+  // Panchayaths already held by other agents of the same role (warning only)
+  const takenSingleMap = useTakenPanchayaths(open, selectedSingleRole, agent?.id || null);
+  const takenBulkMap = useTakenPanchayaths(open && activeTab === "bulk", selectedBulkRole, null);
 
   // Load panchayaths
   useEffect(() => {
@@ -541,8 +546,9 @@ export function BulkAgentFormDialog({
                     selectedResponsiblePanchayaths={selectedResponsiblePanchayaths}
                     togglePanchayathSelection={togglePanchayathSelection}
                     toggleWardSelection={(ward) => toggleWardSelection(ward, "single")}
-                    getWardsForPanchayath={getWardsForPanchayath}
-                  />
+                     getWardsForPanchayath={getWardsForPanchayath}
+                     takenMap={takenSingleMap}
+                   />
                 </form>
               </Form>
             </div>
@@ -586,8 +592,9 @@ export function BulkAgentFormDialog({
                       selectedResponsiblePanchayaths={selectedResponsiblePanchayaths}
                       togglePanchayathSelection={togglePanchayathSelection}
                       toggleWardSelection={(ward) => toggleWardSelection(ward, "single")}
-                      getWardsForPanchayath={getWardsForPanchayath}
-                    />
+                     getWardsForPanchayath={getWardsForPanchayath}
+                     takenMap={takenSingleMap}
+                   />
                   </form>
                 </Form>
               </div>
@@ -619,8 +626,9 @@ export function BulkAgentFormDialog({
                       parentRole={bulkParentRole}
                       selectedPanchayath={selectedBulkPanchayath}
                       selectedRole={selectedBulkRole}
-                      toggleWardSelection={(ward) => toggleWardSelection(ward, "bulk")}
-                    />
+                       toggleWardSelection={(ward) => toggleWardSelection(ward, "bulk")}
+                       takenMap={takenBulkMap}
+                     />
                   </form>
                 </Form>
               </div>
@@ -644,8 +652,9 @@ export function BulkAgentFormDialog({
 // Single form content component
 interface SingleFormContentProps {
   form: ReturnType<typeof useForm<SingleAgentFormValues>>;
-  panchayaths: Panchayath[];
-  wardOptions: string[];
+   panchayaths: Panchayath[];
+   takenMap: Record<string, string[]>;
+   wardOptions: string[];
   potentialParents: PennyekartAgent[];
   isLoadingPanchayaths: boolean;
   needsParent: boolean;
@@ -661,6 +670,7 @@ interface SingleFormContentProps {
 function SingleFormContent({
   form,
   panchayaths,
+  takenMap,
   wardOptions,
   potentialParents,
   isLoadingPanchayaths,
@@ -674,6 +684,9 @@ function SingleFormContent({
   getWardsForPanchayath,
 }: SingleFormContentProps) {
   const selectedResponsibleWards = form.watch("responsible_wards") || [];
+  const sortedPanchayaths = [...panchayaths].sort(
+    (a, b) => Number(!!takenMap[a.id]) - Number(!!takenMap[b.id])
+  );
 
   return (
     <>
@@ -747,7 +760,10 @@ function SingleFormContent({
               <FormItem>
                 <FormLabel className="text-xs sm:text-sm">Panchayath</FormLabel>
                 <SearchableSelect
-                  options={panchayaths.map((p) => ({ value: p.id, label: p.name }))}
+                  options={sortedPanchayaths.map((p) => ({
+                    value: p.id,
+                    label: takenMap[p.id] ? `${p.name} (Already selected – ${takenMap[p.id].join(", ")})` : p.name,
+                  }))}
                   value={field.value}
                   onValueChange={field.onChange}
                   placeholder={isLoadingPanchayaths ? "Loading..." : "Select"}
@@ -877,9 +893,9 @@ function SingleFormContent({
                       Select the panchayaths this Team Leader manages (all wards under selected panchayaths will be their responsibility)
                     </FormDescription>
                     <div className="border rounded-lg p-3 max-h-[200px] overflow-y-auto">
-                      <div className="grid grid-cols-2 gap-2">
-                        {panchayaths.map((p) => (
-                          <div key={p.id} className="flex items-center space-x-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {sortedPanchayaths.map((p) => (
+                          <div key={p.id} className="flex items-start space-x-2">
                             <Checkbox
                               id={`panchayath-${p.id}`}
                               checked={selectedResponsiblePanchayaths?.includes(p.id)}
@@ -890,6 +906,11 @@ function SingleFormContent({
                               className="text-sm cursor-pointer"
                             >
                               {p.name}
+                              {takenMap[p.id] && (
+                                <span className="block text-[11px] text-destructive">
+                                  Already selected – {takenMap[p.id].join(", ")}
+                                </span>
+                              )}
                             </label>
                           </div>
                         ))}
@@ -973,8 +994,9 @@ interface BulkFormContentProps {
   fields: any[];
   append: (value: any) => void;
   remove: (index: number) => void;
-  panchayaths: Panchayath[];
-  wardOptions: string[];
+   panchayaths: Panchayath[];
+   takenMap: Record<string, string[]>;
+   wardOptions: string[];
   potentialParents: PennyekartAgent[];
   isLoadingPanchayaths: boolean;
   needsParent: boolean;
@@ -990,6 +1012,7 @@ function BulkFormContent({
   append,
   remove,
   panchayaths,
+  takenMap,
   wardOptions,
   potentialParents,
   isLoadingPanchayaths,
@@ -1000,6 +1023,9 @@ function BulkFormContent({
   toggleWardSelection,
 }: BulkFormContentProps) {
   const selectedResponsibleWards = form.watch("responsible_wards") || [];
+  const sortedPanchayaths = [...panchayaths].sort(
+    (a, b) => Number(!!takenMap[a.id]) - Number(!!takenMap[b.id])
+  );
 
   return (
     <>
@@ -1018,9 +1044,9 @@ function BulkFormContent({
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  {panchayaths.map((p) => (
+                  {sortedPanchayaths.map((p) => (
                     <SelectItem key={p.id} value={p.id}>
-                      {p.name} ({p.ward} wards)
+                      {p.name} ({p.ward} wards){takenMap[p.id] ? ` – Already selected (${takenMap[p.id].join(", ")})` : ""}
                     </SelectItem>
                   ))}
                 </SelectContent>
