@@ -19,7 +19,11 @@ const ROLE_COLORS: Record<AgentRole, string> = {
   pro: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-300"
 };
 
+type GroupBy = "panchayath" | "super_admin" | "agent";
+
 export function AgentHierarchyTree({ agents, onSelectAgent, selectedAgentId }: AgentHierarchyTreeProps) {
+  const [groupBy, setGroupBy] = useState<GroupBy>("panchayath");
+
   if (agents.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -30,6 +34,147 @@ export function AgentHierarchyTree({ agents, onSelectAgent, selectedAgentId }: A
     );
   }
 
+  const options: { value: GroupBy; label: string }[] = [
+    { value: "panchayath", label: "Panchayath" },
+    { value: "super_admin", label: "Super Admin" },
+    { value: "agent", label: "Agent" },
+  ];
+
+  return (
+    <div className="space-y-3">
+      <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
+        {options.map((o) => (
+          <button
+            key={o.value}
+            onClick={() => setGroupBy(o.value)}
+            className={cn(
+              "px-3 py-1 text-xs sm:text-sm rounded transition-colors",
+              groupBy === o.value ? "bg-background shadow-sm font-medium text-foreground" : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            {o.label}
+          </button>
+        ))}
+      </div>
+      {groupBy === "panchayath" && (
+        <PanchayathGrouping agents={agents} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+      )}
+      {groupBy === "super_admin" && (
+        <SuperAdminGrouping agents={agents} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+      )}
+      {groupBy === "agent" && (
+        <AgentGrouping agents={agents} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+      )}
+    </div>
+  );
+}
+
+function sumCustomers(list: PennyekartAgent[]) {
+  return list.reduce((t, a) => t + (a.role === "pro" ? a.customer_count || 0 : 0), 0);
+}
+
+function GroupBox({ title, icon, count, customers, children }: { title: string; icon: React.ReactNode; count: number; customers: number; children: React.ReactNode }) {
+  const [open, setOpen] = useState(true);
+  return (
+    <div className="border rounded-lg overflow-hidden">
+      <button onClick={() => setOpen(!open)} className="w-full flex items-center gap-2 p-2 sm:p-3 bg-primary/5 hover:bg-primary/10 transition-colors">
+        {open ? <ChevronDown className="h-4 w-4 text-muted-foreground" /> : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+        {icon}
+        <span className="font-semibold text-xs sm:text-sm truncate">{title}</span>
+        <Badge variant="outline" className="ml-auto text-[10px] sm:text-xs px-1.5 py-0">
+          <Users className="h-3 w-3 mr-1" />{customers}
+        </Badge>
+        <Badge variant="secondary" className="text-[10px] sm:text-xs px-1.5 py-0">{count}</Badge>
+      </button>
+      {open && <div className="p-1.5 sm:p-2 space-y-2">{children}</div>}
+    </div>
+  );
+}
+
+function SuperAdminGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHierarchyTreeProps) {
+  const sabps = agents.filter((a) => a.role === "super_admin_partner");
+  const others = agents.filter((a) => a.role !== "super_admin_partner");
+  const assigned = new Set<string>();
+  const nameById = new Map<string, string>();
+  agents.forEach((a) => a.panchayath?.name && nameById.set(a.panchayath_id, a.panchayath.name));
+
+  const groups = sabps.map((s) => {
+    const scope = new Set([s.panchayath_id, ...(s.responsible_panchayath_ids || [])]);
+    const members = others.filter((a) => scope.has(a.panchayath_id));
+    members.forEach((m) => assigned.add(m.id));
+    const byP: Record<string, PennyekartAgent[]> = {};
+    members.forEach((m) => {
+      const n = nameById.get(m.panchayath_id) || "Unknown Panchayath";
+      (byP[n] ||= []).push(m);
+    });
+    return { s, members, byP };
+  });
+  const unassigned = others.filter((a) => !assigned.has(a.id));
+
+  return (
+    <div className="space-y-4">
+      {groups.map(({ s, members, byP }) => (
+        <GroupBox key={s.id} title={`${s.name} · ${s.mobile}`} icon={<Briefcase className="h-4 w-4 text-primary" />} count={members.length} customers={sumCustomers(members)}>
+          <div
+            className={cn("text-xs px-2 py-1 rounded cursor-pointer hover:bg-muted/50", s.id === selectedAgentId && "bg-primary/10")}
+            onClick={() => onSelectAgent(s)}
+          >
+            View Super Admin details
+          </div>
+          {Object.keys(byP).length === 0 && <p className="text-xs text-muted-foreground px-2">No agents in allocated panchayaths</p>}
+          {Object.entries(byP).map(([pn, list]) => (
+            <PanchayathNode key={pn} panchayathName={pn} agents={list} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+          ))}
+        </GroupBox>
+      ))}
+      {unassigned.length > 0 && (
+        <GroupBox title="Unassigned (no Super Admin)" icon={<Users className="h-4 w-4 text-muted-foreground" />} count={unassigned.length} customers={sumCustomers(unassigned)}>
+          <PanchayathGrouping agents={unassigned} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+        </GroupBox>
+      )}
+    </div>
+  );
+}
+
+function AgentGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHierarchyTreeProps) {
+  const ids = new Set(agents.map((a) => a.id));
+  const nonSabp = agents.filter((a) => a.role !== "super_admin_partner");
+  const leaders = nonSabp.filter((a) => a.role === "team_leader");
+  const orphans = nonSabp.filter((a) => a.role !== "team_leader" && (!a.parent_agent_id || !ids.has(a.parent_agent_id)));
+
+  const downline = (root: PennyekartAgent) => {
+    const out: PennyekartAgent[] = [];
+    const seen = new Set([root.id]);
+    const stack = [root.id];
+    while (stack.length) {
+      const id = stack.pop()!;
+      for (const a of agents) if (a.parent_agent_id === id && !seen.has(a.id)) { seen.add(a.id); out.push(a); stack.push(a.id); }
+    }
+    return out;
+  };
+
+  return (
+    <div className="space-y-4">
+      {leaders.map((tl) => {
+        const d = downline(tl);
+        return (
+          <GroupBox key={tl.id} title={`${tl.name} · ${tl.panchayath?.name || ""}`} icon={<User className="h-4 w-4 text-primary" />} count={d.length + 1} customers={sumCustomers(d)}>
+            <AgentNode agent={tl} allAgents={agents} depth={0} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+          </GroupBox>
+        );
+      })}
+      {orphans.length > 0 && (
+        <GroupBox title="Unlinked agents" icon={<Users className="h-4 w-4 text-muted-foreground" />} count={orphans.length} customers={sumCustomers(orphans)}>
+          {orphans.map((a) => (
+            <AgentNode key={a.id} agent={a} allAgents={agents} depth={0} onSelectAgent={onSelectAgent} selectedAgentId={selectedAgentId} />
+          ))}
+        </GroupBox>
+      )}
+    </div>
+  );
+}
+
+function PanchayathGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHierarchyTreeProps) {
   // Build panchayath id -> name map from agents (so we can place SABPs into
   // every panchayath listed in their responsible_panchayath_ids).
   const panchayathNameById = new Map<string, string>();
@@ -39,9 +184,6 @@ export function AgentHierarchyTree({ agents, onSelectAgent, selectedAgentId }: A
     }
   }
 
-  // Group by panchayath. Each agent appears under its home panchayath, plus
-  // Super Admin / Business Partners additionally appear under every panchayath
-  // they are allocated to via responsible_panchayath_ids.
   const byPanchayath: Record<string, PennyekartAgent[]> = {};
   const push = (name: string, agent: PennyekartAgent) => {
     if (!byPanchayath[name]) byPanchayath[name] = [];
