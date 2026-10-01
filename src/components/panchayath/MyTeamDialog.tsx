@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Loader2, Users } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
-import { AgentHierarchyTree } from "@/components/pennyekart/AgentHierarchyTree";
+import { AgentHierarchyTree, sabpScope } from "@/components/pennyekart/AgentHierarchyTree";
 import { PennyekartAgent, ROLE_LABELS } from "@/hooks/usePennyekartAgents";
 
 interface Props {
@@ -48,7 +48,7 @@ export function MyTeamDialog({ open, onOpenChange }: Props) {
       for (const m of mine) {
         result.set(m.id, m);
         if (m.role === "super_admin_partner") {
-          const scope = new Set([m.panchayath_id, ...(m.responsible_panchayath_ids || [])]);
+          const scope = new Set(sabpScope(m));
           all.filter((a) => a.role !== "super_admin_partner" && scope.has(a.panchayath_id)).forEach((a) => result.set(a.id, a));
         } else {
           addDownline(m.id);

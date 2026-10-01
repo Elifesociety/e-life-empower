@@ -1,4 +1,12 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+// Super Admin / Business Partner scope: allocated panchayaths only; home
+// panchayath is just an indicator (used only when nothing is allocated).
+export function sabpScope(a: { panchayath_id: string; responsible_panchayath_ids?: string[] | null }): string[] {
+  const r = a.responsible_panchayath_ids || [];
+  return r.length ? r : [a.panchayath_id];
+}
 import { ChevronRight, ChevronDown, Users, User, Phone, MapPin, Building2, Star, Trophy, Briefcase } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -99,7 +107,7 @@ function SuperAdminGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHie
   agents.forEach((a) => a.panchayath?.name && nameById.set(a.panchayath_id, a.panchayath.name));
 
   const groups = sabps.map((s) => {
-    const scope = new Set([s.panchayath_id, ...(s.responsible_panchayath_ids || [])]);
+    const scope = new Set(sabpScope(s));
     const members = others.filter((a) => scope.has(a.panchayath_id));
     members.forEach((m) => assigned.add(m.id));
     const byP: Record<string, PennyekartAgent[]> = {};
@@ -175,14 +183,38 @@ function AgentGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHierarch
 }
 
 function PanchayathGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHierarchyTreeProps) {
-  // Build panchayath id -> name map from agents (so we can place SABPs into
-  // every panchayath listed in their responsible_panchayath_ids).
-  const panchayathNameById = new Map<string, string>();
+  const [fetchedNames, setFetchedNames] = useState<Record<string, string>>({});
+  const panchayathNameById = new Map<string, string>(Object.entries(fetchedNames));
   for (const a of agents) {
     if (a.panchayath_id && a.panchayath?.name) {
       panchayathNameById.set(a.panchayath_id, a.panchayath.name);
     }
   }
+
+  const missingKey = Array.from(
+    new Set(
+      agents
+        .filter((a) => a.role === "super_admin_partner")
+        .flatMap((a) => a.responsible_panchayath_ids || [])
+        .filter((id) => !panchayathNameById.has(id)),
+    ),
+  ).sort().join(",");
+
+  useEffect(() => {
+    if (!missingKey) return;
+    supabase
+      .from("panchayaths")
+      .select("id, name")
+      .in("id", missingKey.split(","))
+      .then(({ data }) => {
+        if (!data?.length) return;
+        setFetchedNames((prev) => {
+          const next = { ...prev };
+          data.forEach((p) => (next[p.id] = p.name));
+          return next;
+        });
+      });
+  }, [missingKey]);
 
   const byPanchayath: Record<string, PennyekartAgent[]> = {};
   const push = (name: string, agent: PennyekartAgent) => {
@@ -194,12 +226,13 @@ function PanchayathGrouping({ agents, onSelectAgent, selectedAgentId }: AgentHie
 
   for (const agent of agents) {
     const homeName = agent.panchayath?.name || "Unknown Panchayath";
-    push(homeName, agent);
     if (agent.role === "super_admin_partner" && agent.responsible_panchayath_ids?.length) {
       for (const pid of agent.responsible_panchayath_ids) {
         const name = panchayathNameById.get(pid);
-        if (name && name !== homeName) push(name, agent);
+        if (name) push(name, agent);
       }
+    } else {
+      push(homeName, agent);
     }
   }
 
