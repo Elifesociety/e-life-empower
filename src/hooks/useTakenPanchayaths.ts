@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 /** Roles where one panchayath may belong to only one agent of that role. */
-export const EXCLUSIVE_PANCHAYATH_ROLES = ["super_admin_partner", "team_leader", "coordinator"];
+export const EXCLUSIVE_PANCHAYATH_ROLES = ["super_admin_partner", "team_leader"];
 
 /**
  * Returns a map of panchayath id -> names of other active agents of the same role
