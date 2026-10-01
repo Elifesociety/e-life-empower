@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { PanchayathAgentsDialog } from "@/components/panchayath/PanchayathAgentsDialog";
 import { PanchayathNotesDialog } from "@/components/panchayath/PanchayathNotesDialog";
+import { MyTeamDialog } from "@/components/panchayath/MyTeamDialog";
 
 interface Panchayath {
   id: string;
@@ -384,9 +385,14 @@ export default function Panchayaths() {
           <Button variant="ghost" size="sm" asChild className="mb-3">
             <Link to="/"><ArrowLeft className="w-4 h-4 mr-1" /> Back to Home</Link>
           </Button>
-          <h1 className="text-2xl sm:text-3xl font-display font-bold text-kerala-green flex items-center gap-2">
-            <MapPin className="w-7 h-7" /> Panchayath Details
-          </h1>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <h1 className="text-2xl sm:text-3xl font-display font-bold text-kerala-green flex items-center gap-2">
+              <MapPin className="w-7 h-7" /> Panchayath Details
+            </h1>
+            <Button onClick={() => setMyTeamOpen(true)} className="gap-1.5">
+              <Users className="w-4 h-4" /> My Team
+            </Button>
+          </div>
           <p className="text-sm text-muted-foreground mt-1">
             {panchayaths.length} panchayaths · {totals.total} total agents across the hierarchy
           </p>
@@ -649,6 +655,8 @@ export default function Panchayaths() {
         open={!!notesFor}
         onOpenChange={(o) => !o && setNotesFor(null)}
       />
+      <MyTeamDialog open={myTeamOpen} onOpenChange={setMyTeamOpen} />
+
 
     </Layout>
 
