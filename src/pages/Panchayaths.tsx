@@ -261,8 +261,9 @@ export default function Panchayaths() {
         const ids = new Set<string>();
         let name: string | null = null;
         (data || []).forEach((a: any) => {
-          if (a.panchayath_id) ids.add(a.panchayath_id);
-          (a.responsible_panchayath_ids || []).forEach((id: string) => id && ids.add(id));
+          const allocated: string[] = (a.responsible_panchayath_ids || []).filter(Boolean);
+          if (allocated.length > 0) allocated.forEach((id) => ids.add(id));
+          else if (a.panchayath_id) ids.add(a.panchayath_id);
           if (!name) name = a.name;
         });
         setMyPanchayathIds(ids);
