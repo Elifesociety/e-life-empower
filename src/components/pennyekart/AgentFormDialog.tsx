@@ -170,12 +170,12 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
       if (selectedRole !== "team_leader" && selectedPanchayath) {
         query = query.eq("panchayath_id", selectedPanchayath);
       }
-      const { data } = await query.order("name");
+      const { data, error } = await query.order("name");
 
       const parents = (data as unknown as PennyekartAgent[]) || [];
       setPotentialParents(parents);
       const selectedParentId = form.getValues("parent_agent_id");
-      if (selectedParentId && !parents.some((parent) => parent.id === selectedParentId)) {
+      if (!error && selectedParentId && !parents.some((parent) => parent.id === selectedParentId)) {
         form.setValue("parent_agent_id", null);
       }
     };
@@ -493,8 +493,8 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                           Reports To ({ROLE_LABELS[parentRole]}){selectedRole === "team_leader" ? " · optional" : ""}
                         </FormLabel>
                         <Select 
-                          onValueChange={field.onChange} 
-                          value={field.value || ""}
+                          onValueChange={(value) => field.onChange(value === "__none__" ? null : value)}
+                          value={field.value || (selectedRole === "team_leader" ? "__none__" : "")}
                         >
                           <FormControl>
                             <SelectTrigger className="h-10">
@@ -510,6 +510,9 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            {selectedRole === "team_leader" && (
+                              <SelectItem value="__none__">No Super Admin / Business Partner</SelectItem>
+                            )}
                             {potentialParents.map((parent) => (
                               <SelectItem key={parent.id} value={parent.id}>
                                 {parent.name} ({ROLE_LABELS[parent.role]})

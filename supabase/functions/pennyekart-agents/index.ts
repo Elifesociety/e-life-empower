@@ -462,6 +462,22 @@ serve(async (req) => {
           );
         }
       }
+
+      if (agent.role === "team_leader" && agent.parent_agent_id) {
+        const { data: parent } = await supabase
+          .from("pennyekart_agents")
+          .select("id")
+          .eq("id", agent.parent_agent_id)
+          .eq("role", "super_admin_partner")
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!parent) {
+          return new Response(
+            JSON.stringify({ error: "Reports To must be an active Super Admin / Business Partner" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
       
       // Duplicate check: look for existing agent with same mobile in same panchayath
       const { data: existing } = await supabase
@@ -573,6 +589,18 @@ serve(async (req) => {
         );
       }
 
+      const { data: currentAgent } = await supabase
+        .from("pennyekart_agents")
+        .select("role, parent_agent_id")
+        .eq("id", id)
+        .maybeSingle();
+      if (!currentAgent) {
+        return new Response(
+          JSON.stringify({ error: "Agent not found" }),
+          { status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        );
+      }
+
       // Caller-mobile scope checks (public TL / Super Admin)
       if (caller) {
         const { data: target } = await supabase
@@ -603,6 +631,26 @@ serve(async (req) => {
 
       // Remove fields that shouldn't be updated
       const { created_at, created_by, panchayath, parent_agent, children, ...updateData } = agent;
+
+      const updatedRole = updateData.role || currentAgent.role;
+      const updatedParentId = Object.prototype.hasOwnProperty.call(updateData, "parent_agent_id")
+        ? updateData.parent_agent_id
+        : currentAgent.parent_agent_id;
+      if (updatedRole === "team_leader" && updatedParentId) {
+        const { data: parent } = await supabase
+          .from("pennyekart_agents")
+          .select("id")
+          .eq("id", updatedParentId)
+          .eq("role", "super_admin_partner")
+          .eq("is_active", true)
+          .maybeSingle();
+        if (!parent) {
+          return new Response(
+            JSON.stringify({ error: "Reports To must be an active Super Admin / Business Partner" }),
+            { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+          );
+        }
+      }
       
       const { data, error } = await supabase
         .from("pennyekart_agents")
