@@ -125,7 +125,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">
-                    {selectedRole === "super_admin_partner" ? `All ${ROLE_LABELS[selectedRole]}s` : `All ${ROLE_LABELS[selectedRole]}s`}
+                    {selectedRole === "super_admin_partner" ? "All Super Admins / Business Partners" : `All ${ROLE_LABELS[selectedRole]}s`}
                   </SelectItem>
                   {agentsOfRole.map(a => (
                     <SelectItem key={a.id} value={a.id}>
