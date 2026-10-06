@@ -382,6 +382,53 @@ serve(async (req) => {
       });
     }
 
+    // ── Backup / restore ──
+    const BACKUP_TABLES = ["pennyekart_agents", "agent_direct_customers", "agent_work_logs", "agent_wallet_transactions", "agent_complaints"];
+    if (req.method === "POST" && (action === "export_backup" || action === "restore_backup")) {
+      const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!admin) return json({ error: "Admin session required" }, 403);
+      if (action === "export_backup") {
+        const out: Record<string, unknown[]> = {};
+        for (const t of BACKUP_TABLES) {
+          const rows: unknown[] = [];
+          for (let from = 0; ; from += 1000) {
+            const { data, error } = await supabase.from(t).select("*").order("created_at", { ascending: true }).range(from, from + 999);
+            if (error) return json({ error: `${t}: ${error.message}` }, 500);
+            rows.push(...(data || []));
+            if (!data || data.length < 1000) break;
+          }
+          out[t] = rows;
+        }
+        const { data: p } = await supabase.from("panchayaths").select("id, name").range(0, 9999);
+        return json({ data: out, panchayaths: p || [] });
+      }
+      if (!isSuperAdmin) return json({ error: "Only Super Admin can restore backups" }, 403);
+      const tables = (body?.tables || {}) as Record<string, Record<string, unknown>[]>;
+      const result: Record<string, { restored: number; error?: string }> = {};
+      for (const t of BACKUP_TABLES) {
+        let rows = (tables[t] || []).filter((r) => r && typeof r.id === "string");
+        if (t === "pennyekart_agents") {
+          const byId = new Map(rows.map((r) => [r.id as string, r]));
+          const depth = (r: Record<string, unknown>, seen = new Set<string>()): number => {
+            const pid = r.parent_agent_id as string | null;
+            if (!pid || seen.has(pid) || !byId.has(pid)) return 0;
+            seen.add(pid);
+            return 1 + depth(byId.get(pid)!, seen);
+          };
+          rows = [...rows].sort((a, b) => depth(a) - depth(b));
+        }
+        let restored = 0;
+        let err: string | undefined;
+        for (let i = 0; i < rows.length; i += 500) {
+          const { error } = await supabase.from(t).upsert(rows.slice(i, i + 500), { onConflict: "id" });
+          if (error) { err = error.message; break; }
+          restored += Math.min(500, rows.length - i);
+        }
+        result[t] = { restored, ...(err ? { error: err } : {}) };
+      }
+      return json({ result });
+    }
+
     // Caller-mobile sessions may create / update / delete agents in their scope
     if (caller && !admin) {
       const allowed = (req.method === "POST" && action === "create") || req.method === "PUT" || req.method === "DELETE";
