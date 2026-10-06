@@ -58,7 +58,8 @@ import { exportAgentsToXlsx, exportAgentsToPdf, shareAgentsViaWhatsApp } from "@
 import { AgentRanksTab } from "@/components/pennyekart/AgentRanksTab";
 import { AgentWorkLogReport } from "@/components/pennyekart/AgentWorkLogReport";
 import { AgentComplaintsTab } from "@/components/pennyekart/AgentComplaintsTab";
-import { MessageSquareWarning } from "lucide-react";
+import { MessageSquareWarning, ShieldCheck } from "lucide-react";
+import { BackupRestoreDialog } from "@/components/pennyekart/BackupRestoreDialog";
 
 interface Panchayath {
   id: string;
@@ -79,6 +80,7 @@ export default function PennyekartAgentHierarchy() {
   const [defaultParentId, setDefaultParentId] = useState<string | null>(null);
   const [defaultRole, setDefaultRole] = useState<AgentRole | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [backupOpen, setBackupOpen] = useState(false);
 
   const { agents, isLoading, error, refetch } = usePennyekartAgents(filters);
   const { deleteAgent } = useAgentMutations();
@@ -229,6 +231,10 @@ export default function PennyekartAgentHierarchy() {
             >
               <Download className="h-4 w-4 mr-2" />
               Export
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setBackupOpen(true)}>
+              <ShieldCheck className="h-4 w-4 mr-2" />
+              Backup
             </Button>
             <Button onClick={handleAddAgent} size="sm" className="flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" />
@@ -441,6 +447,14 @@ export default function PennyekartAgentHierarchy() {
           defaultParentId={defaultParentId}
           defaultRole={defaultRole}
           onSuccess={refetch}
+        />
+
+        <BackupRestoreDialog
+          open={backupOpen}
+          onOpenChange={setBackupOpen}
+          isSuperAdmin={isSuperAdmin}
+          madeBy={(adminData as { full_name?: string } | null)?.full_name || (isSuperAdmin ? "Super Admin" : "Admin")}
+          onRestored={refetch}
         />
 
         {/* Export Filter Dialog */}
