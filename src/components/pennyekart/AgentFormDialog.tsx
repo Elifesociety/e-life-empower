@@ -156,25 +156,32 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
   // Load potential parent agents based on selected role
   useEffect(() => {
     const fetchParentAgents = async () => {
-      const parentRole = getParentRole(selectedRole);
-      if (!parentRole || !selectedPanchayath) {
+      const parentRole = selectedRole === "team_leader" ? "super_admin_partner" : getParentRole(selectedRole);
+      if (!parentRole || (selectedRole !== "team_leader" && !selectedPanchayath)) {
         setPotentialParents([]);
         return;
       }
 
-      const { data } = await supabase
+      let query = supabase
         .from("pennyekart_agents")
         .select("id, name, role, ward")
-        .eq("panchayath_id", selectedPanchayath)
         .eq("role", parentRole)
-        .eq("is_active", true)
-        .order("name");
+        .eq("is_active", true);
+      if (selectedRole !== "team_leader" && selectedPanchayath) {
+        query = query.eq("panchayath_id", selectedPanchayath);
+      }
+      const { data, error } = await query.order("name");
 
-      setPotentialParents((data as unknown as PennyekartAgent[]) || []);
+      const parents = (data as unknown as PennyekartAgent[]) || [];
+      setPotentialParents(parents);
+      const selectedParentId = form.getValues("parent_agent_id");
+      if (!error && selectedParentId && !parents.some((parent) => parent.id === selectedParentId)) {
+        form.setValue("parent_agent_id", null);
+      }
     };
 
     fetchParentAgents();
-  }, [selectedRole, selectedPanchayath]);
+  }, [selectedRole, selectedPanchayath, form]);
 
   // Load available wards for coordinators (exclude already allocated wards)
   useEffect(() => {
@@ -268,10 +275,10 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
 
 
   const onSubmit = async (values: AgentFormValues) => {
-    // Top-level roles (team leader / super admin / business partner) don't have parents
-    if (isTopLevelRole(values.role)) {
+    // Team Leaders may optionally report to a Super Admin / Business Partner.
+    if (values.role === "super_admin_partner") {
       values.parent_agent_id = null;
-    } else {
+    } else if (!isTopLevelRole(values.role)) {
       // Non-top-level roles don't have responsible panchayaths
       values.responsible_panchayath_ids = [];
     }
@@ -318,8 +325,8 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
     onSuccess();
   };
 
-  const parentRole = getParentRole(selectedRole);
-  const needsParent = !isTopLevelRole(selectedRole);
+  const parentRole = selectedRole === "team_leader" ? "super_admin_partner" : getParentRole(selectedRole);
+  const needsParent = !!parentRole;
   const showResponsiblePanchayaths = selectedRole === "team_leader" || selectedRole === "super_admin_partner";
 
   const handleResponsiblePanchayathToggle = (panchayathId: string, checked: boolean) => {
@@ -483,11 +490,11 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel className="text-sm font-medium">
-                          Reports To ({parentRole ? ROLE_LABELS[parentRole] : ""})
+                          Reports To ({ROLE_LABELS[parentRole]}){selectedRole === "team_leader" ? " · optional" : ""}
                         </FormLabel>
                         <Select 
-                          onValueChange={field.onChange} 
-                          value={field.value || ""}
+                          onValueChange={(value) => field.onChange(value === "__none__" ? null : value)}
+                          value={field.value || (selectedRole === "team_leader" ? "__none__" : "")}
                         >
                           <FormControl>
                             <SelectTrigger className="h-10">
@@ -495,15 +502,20 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                                 !selectedPanchayath 
                                   ? "Select panchayath first" 
                                   : potentialParents.length === 0 
-                                    ? `No ${parentRole ? ROLE_LABELS[parentRole] : "parent"} available` 
-                                    : "Select parent"
+                                    ? `No ${ROLE_LABELS[parentRole]} available`
+                                    : selectedRole === "team_leader"
+                                      ? "Select Super Admin / Business Partner"
+                                      : "Select parent"
                               } />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
+                            {selectedRole === "team_leader" && (
+                              <SelectItem value="__none__">No Super Admin / Business Partner</SelectItem>
+                            )}
                             {potentialParents.map((parent) => (
                               <SelectItem key={parent.id} value={parent.id}>
-                                {parent.name} ({parent.ward})
+                                {parent.name} ({ROLE_LABELS[parent.role]})
                               </SelectItem>
                             ))}
                           </SelectContent>
