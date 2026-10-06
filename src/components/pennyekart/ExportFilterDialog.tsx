@@ -108,7 +108,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
                 <SelectItem value="all">All Agents</SelectItem>
                 {filterableRoles.map(role => (
                   <SelectItem key={role} value={role}>
-                    {ROLE_LABELS[role]} branches
+                    {role === "super_admin_partner" ? ROLE_LABELS[role] : `${ROLE_LABELS[role]} branches`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -124,7 +124,9 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
                   <SelectValue placeholder={`Select ${ROLE_LABELS[selectedRole]}`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All {ROLE_LABELS[selectedRole]}s</SelectItem>
+                  <SelectItem value="all">
+                    {selectedRole === "super_admin_partner" ? `All ${ROLE_LABELS[selectedRole]}s` : `All ${ROLE_LABELS[selectedRole]}s`}
+                  </SelectItem>
                   {agentsOfRole.map(a => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.name} ({a.panchayath?.name || ""})
