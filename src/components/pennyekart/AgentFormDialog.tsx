@@ -499,7 +499,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
                           <FormControl>
                             <SelectTrigger className="h-10">
                               <SelectValue placeholder={
-                                !selectedPanchayath 
+                                !selectedPanchayath && selectedRole !== "team_leader"
                                   ? "Select panchayath first" 
                                   : potentialParents.length === 0 
                                     ? `No ${ROLE_LABELS[parentRole]} available`
