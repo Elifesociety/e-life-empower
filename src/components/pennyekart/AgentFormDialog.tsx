@@ -162,22 +162,15 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
         return;
       }
 
-      const { data } = await supabase
+      let query = supabase
         .from("pennyekart_agents")
         .select("id, name, role, ward")
         .eq("role", parentRole)
-        .eq("is_active", true)
-        .then(async (result) => {
-          if (selectedRole === "team_leader" || !selectedPanchayath) return result;
-          return supabase
-            .from("pennyekart_agents")
-            .select("id, name, role, ward")
-            .eq("panchayath_id", selectedPanchayath)
-            .eq("role", parentRole)
-            .eq("is_active", true)
-            .order("name");
-        })
-        .order("name");
+        .eq("is_active", true);
+      if (selectedRole !== "team_leader" && selectedPanchayath) {
+        query = query.eq("panchayath_id", selectedPanchayath);
+      }
+      const { data } = await query.order("name");
 
       const parents = (data as unknown as PennyekartAgent[]) || [];
       setPotentialParents(parents);
