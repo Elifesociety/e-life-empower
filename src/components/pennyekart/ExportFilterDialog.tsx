@@ -150,7 +150,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
             </p>
 
             {/* Show hierarchy chain */}
-            {selectedAgentId !== "all' && selectedRole !== "all" && selectedRole !== "super_admin_partner" && (() => {
+            {selectedAgentId !== "all" && selectedRole !== "all" && selectedRole !== "super_admin_partner" && (() => {
               const root = agents.find(a => a.id === selectedAgentId);
               if (!root) return null;
               const childRoles = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf(root.role));
