@@ -42,7 +42,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
   const [selectedAgentId, setSelectedAgentId] = useState<string>("all");
 
   // Roles that can be used as branch roots (have potential children)
-  const filterableRoles: AgentRole[] = ["team_leader", "coordinator", "group_leader"];
+  const filterableRoles: AgentRole[] = ["super_admin_partner", "team_leader", "coordinator", "group_leader"];
 
   // Agents of the selected role
   const agentsOfRole = useMemo(() => {
@@ -53,6 +53,11 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
   // Filtered agents for preview/export
   const filteredAgents = useMemo(() => {
     if (selectedRole === "all") return agents;
+    if (selectedRole === "super_admin_partner") {
+      return selectedAgentId === "all"
+        ? agentsOfRole
+        : agentsOfRole.filter(agent => agent.id === selectedAgentId);
+    }
     if (selectedAgentId === "all") {
       // All branches of this role
       return agentsOfRole.flatMap(a => [a, ...collectBranch(a.id, agents)]);
@@ -103,7 +108,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
                 <SelectItem value="all">All Agents</SelectItem>
                 {filterableRoles.map(role => (
                   <SelectItem key={role} value={role}>
-                    {ROLE_LABELS[role]} branches
+                    {role === "super_admin_partner" ? ROLE_LABELS[role] : `${ROLE_LABELS[role]} branches`}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -119,7 +124,9 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
                   <SelectValue placeholder={`Select ${ROLE_LABELS[selectedRole]}`} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All {ROLE_LABELS[selectedRole]}s</SelectItem>
+                  <SelectItem value="all">
+                    {selectedRole === "super_admin_partner" ? "All Super Admins / Business Partners" : `All ${ROLE_LABELS[selectedRole]}s`}
+                  </SelectItem>
                   {agentsOfRole.map(a => (
                     <SelectItem key={a.id} value={a.id}>
                       {a.name} ({a.panchayath?.name || ""})
@@ -134,7 +141,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
           <div className="rounded-md bg-muted/50 p-3 space-y-2">
             <p className="text-sm font-medium">Export preview</p>
             <div className="flex flex-wrap gap-1.5">
-              {ROLE_HIERARCHY.filter(r => roleStats[r]).map(role => (
+              {(["super_admin_partner", ...ROLE_HIERARCHY] as AgentRole[]).filter(r => roleStats[r]).map(role => (
                 <Badge key={role} variant="secondary" className="text-xs">
                   {roleStats[role]} {ROLE_LABELS[role]}s
                 </Badge>
@@ -145,7 +152,7 @@ export function ExportFilterDialog({ open, onOpenChange, agents, onExport }: Exp
             </p>
 
             {/* Show hierarchy chain */}
-            {selectedAgentId !== "all" && selectedRole !== "all" && (() => {
+            {selectedAgentId !== "all" && selectedRole !== "all" && selectedRole !== "super_admin_partner" && (() => {
               const root = agents.find(a => a.id === selectedAgentId);
               if (!root) return null;
               const childRoles = ROLE_HIERARCHY.slice(ROLE_HIERARCHY.indexOf(root.role));
