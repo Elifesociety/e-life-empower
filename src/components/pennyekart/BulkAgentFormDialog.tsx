@@ -291,6 +291,16 @@ export function BulkAgentFormDialog({
   // Load potential parent agents (single form) - Team Leaders across all responsible panchayaths
   useEffect(() => {
     const fetchParentAgents = async () => {
+      if (selectedSingleRole === "team_leader") {
+        const { data } = await supabase
+          .from("pennyekart_agents")
+          .select("id, name, role, ward, responsible_panchayath_ids")
+          .eq("role", "super_admin_partner")
+          .eq("is_active", true)
+          .order("name");
+        setPotentialParents((data as unknown as PennyekartAgent[]) || []);
+        return;
+      }
       const parentRole = getParentRole(selectedSingleRole);
       if (!parentRole) {
         setPotentialParents([]);
@@ -298,7 +308,6 @@ export function BulkAgentFormDialog({
       }
 
       // For coordinators and below, get parents from the selected panchayath
-      // For team leaders, they have no parent
       let panchayathFilter = selectedSinglePanchayath;
       
       if (!panchayathFilter) {
@@ -384,7 +393,8 @@ export function BulkAgentFormDialog({
     try {
       // Top-level roles don't have parents
       if ((values.role === "team_leader" || values.role === "super_admin_partner")) {
-        values.parent_agent_id = null;
+        // Team Leaders may optionally report to a Super Admin / Business Partner
+        if (values.role === "super_admin_partner") values.parent_agent_id = null;
         // Set ward to "N/A" for top-level roles
         if (!values.ward) {
           values.ward = "N/A";
@@ -872,6 +882,35 @@ function SingleFormContent({
               />
             )}
           </div>
+        )}
+
+        {selectedRole === "team_leader" && (
+          <FormField
+            control={form.control}
+            name="parent_agent_id"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel className="text-xs sm:text-sm">Reports To (Super Admin / Business Partner) · optional</FormLabel>
+                <Select
+                  onValueChange={(v) => field.onChange(v === "__none__" ? null : v)}
+                  value={field.value || "__none__"}
+                >
+                  <FormControl>
+                    <SelectTrigger className="h-9">
+                      <SelectValue placeholder="Select Super Admin / Business Partner" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="__none__">No Super Admin / Business Partner</SelectItem>
+                    {potentialParents.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage className="text-xs" />
+              </FormItem>
+            )}
+          />
         )}
       </div>
 
