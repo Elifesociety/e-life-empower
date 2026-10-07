@@ -4,6 +4,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { supabase } from "@/integrations/supabase/client";
 import { AgentHierarchyTree, sabpScope } from "@/components/pennyekart/AgentHierarchyTree";
 import { PennyekartAgent, ROLE_LABELS } from "@/hooks/usePennyekartAgents";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CustomTeamPanel } from "./CustomTeamPanel";
 
 interface Props {
   open: boolean;
@@ -15,6 +17,7 @@ export function MyTeamDialog({ open, onOpenChange }: Props) {
   const [team, setTeam] = useState<PennyekartAgent[]>([]);
   const [me, setMe] = useState<PennyekartAgent[]>([]);
   const [selected, setSelected] = useState<PennyekartAgent | null>(null);
+  const [allAgents, setAllAgents] = useState<PennyekartAgent[]>([]);
 
   useEffect(() => {
     if (!open) return;
@@ -61,6 +64,7 @@ export function MyTeamDialog({ open, onOpenChange }: Props) {
         addDownline(m.id);
       }
       setMe(mine);
+      setAllAgents(all);
       setTeam(Array.from(result.values()));
       setLoading(false);
     })();
@@ -84,7 +88,18 @@ export function MyTeamDialog({ open, onOpenChange }: Props) {
             Your mobile number is not registered as an agent, so there is no team to show.
           </p>
         ) : (
-          <AgentHierarchyTree agents={team} onSelectAgent={setSelected} selectedAgentId={selected?.id} />
+          <Tabs defaultValue="official">
+            <TabsList className="w-full">
+              <TabsTrigger value="official" className="flex-1">Official Hierarchy</TabsTrigger>
+              <TabsTrigger value="custom" className="flex-1">My Performance Team</TabsTrigger>
+            </TabsList>
+            <TabsContent value="official">
+              <AgentHierarchyTree agents={team} onSelectAgent={setSelected} selectedAgentId={selected?.id} />
+            </TabsContent>
+            <TabsContent value="custom">
+              <CustomTeamPanel owner={me[0]} allAgents={allAgents} />
+            </TabsContent>
+          </Tabs>
         )}
       </DialogContent>
     </Dialog>
