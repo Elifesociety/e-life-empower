@@ -53,7 +53,7 @@ export function MyTeamDialog({ open, onOpenChange }: Props) {
           // plus anyone linked under them.
           const scope = new Set(sabpScope(m));
           const inScope = all.filter(
-            (a) => a.role !== "super_admin_partner" && sabpScope(a).concat(a.panchayath_id).some((id) => scope.has(id)),
+            (a) => a.role !== "super_admin_partner" && sabpScope(a).some((id) => scope.has(id)),
           );
           inScope.forEach((a) => result.set(a.id, a));
           inScope.forEach((a) => addDownline(a.id));
