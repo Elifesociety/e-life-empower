@@ -152,6 +152,58 @@ export type Database = {
           },
         ]
       }
+      agent_custom_team: {
+        Row: {
+          created_at: string
+          id: string
+          member_agent_id: string
+          owner_agent_id: string
+          parent_member_agent_id: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          member_agent_id: string
+          owner_agent_id: string
+          parent_member_agent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          member_agent_id?: string
+          owner_agent_id?: string
+          parent_member_agent_id?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_custom_team_member_agent_id_fkey"
+            columns: ["member_agent_id"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_custom_team_owner_agent_id_fkey"
+            columns: ["owner_agent_id"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_custom_team_parent_member_agent_id_fkey"
+            columns: ["parent_member_agent_id"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       agent_direct_customers: {
         Row: {
           address: string | null
