@@ -32,6 +32,7 @@ interface Props {
   panchayath: { id: string; name: string; name_ml?: string | null } | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  focusAgentId?: string | null;
 }
 
 const ROLE_ORDER: AgentRole[] = ["super_admin_partner", "team_leader", "coordinator", "group_leader", "pro"];
@@ -52,7 +53,7 @@ const roleColor: Record<AgentRole, string> = {
   pro: "border-l-rose-500 bg-rose-50/60 dark:bg-rose-950/20",
 };
 
-export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props) {
+export function PanchayathAgentsDialog({ panchayath, open, onOpenChange, focusAgentId }: Props) {
   const [agents, setAgents] = useState<PennyekartAgent[]>([]);
   const [loading, setLoading] = useState(false);
   const [access, setAccess] = useState<PanchayathAccess | null>(null);
@@ -104,6 +105,17 @@ export function PanchayathAgentsDialog({ panchayath, open, onOpenChange }: Props
       checkPanchayathAccess(panchayath.id).then(setAccess);
     }
   }, [open, panchayath?.id]);
+
+  const [focusHandled, setFocusHandled] = useState<string | null>(null);
+  useEffect(() => {
+    if (!open) { setFocusHandled(null); return; }
+    if (!focusAgentId || focusHandled === focusAgentId || !access || loading) return;
+    const a = agents.find((x) => x.id === focusAgentId);
+    if (!a) return;
+    setFocusHandled(focusAgentId);
+    if (access.canManage) { setEditing(a); setFormOpen(true); }
+    else toast({ title: "View only", description: "You can edit agents only in your own allocated panchayaths." });
+  }, [open, focusAgentId, access, agents, loading]);
 
   const grouped = useMemo(() => {
     const out: Record<AgentRole, PennyekartAgent[]> = {

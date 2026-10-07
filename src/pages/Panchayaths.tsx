@@ -11,6 +11,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { PanchayathAgentsDialog } from "@/components/panchayath/PanchayathAgentsDialog";
 import { PanchayathNotesDialog } from "@/components/panchayath/PanchayathNotesDialog";
 import { MyTeamDialog } from "@/components/panchayath/MyTeamDialog";
+import { ROLE_LABELS } from "@/hooks/usePennyekartAgents";
+import { Pencil } from "lucide-react";
 
 interface Panchayath {
   id: string;
@@ -185,7 +187,19 @@ export default function Panchayaths() {
   const [myAgentName, setMyAgentName] = useState<string | null>(null);
   const [lastNoteMap, setLastNoteMap] = useState<Record<string, string>>({});
   const [noteCountMap, setNoteCountMap] = useState<Record<string, number>>({});
+  const [allAgents, setAllAgents] = useState<any[]>([]);
+  const [agentSearch, setAgentSearch] = useState("");
+  const [focusAgentId, setFocusAgentId] = useState<string | null>(null);
 
+
+  const agentMatches = useMemo(() => {
+    const q = agentSearch.trim().toLowerCase();
+    const digits = q.replace(/\D/g, "");
+    if (q.length < 2) return [];
+    return allAgents.filter((a) =>
+      (a.name || "").toLowerCase().includes(q) || (digits.length >= 3 && (a.mobile || "").includes(digits))
+    ).slice(0, 30);
+  }, [agentSearch, allAgents]);
 
   useEffect(() => {
     (async () => {
@@ -203,6 +217,7 @@ export default function Panchayaths() {
         if (!lastNotes[n.panchayath_id]) lastNotes[n.panchayath_id] = n.note_date;
         noteCounts[n.panchayath_id] = (noteCounts[n.panchayath_id] || 0) + 1;
       });
+      setAllAgents(aData || []);
       setLastNoteMap(lastNotes);
       setNoteCountMap(noteCounts);
       const map: Record<string, Metrics> = {};
@@ -442,6 +457,39 @@ export default function Panchayaths() {
           </div>
         )}
 
+        <div className="mb-3">
+          <div className="relative">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input value={agentSearch} onChange={(e) => setAgentSearch(e.target.value)} placeholder="Search agent by name or mobile…" className="pl-9" />
+          </div>
+          {agentMatches.length > 0 && (
+            <div className="mt-2 space-y-2 max-h-96 overflow-y-auto">
+              {agentMatches.map((a) => {
+                const pids: string[] = Array.from(new Set([...(a.responsible_panchayath_ids || []), a.panchayath_id].filter(Boolean)));
+                return (
+                  <Card key={a.id}><CardContent className="p-3 space-y-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="font-semibold">{a.name}</span>
+                      <Badge variant="secondary">{(ROLE_LABELS as any)[a.role] ?? a.role}</Badge>
+                      <a href={`tel:${a.mobile}`} className="text-sm text-primary underline">{a.mobile}</a>
+                      <Button size="sm" variant="outline" className="ml-auto h-7" onClick={() => {
+                        const p = panchayaths.find((x) => x.id === a.panchayath_id);
+                        if (p) { setFocusAgentId(a.id); setSelected(p); }
+                      }}><Pencil className="w-3 h-3 mr-1" />Edit</Button>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {pids.map((pid) => { const p = panchayaths.find((x) => x.id === pid); return p ? (
+                        <Button key={pid} size="sm" variant="ghost" className="h-6 px-2 text-xs" onClick={() => { setFocusAgentId(null); setSelected(p); }}><MapPin className="w-3 h-3 mr-1" />{p.name}</Button>
+                      ) : null; })}
+                    </div>
+                  </CardContent></Card>
+                );
+              })}
+            </div>
+          )}
+          {agentSearch.trim().length >= 2 && agentMatches.length === 0 && <p className="text-sm text-muted-foreground mt-2">No agents found.</p>}
+        </div>
+
         <div className="flex flex-col sm:flex-row gap-2 mb-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -649,7 +697,8 @@ export default function Panchayaths() {
       <PanchayathAgentsDialog
         panchayath={selected}
         open={!!selected}
-        onOpenChange={(o) => !o && setSelected(null)}
+        onOpenChange={(o) => { if (!o) { setSelected(null); setFocusAgentId(null); } }}
+        focusAgentId={focusAgentId}
       />
       <PanchayathNotesDialog
         panchayathId={notesFor?.id ?? null}
