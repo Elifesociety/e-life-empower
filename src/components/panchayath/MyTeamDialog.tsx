@@ -48,11 +48,17 @@ export function MyTeamDialog({ open, onOpenChange }: Props) {
       for (const m of mine) {
         result.set(m.id, m);
         if (m.role === "super_admin_partner") {
+          // Match the "My Panchayaths" list: every agent working in any of
+          // the allocated panchayaths (by home OR allocated panchayaths),
+          // plus anyone linked under them.
           const scope = new Set(sabpScope(m));
-          all.filter((a) => a.role !== "super_admin_partner" && scope.has(a.panchayath_id)).forEach((a) => result.set(a.id, a));
-        } else {
-          addDownline(m.id);
+          const inScope = all.filter(
+            (a) => a.role !== "super_admin_partner" && sabpScope(a).concat(a.panchayath_id).some((id) => scope.has(id)),
+          );
+          inScope.forEach((a) => result.set(a.id, a));
+          inScope.forEach((a) => addDownline(a.id));
         }
+        addDownline(m.id);
       }
       setMe(mine);
       setTeam(Array.from(result.values()));
