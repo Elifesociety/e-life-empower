@@ -266,7 +266,7 @@ export function AgentDetailsPanel({
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete Agent?</AlertDialogTitle>
                 <AlertDialogDescription>
-                  This will permanently delete {agent.name}. 
+                  This will move {agent.name} to Deleted Agents (kept 30 days, can be restored). 
                   {directReports.length > 0 && (
                     <span className="block mt-2 text-destructive">
                       Warning: This agent has {directReports.length} direct reports that will become orphaned.
