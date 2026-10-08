@@ -634,6 +634,45 @@ export type Database = {
           },
         ]
       }
+      deleted_agents_archive: {
+        Row: {
+          agent_data: Json
+          agent_id: string
+          agent_mobile: string | null
+          agent_name: string | null
+          agent_role: string | null
+          child_agent_ids: string[]
+          deleted_at: string
+          deleted_by: string | null
+          id: string
+          related_data: Json
+        }
+        Insert: {
+          agent_data: Json
+          agent_id: string
+          agent_mobile?: string | null
+          agent_name?: string | null
+          agent_role?: string | null
+          child_agent_ids?: string[]
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          related_data?: Json
+        }
+        Update: {
+          agent_data?: Json
+          agent_id?: string
+          agent_mobile?: string | null
+          agent_name?: string | null
+          agent_role?: string | null
+          child_agent_ids?: string[]
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          related_data?: Json
+        }
+        Relationships: []
+      }
       department_members: {
         Row: {
           agent_id: string

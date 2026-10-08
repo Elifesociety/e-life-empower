@@ -429,6 +429,51 @@ serve(async (req) => {
       return json({ result });
     }
 
+    // ── Deleted agents bin (30-day retention) ──
+    if (req.method === "POST" && (action === "list_deleted" || action === "restore_deleted" || action === "purge_deleted")) {
+      const json = (d: unknown, status = 200) => new Response(JSON.stringify(d), { status, headers: { ...corsHeaders, "Content-Type": "application/json" } });
+      if (!admin) return json({ error: "Admin session required" }, 403);
+      const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+      await supabase.from("deleted_agents_archive").delete().lt("deleted_at", cutoff);
+      if (action === "list_deleted") {
+        const { data, error } = await supabase.from("deleted_agents_archive")
+          .select("id, agent_id, agent_name, agent_mobile, agent_role, deleted_by, deleted_at, child_agent_ids, agent_data")
+          .order("deleted_at", { ascending: false });
+        if (error) return json({ error: error.message }, 500);
+        return json({ data });
+      }
+      if (!isSuperAdmin) return json({ error: "Only Super Admin can do this" }, 403);
+      const archiveId = body?.archive_id as string;
+      if (!archiveId) return json({ error: "archive_id required" }, 400);
+      if (action === "purge_deleted") {
+        const { error } = await supabase.from("deleted_agents_archive").delete().eq("id", archiveId);
+        if (error) return json({ error: error.message }, 500);
+        return json({ success: true });
+      }
+      const { data: arc } = await supabase.from("deleted_agents_archive").select("*").eq("id", archiveId).maybeSingle();
+      if (!arc) return json({ error: "Not found or expired" }, 404);
+      const agentRow = { ...(arc.agent_data as Record<string, unknown>) };
+      if (agentRow.parent_agent_id) {
+        const { data: par } = await supabase.from("pennyekart_agents").select("id").eq("id", agentRow.parent_agent_id as string).maybeSingle();
+        if (!par) agentRow.parent_agent_id = null;
+      }
+      const { error: aErr } = await supabase.from("pennyekart_agents").upsert(agentRow, { onConflict: "id" });
+      if (aErr) return json({ error: aErr.message }, 500);
+      const rel = (arc.related_data || {}) as Record<string, Record<string, unknown>[]>;
+      const errors: string[] = [];
+      for (const [t, rows] of Object.entries(rel)) {
+        if (!rows?.length) continue;
+        const { error } = await supabase.from(t).upsert(rows, { onConflict: "id" });
+        if (error) errors.push(`${t}: ${error.message}`);
+      }
+      const kids = (arc.child_agent_ids || []) as string[];
+      if (kids.length) {
+        await supabase.from("pennyekart_agents").update({ parent_agent_id: arc.agent_id }).in("id", kids).is("parent_agent_id", null);
+      }
+      await supabase.from("deleted_agents_archive").delete().eq("id", archiveId);
+      return json({ success: true, errors });
+    }
+
     // Caller-mobile sessions may create / update / delete agents in their scope
     if (caller && !admin) {
       const allowed = (req.method === "POST" && action === "create") || req.method === "PUT" || req.method === "DELETE";
@@ -695,6 +740,25 @@ serve(async (req) => {
             JSON.stringify({ error: "Forbidden - Team Leaders cannot delete this role" }),
             { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
           );
+        }
+      }
+
+      // Archive a full copy (kept 30 days) before deleting
+      {
+        const { data: full } = await supabase.from("pennyekart_agents").select("*").eq("id", agentId).maybeSingle();
+        if (full) {
+          const related: Record<string, unknown[]> = {};
+          for (const t of ["agent_direct_customers", "agent_work_logs", "agent_wallet_transactions", "agent_complaints", "agent_auth"]) {
+            const { data } = await supabase.from(t).select("*").eq("agent_id", agentId);
+            related[t] = data || [];
+          }
+          const { data: kids } = await supabase.from("pennyekart_agents").select("id").eq("parent_agent_id", agentId);
+          const { error: arcErr } = await supabase.from("deleted_agents_archive").insert({
+            agent_id: full.id, agent_name: full.name, agent_mobile: full.mobile, agent_role: full.role,
+            agent_data: full, related_data: related, child_agent_ids: (kids || []).map((k: any) => k.id),
+            deleted_by: admin ? ((admin as any).full_name || (admin as any).phone || "Admin") : (caller ? `Agent ${callerMobile}` : null),
+          });
+          if (arcErr) throw arcErr;
         }
       }
 
