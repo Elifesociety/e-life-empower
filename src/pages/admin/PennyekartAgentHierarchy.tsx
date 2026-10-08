@@ -60,6 +60,8 @@ import { AgentWorkLogReport } from "@/components/pennyekart/AgentWorkLogReport";
 import { AgentComplaintsTab } from "@/components/pennyekart/AgentComplaintsTab";
 import { MessageSquareWarning, ShieldCheck } from "lucide-react";
 import { BackupRestoreDialog } from "@/components/pennyekart/BackupRestoreDialog";
+import { DeletedAgentsDialog } from "@/components/pennyekart/DeletedAgentsDialog";
+import { Trash2 as BinIcon } from "lucide-react";
 
 interface Panchayath {
   id: string;
@@ -81,6 +83,7 @@ export default function PennyekartAgentHierarchy() {
   const [defaultRole, setDefaultRole] = useState<AgentRole | null>(null);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
+  const [binOpen, setBinOpen] = useState(false);
 
   const { agents, isLoading, error, refetch } = usePennyekartAgents(filters);
   const { deleteAgent } = useAgentMutations();
@@ -235,6 +238,10 @@ export default function PennyekartAgentHierarchy() {
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setBackupOpen(true)}>
               <ShieldCheck className="h-4 w-4 mr-2" />
               Backup
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setBinOpen(true)}>
+              <BinIcon className="h-4 w-4 mr-2" />
+              Deleted
             </Button>
             <Button onClick={handleAddAgent} size="sm" className="flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" />
@@ -448,6 +455,8 @@ export default function PennyekartAgentHierarchy() {
           defaultRole={defaultRole}
           onSuccess={refetch}
         />
+
+        <DeletedAgentsDialog open={binOpen} onOpenChange={setBinOpen} isSuperAdmin={isSuperAdmin} onRestored={refetch} />
 
         <BackupRestoreDialog
           open={backupOpen}

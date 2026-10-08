@@ -13,6 +13,8 @@ const FN_URL = `${import.meta.env.VITE_SUPABASE_URL || "https://qnucqwniloioxsow
 const ANON =
   "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFudWNxd25pbG9pb3hzb3dkcXpqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk0MDQ3NzcsImV4cCI6MjA4NDk4MDc3N30.hbmuNMcmmFs7-yCYtuJ34jbX6aqWaSDTiryD1VDHFKc";
 
+export async function callAgentsFn(body: object) { return call(body); }
+
 async function call(body: object) {
   const headers: Record<string, string> = { "Content-Type": "application/json", apikey: ANON };
   const t = localStorage.getItem("elife_admin_token");
