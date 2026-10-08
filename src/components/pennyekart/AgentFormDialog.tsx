@@ -168,7 +168,7 @@ export function AgentFormDialog({ open, onOpenChange, agent, onSuccess, lockedPa
         .eq("role", parentRole)
         .eq("is_active", true);
       if (selectedRole !== "team_leader" && selectedPanchayath) {
-        query = query.eq("panchayath_id", selectedPanchayath);
+        query = query.or(`panchayath_id.eq.${selectedPanchayath},responsible_panchayath_ids.cs.{${selectedPanchayath}}`);
       }
       const { data, error } = await query.order("name");
 
