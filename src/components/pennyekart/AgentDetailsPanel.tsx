@@ -81,10 +81,12 @@ export function AgentDetailsPanel({
   const parentAgent = allAgents.find(a => a.id === agent.parent_agent_id);
 
   // Calculate total customers under this agent
-  const calculateTotalCustomers = (a: PennyekartAgent): number => {
+  const calculateTotalCustomers = (a: PennyekartAgent, visited = new Set<string>()): number => {
+    if (visited.has(a.id)) return 0;
+    visited.add(a.id);
     if (a.role === "pro") return a.customer_count;
     const children = allAgents.filter(c => c.parent_agent_id === a.id);
-    return children.reduce((sum, child) => sum + calculateTotalCustomers(child), 0);
+    return children.reduce((sum, child) => sum + calculateTotalCustomers(child, visited), 0);
   };
 
   const initials = agent.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();

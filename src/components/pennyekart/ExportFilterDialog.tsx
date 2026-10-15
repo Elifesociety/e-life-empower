@@ -27,12 +27,13 @@ interface ExportFilterDialogProps {
 }
 
 /** Recursively collect all descendants of a given agent */
-function collectBranch(agentId: string, allAgents: PennyekartAgent[]): PennyekartAgent[] {
+function collectBranch(agentId: string, allAgents: PennyekartAgent[], visited = new Set<string>([agentId])): PennyekartAgent[] {
   const result: PennyekartAgent[] = [];
-  const children = allAgents.filter(a => a.parent_agent_id === agentId);
+  const children = allAgents.filter(a => a.parent_agent_id === agentId && !visited.has(a.id));
   for (const child of children) {
+    visited.add(child.id);
     result.push(child);
-    result.push(...collectBranch(child.id, allAgents));
+    result.push(...collectBranch(child.id, allAgents, visited));
   }
   return result;
 }
