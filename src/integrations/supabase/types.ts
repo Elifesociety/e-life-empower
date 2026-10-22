@@ -1200,6 +1200,53 @@ export type Database = {
         }
         Relationships: []
       }
+      pennyekart_agent_roles: {
+        Row: {
+          color: string | null
+          created_at: string
+          is_active: boolean
+          is_system: boolean
+          key: string
+          name: string
+          name_ml: string | null
+          parent_key: string | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          is_active?: boolean
+          is_system?: boolean
+          key: string
+          name: string
+          name_ml?: string | null
+          parent_key?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          is_active?: boolean
+          is_system?: boolean
+          key?: string
+          name?: string
+          name_ml?: string | null
+          parent_key?: string | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "pennyekart_agent_roles_parent_key_fkey"
+            columns: ["parent_key"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agent_roles"
+            referencedColumns: ["key"]
+          },
+        ]
+      }
       pennyekart_agent_task_feedback: {
         Row: {
           agent_id: string
@@ -1302,7 +1349,7 @@ export type Database = {
           parent_agent_id: string | null
           responsible_panchayath_ids: string[] | null
           responsible_wards: string[] | null
-          role: Database["public"]["Enums"]["pennyekart_agent_role"]
+          role: string
           updated_at: string | null
           ward: string
         }
@@ -1318,7 +1365,7 @@ export type Database = {
           parent_agent_id?: string | null
           responsible_panchayath_ids?: string[] | null
           responsible_wards?: string[] | null
-          role: Database["public"]["Enums"]["pennyekart_agent_role"]
+          role: string
           updated_at?: string | null
           ward: string
         }
@@ -1334,11 +1381,18 @@ export type Database = {
           parent_agent_id?: string | null
           responsible_panchayath_ids?: string[] | null
           responsible_wards?: string[] | null
-          role?: Database["public"]["Enums"]["pennyekart_agent_role"]
+          role?: string
           updated_at?: string | null
           ward?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "fk_pennyekart_agents_role"
+            columns: ["role"]
+            isOneToOne: false
+            referencedRelation: "pennyekart_agent_roles"
+            referencedColumns: ["key"]
+          },
           {
             foreignKeyName: "pennyekart_agents_panchayath_id_fkey"
             columns: ["panchayath_id"]
@@ -2118,13 +2172,6 @@ export type Database = {
     Enums: {
       app_role: "super_admin" | "admin" | "member"
       cash_collection_status: "pending" | "verified" | "submitted"
-      pennyekart_agent_role:
-        | "scode"
-        | "team_leader"
-        | "coordinator"
-        | "group_leader"
-        | "pro"
-        | "super_admin_partner"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -2254,14 +2301,6 @@ export const Constants = {
     Enums: {
       app_role: ["super_admin", "admin", "member"],
       cash_collection_status: ["pending", "verified", "submitted"],
-      pennyekart_agent_role: [
-        "scode",
-        "team_leader",
-        "coordinator",
-        "group_leader",
-        "pro",
-        "super_admin_partner",
-      ],
     },
   },
 } as const
