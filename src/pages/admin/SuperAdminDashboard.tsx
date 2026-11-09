@@ -166,6 +166,12 @@ export default function SuperAdminDashboard() {
             </Link>
           </Button>
           <Button asChild variant="outline" className="h-auto py-3 sm:py-4">
+            <Link to="/admin/pennyekart-agents" className="flex flex-col items-center gap-1.5 sm:gap-2">
+              <Users className="h-5 w-5 sm:h-6 sm:w-6" />
+              <span className="text-[10px] sm:text-sm">Pennyekart Agents</span>
+            </Link>
+          </Button>
+          <Button asChild variant="outline" className="h-auto py-3 sm:py-4">
             <Link to="/super-admin/cash-collections" className="flex flex-col items-center gap-1.5 sm:gap-2">
               <IndianRupee className="h-5 w-5 sm:h-6 sm:w-6" />
               <span className="text-[10px] sm:text-sm">Cash</span>
