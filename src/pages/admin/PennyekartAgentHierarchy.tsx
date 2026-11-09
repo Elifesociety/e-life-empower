@@ -20,6 +20,13 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { SearchableSelect } from "@/components/ui/searchable-select";
 import { 
   Users, 
@@ -84,6 +91,9 @@ export default function PennyekartAgentHierarchy() {
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [backupOpen, setBackupOpen] = useState(false);
   const [binOpen, setBinOpen] = useState(false);
+  const [unassignedOpen, setUnassignedOpen] = useState(false);
+  const [unassignedLoading, setUnassignedLoading] = useState(false);
+  const [unassignedPanchayaths, setUnassignedPanchayaths] = useState<Panchayath[]>([]);
 
   const { agents, isLoading, error, refetch } = usePennyekartAgents(filters);
   const { deleteAgent } = useAgentMutations();
@@ -185,6 +195,51 @@ export default function PennyekartAgentHierarchy() {
     setFilters({});
   };
 
+  const openUnassignedPanchayaths = async () => {
+    setUnassignedOpen(true);
+    setUnassignedLoading(true);
+    try {
+      const activeAssignments: Array<{
+        role: string;
+        panchayath_id: string;
+        responsible_panchayath_ids: string[] | null;
+      }> = [];
+      const pageSize = 1000;
+      let from = 0;
+
+      while (true) {
+        const { data, error: assignmentError } = await supabase
+          .from("pennyekart_agents")
+          .select("role, panchayath_id, responsible_panchayath_ids")
+          .eq("is_active", true)
+          .in("role", ["super_admin_partner", "team_leader"])
+          .range(from, from + pageSize - 1);
+
+        if (assignmentError) throw assignmentError;
+        const page = data || [];
+        activeAssignments.push(...page);
+        if (page.length < pageSize) break;
+        from += pageSize;
+      }
+
+      const assignedIds = new Set<string>();
+      activeAssignments.forEach((agent) => {
+        const allocations = agent.responsible_panchayath_ids || [];
+        if (allocations.length > 0) {
+          allocations.forEach((id) => assignedIds.add(id));
+        } else if (agent.panchayath_id) {
+          assignedIds.add(agent.panchayath_id);
+        }
+      });
+
+      setUnassignedPanchayaths(panchayaths.filter((panchayath) => !assignedIds.has(panchayath.id)));
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load unassigned panchayaths");
+    } finally {
+      setUnassignedLoading(false);
+    }
+  };
+
   // Calculate stats
   const totalAgents = agents.length;
   const byRole = ALL_ROLES.reduce((acc, role) => {
@@ -242,6 +297,10 @@ export default function PennyekartAgentHierarchy() {
             <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={() => setBinOpen(true)}>
               <BinIcon className="h-4 w-4 mr-2" />
               Deleted
+            </Button>
+            <Button variant="outline" size="sm" className="flex-1 sm:flex-none" onClick={openUnassignedPanchayaths}>
+              <Building2 className="h-4 w-4 mr-2" />
+              Unassigned
             </Button>
             <Button onClick={handleAddAgent} size="sm" className="flex-1 sm:flex-none">
               <Plus className="h-4 w-4 mr-2" />
@@ -457,6 +516,44 @@ export default function PennyekartAgentHierarchy() {
         />
 
         <DeletedAgentsDialog open={binOpen} onOpenChange={setBinOpen} isSuperAdmin={isSuperAdmin} onRestored={refetch} />
+
+        <Dialog open={unassignedOpen} onOpenChange={setUnassignedOpen}>
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>Unassigned Panchayaths</DialogTitle>
+              <DialogDescription>
+                Panchayaths without an active Business Partner or Team Leader allocation.
+              </DialogDescription>
+            </DialogHeader>
+            {unassignedLoading ? (
+              <div className="flex justify-center py-10">
+                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+              </div>
+            ) : unassignedPanchayaths.length > 0 ? (
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {unassignedPanchayaths.map((panchayath) => (
+                  <Card key={panchayath.id}>
+                    <CardContent className="flex items-center gap-3 p-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted text-primary">
+                        <Building2 className="h-5 w-5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-medium">{panchayath.name}</p>
+                        <p className="text-sm text-muted-foreground">No active allocation</p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            ) : (
+              <div className="py-10 text-center">
+                <Building2 className="mx-auto mb-3 h-9 w-9 text-muted-foreground" />
+                <p className="font-medium">All panchayaths are assigned</p>
+                <p className="mt-1 text-sm text-muted-foreground">There are no unassigned active panchayaths.</p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
 
         <BackupRestoreDialog
           open={backupOpen}
