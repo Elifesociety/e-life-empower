@@ -190,6 +190,19 @@ export default function Panchayaths() {
   const [allAgents, setAllAgents] = useState<any[]>([]);
   const [agentSearch, setAgentSearch] = useState("");
   const [focusAgentId, setFocusAgentId] = useState<string | null>(null);
+  const [unassignedOnly, setUnassignedOnly] = useState(false);
+
+  // Same rule as admin "Unassigned": no active Business Partner or Team Leader allocation
+  const assignedIds = useMemo(() => {
+    const ids = new Set<string>();
+    allAgents.forEach((a: any) => {
+      if (a.role !== "super_admin_partner" && a.role !== "team_leader") return;
+      const alloc: string[] = (a.responsible_panchayath_ids || []).filter(Boolean);
+      if (alloc.length > 0) alloc.forEach((id) => ids.add(id));
+      else if (a.panchayath_id) ids.add(a.panchayath_id);
+    });
+    return ids;
+  }, [allAgents]);
 
 
   const agentMatches = useMemo(() => {
@@ -302,6 +315,7 @@ export default function Panchayaths() {
     setSortBy("code");
     setSearch("");
     setMyOnly(false);
+    setUnassignedOnly(false);
     setPartnerFilter("all");
     setAdminFilter("all");
   };
@@ -321,6 +335,7 @@ export default function Panchayaths() {
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     let list = panchayaths.filter((p) => {
+      if (unassignedOnly && assignedIds.has(p.id)) return false;
       if (myOnly && myPanchayathIds && !myPanchayathIds.has(p.id)) return false;
       if (partnerFilter !== "all") {
         const list = partnersMap[p.id] || [];
@@ -359,7 +374,7 @@ export default function Panchayaths() {
       });
     }
     return list;
-  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds, partnerFilter, adminFilter, partnersMap, leadersMap]);
+  }, [panchayaths, search, activeFilters, sortBy, metricsMap, myOnly, myPanchayathIds, partnerFilter, adminFilter, partnersMap, leadersMap, unassignedOnly, assignedIds]);
 
 
   const totals = useMemo(() => {
@@ -392,7 +407,7 @@ export default function Panchayaths() {
     };
   }, [panchayaths, metricsMap, noteCountMap]);
 
-  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly || partnerFilter !== "all" || adminFilter !== "all";
+  const hasActive = activeFilters.size > 0 || sortBy !== "code" || search.trim().length > 0 || myOnly || unassignedOnly || partnerFilter !== "all" || adminFilter !== "all";
   const hasMy = !!(myPanchayathIds && myPanchayathIds.size > 0);
 
   return (
@@ -511,6 +526,13 @@ export default function Panchayaths() {
             <User className="w-4 h-4 mr-1.5" />
             {myOnly ? `My Panchayaths (${myPanchayathIds?.size ?? 0})` : "My Panchayaths"}
           </Button>
+          <Button
+            variant={unassignedOnly ? "destructive" : "outline"}
+            onClick={() => setUnassignedOnly((v) => !v)}
+          >
+            <MapPin className="w-4 h-4 mr-1.5" />
+            Unassigned ({panchayaths.filter((p) => !assignedIds.has(p.id)).length})
+          </Button>
           <Select value={sortBy} onValueChange={(v) => setSortBy(v as SortKey)}>
             <SelectTrigger className="sm:w-56"><SelectValue placeholder="Sort by" /></SelectTrigger>
             <SelectContent>
@@ -590,6 +612,9 @@ export default function Panchayaths() {
                     <CardTitle className="text-base flex items-start justify-between gap-2">
                       <div>
                         <div className="font-semibold">{p.name}</div>
+                        {!loading && !assignedIds.has(p.id) && (
+                          <Badge variant="destructive" className="mt-1 mr-1 text-[10px]">Unassigned</Badge>
+                        )}
                         {p.name_ml && <div className="text-xs text-muted-foreground font-normal">{p.name_ml}</div>}
                         {p.code && (
                           <Badge variant="outline" className="mt-1 text-[10px] font-mono">
