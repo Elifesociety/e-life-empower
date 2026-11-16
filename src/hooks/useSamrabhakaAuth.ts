@@ -87,11 +87,14 @@ export function useSamrabhakaAuth() {
     return res;
   };
 
+  const changePassword = (old_password: string, new_password: string) =>
+    call("change_password", { old_password, new_password }, token);
+
   const logout = () => {
     localStorage.removeItem(TOKEN_KEY);
     setToken(null);
     setAgent(null);
   };
 
-  return { token, agent, isLoading, checkMobile, register, login, logout };
+  return { token, agent, isLoading, checkMobile, register, login, logout, changePassword };
 }
