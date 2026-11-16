@@ -99,15 +99,27 @@ export function useSuperAdminStats(): SuperAdminStats & {
         
         if (divisionsError) throw divisionsError;
 
-        const divisionData: DivisionInfo[] = await Promise.all(
-          (divisions || []).map(async (div) => {
-            const [{ count: programCount }, { count: memberCount }] = await Promise.all([
-              supabase.from("programs").select("id", { count: "exact", head: true }).eq("division_id", div.id),
-              supabase.from("members").select("id", { count: "exact", head: true }).eq("division_id", div.id),
-            ]);
-            return { ...div, programCount: programCount || 0, memberCount: memberCount || 0 };
-          })
-        );
+        const [{ data: progDivs }, { data: memDivs }] = await Promise.all([
+          supabase.from("programs").select("division_id").limit(10000),
+          supabase.from("members").select("division_id").limit(10000),
+        ]);
+        const pc = new Map<string, number>();
+        const mc = new Map<string, number>();
+        (progDivs || []).forEach((r: any) => pc.set(r.division_id, (pc.get(r.division_id) || 0) + 1));
+        (memDivs || []).forEach((r: any) => mc.set(r.division_id, (mc.get(r.division_id) || 0) + 1));
+        // Row cap safety: fall back to exact per-division counts if lists were truncated
+        const capped = (progDivs?.length || 0) >= 1000 || (memDivs?.length || 0) >= 1000;
+        const divisionData: DivisionInfo[] = capped
+          ? await Promise.all((divisions || []).map(async (div) => {
+              const [{ count: p }, { count: m }] = await Promise.all([
+                supabase.from("programs").select("id", { count: "exact", head: true }).eq("division_id", div.id),
+                supabase.from("members").select("id", { count: "exact", head: true }).eq("division_id", div.id),
+              ]);
+              return { ...div, programCount: p || 0, memberCount: m || 0 };
+            }))
+          : (divisions || []).map((div) => ({
+              ...div, programCount: pc.get(div.id) || 0, memberCount: mc.get(div.id) || 0,
+            }));
 
         const [
           { data: programs, error: programsError },

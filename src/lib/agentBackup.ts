@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { supabase } from "@/integrations/supabase/client";
 
 export const BACKUP_SHEETS: Record<string, string> = {
@@ -35,6 +34,7 @@ export async function fetchBackupData(): Promise<Record<string, Record<string, u
 }
 
 export async function downloadFullBackup(madeBy: string) {
+  const XLSX = await import("xlsx");
   const { data, panchayaths } = await call({ action: "export_backup" });
   const pMap = new Map<string, string>((panchayaths || []).map((p: { id: string; name: string }) => [p.id, p.name]));
   const wb = XLSX.utils.book_new();
@@ -65,6 +65,7 @@ export async function downloadFullBackup(madeBy: string) {
 const HELPER_COLS = new Set(["panchayath_name", "responsible_panchayath_names"]);
 
 export async function parseBackupFile(file: File) {
+  const XLSX = await import("xlsx");
   const wb = XLSX.read(await file.arrayBuffer());
   const tables: Record<string, Record<string, unknown>[]> = {};
   const problems: string[] = [];

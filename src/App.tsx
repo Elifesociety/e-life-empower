@@ -45,7 +45,9 @@ import TrainingDetail from "./pages/TrainingDetail";
 const TrainingsManagement = lazy(() => import("./pages/admin/TrainingsManagement"));
 import { MobileGate } from "./components/MobileGate";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: { queries: { staleTime: 3 * 60 * 1000, refetchOnWindowFocus: false } },
+});
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
