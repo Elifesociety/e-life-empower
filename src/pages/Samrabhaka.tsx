@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useSamrabhakaAuth } from "@/hooks/useSamrabhakaAuth";
 import { toast } from "sonner";
-import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight, ChevronDown } from "lucide-react";
+import { Loader2, LogOut, User, Phone, MapPin, Shield, Briefcase, ListChecks, ChevronRight, ChevronDown, KeyRound } from "lucide-react";
 import { ProjectsSection } from "@/components/samrabhaka/ProjectsSection";
 import { MyTasksSection } from "@/components/samrabhaka/MyTasksSection";
 
@@ -18,7 +18,25 @@ import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover
 type Step = "mobile" | "register" | "login";
 
 export default function Samrabhaka() {
-  const { agent, isLoading, token, checkMobile, register, login, logout } = useSamrabhakaAuth();
+  const { agent, isLoading, token, checkMobile, register, login, logout, changePassword } = useSamrabhakaAuth();
+  const [pwOpen, setPwOpen] = useState(false);
+  const [oldPw, setOldPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [newPw2, setNewPw2] = useState("");
+  const [pwBusy, setPwBusy] = useState(false);
+  const handleChangePw = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (newPw.length < 6) return toast.error("New password must be at least 6 characters");
+    if (newPw !== newPw2) return toast.error("Passwords do not match");
+    setPwBusy(true);
+    try {
+      await changePassword(oldPw, newPw);
+      toast.success("Password changed");
+      setPwOpen(false); setOldPw(""); setNewPw(""); setNewPw2("");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to change password");
+    } finally { setPwBusy(false); }
+  };
 
   const [step, setStep] = useState<Step>("mobile");
   const [mobile, setMobile] = useState("");
@@ -127,7 +145,10 @@ export default function Samrabhaka() {
                     />
                   )}
                   {agent.ward && <ProfileRow icon={<MapPin className="h-4 w-4" />} label="Ward" value={agent.ward} />}
-                  <div className="pt-3">
+                  <div className="pt-3 space-y-2">
+                    <Button variant="outline" onClick={() => setPwOpen(true)} className="gap-2 w-full">
+                      <KeyRound className="h-4 w-4" /> Change Password
+                    </Button>
                     <Button variant="outline" onClick={logout} className="gap-2 w-full">
                       <LogOut className="h-4 w-4" /> Logout
                     </Button>
@@ -151,6 +172,28 @@ export default function Samrabhaka() {
               onClick={() => setOpenFeature("projects")}
             />
           </div>
+
+          <Dialog open={pwOpen} onOpenChange={setPwOpen}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <KeyRound className="h-5 w-5 text-pink-600" /> Change Password
+                </DialogTitle>
+                <DialogDescription>Enter your current password and a new one.</DialogDescription>
+              </DialogHeader>
+              <form onSubmit={handleChangePw} className="space-y-3">
+                <div className="space-y-1"><Label htmlFor="oldpw">Current Password</Label>
+                  <Input id="oldpw" type="password" value={oldPw} onChange={(e) => setOldPw(e.target.value)} required /></div>
+                <div className="space-y-1"><Label htmlFor="newpw">New Password</Label>
+                  <Input id="newpw" type="password" value={newPw} onChange={(e) => setNewPw(e.target.value)} required /></div>
+                <div className="space-y-1"><Label htmlFor="newpw2">Confirm New Password</Label>
+                  <Input id="newpw2" type="password" value={newPw2} onChange={(e) => setNewPw2(e.target.value)} required /></div>
+                <Button type="submit" className="w-full" disabled={pwBusy}>
+                  {pwBusy && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Update Password
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
 
           <Dialog open={openFeature === "projects"} onOpenChange={(o) => !o && setOpenFeature(null)}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
