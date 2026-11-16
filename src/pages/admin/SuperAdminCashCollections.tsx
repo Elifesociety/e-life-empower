@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Link, Navigate } from "react-router-dom";
 import {
   ArrowLeft, Loader2, IndianRupee, Receipt, Clock, ShieldCheck,
-  FileText, Send, Pencil, Trash2, Building2,
+  FileText, Send, Pencil, Trash2, Building2, Download,
 } from "lucide-react";
 import { formatDistanceToNow, format } from "date-fns";
 
@@ -71,6 +71,7 @@ export default function SuperAdminCashCollections() {
   const [filterStatus, setFilterStatus] = useState<string>("all");
   const [filterDivision, setFilterDivision] = useState<string>("all");
   const [searchMobile, setSearchMobile] = useState("");
+  const [filterPanchayath, setFilterPanchayath] = useState<string>("all");
 
   // Edit state
   const [editDialog, setEditDialog] = useState(false);
@@ -139,9 +140,64 @@ export default function SuperAdminCashCollections() {
     new Map(collections.filter(c => c.divisions?.name).map(c => [c.division_id, c.divisions!.name])).entries()
   ).sort((a, b) => a[1].localeCompare(b[1]));
 
+  const uniquePanchayaths = Array.from(
+    new Set(collections.map(c => (c.panchayath_name || "").trim()).filter(Boolean))
+  ).sort((a, b) => a.localeCompare(b));
+
+  const handleExport = async () => {
+    const XLSX = await import("xlsx");
+    const fmt = (d: string | null) => (d ? format(new Date(d), "dd MMM yyyy, hh:mm a") : "");
+    const rows = filteredCollections.map((c, i) => ({
+      "#": i + 1,
+      "Receipt": c.receipt_number,
+      "Date": fmt(c.created_at),
+      "Division": c.divisions?.name || "",
+      "Person": c.person_name,
+      "Mobile": c.mobile,
+      "Panchayath": c.panchayath_name || "",
+      "Amount (₹)": Number(c.amount),
+      "Status": c.status,
+      "Collected By": c.collected_by_name || "",
+      "Verified By": c.verified_by_name || "",
+      "Verified At": fmt(c.verified_at),
+      "Submitted By": c.submitted_by_name || "",
+      "Submitted At": fmt(c.submitted_at),
+      "Notes": c.notes || "",
+    }));
+    const total = rows.reduce((s, r) => s + r["Amount (₹)"], 0);
+    const ws = XLSX.utils.json_to_sheet(rows);
+    XLSX.utils.sheet_add_aoa(ws, [["", "", "", "", "", "", "Total", total]], { origin: -1 });
+    ws["!cols"] = Object.keys(rows[0] || { a: 1 }).map(() => ({ wch: 18 }));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Cash Collections");
+    const tag = filterPanchayath !== "all" ? filterPanchayath.replace(/[^a-zA-Z0-9]/g, "_") : "All";
+    XLSX.writeFile(wb, `Cash_Collections_${tag}_${format(new Date(), "yyyy-MM-dd")}.xlsx`);
+  };
+
+  const panchayathSelect = (
+    <Select value={filterPanchayath} onValueChange={setFilterPanchayath}>
+      <SelectTrigger className="w-[170px] h-9">
+        <SelectValue placeholder="Panchayath" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Panchayaths</SelectItem>
+        {uniquePanchayaths.map((p) => (
+          <SelectItem key={p} value={p}>{p}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const exportButton = (
+    <Button variant="outline" size="sm" className="h-9" onClick={handleExport} disabled={filteredCollections.length === 0}>
+      <Download className="h-4 w-4 mr-1" />Export Excel
+    </Button>
+  );
+
   // Client-side filtering
   const filteredCollections = collections.filter(c => {
     if (filterDivision !== "all" && c.division_id !== filterDivision) return false;
+    if (filterPanchayath !== "all" && (c.panchayath_name || "").trim() !== filterPanchayath) return false;
     if (searchMobile && !c.mobile.includes(searchMobile) && !c.person_name.toLowerCase().includes(searchMobile.toLowerCase()) && !c.receipt_number?.toLowerCase().includes(searchMobile.toLowerCase())) return false;
     return true;
   });
@@ -273,7 +329,11 @@ export default function SuperAdminCashCollections() {
                         <SelectItem value="submitted">Submitted</SelectItem>
                       </SelectContent>
                     </Select>
-                    <span className="text-xs text-muted-foreground ml-auto">{filteredCollections.length} results</span>
+                    {panchayathSelect}
+                    {exportButton}
+                    {panchayathSelect}
+                {exportButton}
+                <span className="text-xs text-muted-foreground ml-auto">{filteredCollections.length} results</span>
                   </div>
                 </div>
               </CardHeader>
