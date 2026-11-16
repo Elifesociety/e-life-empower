@@ -1,4 +1,3 @@
-import * as XLSX from "xlsx";
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 
 export interface ExportColumn {
@@ -6,11 +5,12 @@ export interface ExportColumn {
   key: string;
 }
 
-export function exportRegistrationsToXlsx(
+export async function exportRegistrationsToXlsx(
   registrations: ProgramRegistration[],
   questions: ProgramFormQuestion[],
   programName: string
 ) {
+  const XLSX = await import("xlsx");
   // Sort questions by sort_order
   const sortedQuestions = [...questions].sort((a, b) => a.sort_order - b.sort_order);
 
