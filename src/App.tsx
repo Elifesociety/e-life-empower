@@ -2,6 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { lazy, Suspense } from "react";
+import { Loader2 } from "lucide-react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -16,31 +18,31 @@ import NotFound from "./pages/NotFound";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Unauthorized from "./pages/Unauthorized";
-import AdminsManagement from "./pages/admin/AdminsManagement";
-import MembersManagement from "./pages/admin/MembersManagement";
-import LocationsManagement from "./pages/admin/LocationsManagement";
-import ClustersManagement from "./pages/admin/ClustersManagement";
-import ProgramsManagement from "./pages/admin/ProgramsManagement";
-import ProgramDetail from "./pages/admin/ProgramDetail";
-import AdminDashboard from "./pages/admin/AdminDashboard";
-import SuperAdminDashboard from "./pages/admin/SuperAdminDashboard";
-import PennyekartAgentHierarchy from "./pages/admin/PennyekartAgentHierarchy";
-import DivisionAdminDashboard from "./pages/admin/DivisionAdminDashboard";
-import CashCollections from "./pages/admin/CashCollections";
-import SuperAdminCashCollections from "./pages/admin/SuperAdminCashCollections";
-import OldPaymentsUpload from "./pages/admin/OldPaymentsUpload";
-import SalesReport from "./pages/admin/SalesReport";
-import Payouts from "./pages/admin/Payouts";
-import AgentTasks from "./pages/admin/AgentTasks";
-import WhatsAppCommands from "./pages/admin/WhatsAppCommands";
-import SamrambhakaManagement from "./pages/admin/SamrambhakaManagement";
-import DepartmentsManagement from "./pages/admin/DepartmentsManagement";
+const AdminsManagement = lazy(() => import("./pages/admin/AdminsManagement"));
+const MembersManagement = lazy(() => import("./pages/admin/MembersManagement"));
+const LocationsManagement = lazy(() => import("./pages/admin/LocationsManagement"));
+const ClustersManagement = lazy(() => import("./pages/admin/ClustersManagement"));
+const ProgramsManagement = lazy(() => import("./pages/admin/ProgramsManagement"));
+const ProgramDetail = lazy(() => import("./pages/admin/ProgramDetail"));
+const AdminDashboard = lazy(() => import("./pages/admin/AdminDashboard"));
+const SuperAdminDashboard = lazy(() => import("./pages/admin/SuperAdminDashboard"));
+const PennyekartAgentHierarchy = lazy(() => import("./pages/admin/PennyekartAgentHierarchy"));
+const DivisionAdminDashboard = lazy(() => import("./pages/admin/DivisionAdminDashboard"));
+const CashCollections = lazy(() => import("./pages/admin/CashCollections"));
+const SuperAdminCashCollections = lazy(() => import("./pages/admin/SuperAdminCashCollections"));
+const OldPaymentsUpload = lazy(() => import("./pages/admin/OldPaymentsUpload"));
+const SalesReport = lazy(() => import("./pages/admin/SalesReport"));
+const Payouts = lazy(() => import("./pages/admin/Payouts"));
+const AgentTasks = lazy(() => import("./pages/admin/AgentTasks"));
+const WhatsAppCommands = lazy(() => import("./pages/admin/WhatsAppCommands"));
+const SamrambhakaManagement = lazy(() => import("./pages/admin/SamrambhakaManagement"));
+const DepartmentsManagement = lazy(() => import("./pages/admin/DepartmentsManagement"));
 import RegisterAgent from "./pages/RegisterAgent";
 import Panchayaths from "./pages/Panchayaths";
 import Samrabhaka from "./pages/Samrabhaka";
 import Trainings from "./pages/Trainings";
 import TrainingDetail from "./pages/TrainingDetail";
-import TrainingsManagement from "./pages/admin/TrainingsManagement";
+const TrainingsManagement = lazy(() => import("./pages/admin/TrainingsManagement"));
 import { MobileGate } from "./components/MobileGate";
 
 const queryClient = new QueryClient();
@@ -53,6 +55,7 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <MobileGate />
+          <Suspense fallback={<div className="min-h-screen flex items-center justify-center bg-background"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>}>
           <Routes>
             {/* Public routes */}
             <Route path="/" element={<Index />} />
@@ -281,6 +284,7 @@ const App = () => (
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </Suspense>
         </BrowserRouter>
       </AuthProvider>
     </TooltipProvider>

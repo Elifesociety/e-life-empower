@@ -99,57 +99,34 @@ export function useSuperAdminStats(): SuperAdminStats & {
         
         if (divisionsError) throw divisionsError;
 
-        const divisionData: DivisionInfo[] = [];
-        for (const div of divisions || []) {
-          const { count: programCount } = await supabase
-            .from("programs")
-            .select("*", { count: "exact", head: true })
-            .eq("division_id", div.id);
-          
-          const { count: memberCount } = await supabase
-            .from("members")
-            .select("*", { count: "exact", head: true })
-            .eq("division_id", div.id);
-          
-          divisionData.push({
-            ...div,
-            programCount: programCount || 0,
-            memberCount: memberCount || 0,
-          });
-        }
+        const divisionData: DivisionInfo[] = await Promise.all(
+          (divisions || []).map(async (div) => {
+            const [{ count: programCount }, { count: memberCount }] = await Promise.all([
+              supabase.from("programs").select("id", { count: "exact", head: true }).eq("division_id", div.id),
+              supabase.from("members").select("id", { count: "exact", head: true }).eq("division_id", div.id),
+            ]);
+            return { ...div, programCount: programCount || 0, memberCount: memberCount || 0 };
+          })
+        );
 
-        // Fetch programs
-        const { data: programs, error: programsError } = await supabase
-          .from("programs")
-          .select("id, is_active, name, created_at")
-          .order("created_at", { ascending: false });
-        
+        const [
+          { data: programs, error: programsError },
+          { count: registrationCount, error: regError },
+          { count: memberCount, error: membersError },
+          { data: recentRegs },
+          { data: recentPrograms },
+        ] = await Promise.all([
+          supabase.from("programs").select("id, is_active, name, created_at").order("created_at", { ascending: false }),
+          supabase.from("program_registrations").select("id", { count: "exact", head: true }),
+          supabase.from("members").select("id", { count: "exact", head: true }),
+          supabase.from("program_registrations").select("id, created_at, program:programs(name)").order("created_at", { ascending: false }).limit(5),
+          supabase.from("programs").select("id, name, created_at").order("created_at", { ascending: false }).limit(5),
+        ]);
         if (programsError) throw programsError;
-
-        // Fetch registrations
-        const { count: registrationCount, error: regError } = await supabase
-          .from("program_registrations")
-          .select("*", { count: "exact", head: true });
-        
         if (regError) throw regError;
-
-        // Fetch members
-        const { count: memberCount, error: membersError } = await supabase
-          .from("members")
-          .select("*", { count: "exact", head: true });
-        
         if (membersError) throw membersError;
 
-        // Build recent activity
         const recentActivity: RecentActivity[] = [];
-        
-        // Recent registrations
-        const { data: recentRegs } = await supabase
-          .from("program_registrations")
-          .select("id, created_at, program:programs(name)")
-          .order("created_at", { ascending: false })
-          .limit(5);
-        
         for (const reg of recentRegs || []) {
           recentActivity.push({
             id: reg.id,
@@ -159,13 +136,6 @@ export function useSuperAdminStats(): SuperAdminStats & {
           });
         }
 
-        // Recent programs
-        const { data: recentPrograms } = await supabase
-          .from("programs")
-          .select("id, name, created_at")
-          .order("created_at", { ascending: false })
-          .limit(5);
-        
         for (const prog of recentPrograms || []) {
           recentActivity.push({
             id: prog.id,
