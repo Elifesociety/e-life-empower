@@ -144,6 +144,14 @@ export default function SuperAdminCashCollections() {
     new Set(collections.map(c => (c.panchayath_name || "").trim()).filter(Boolean))
   ).sort((a, b) => a.localeCompare(b));
 
+  // Client-side filtering
+  const filteredCollections = collections.filter(c => {
+    if (filterDivision !== "all" && c.division_id !== filterDivision) return false;
+    if (filterPanchayath !== "all" && (c.panchayath_name || "").trim() !== filterPanchayath) return false;
+    if (searchMobile && !c.mobile.includes(searchMobile) && !c.person_name.toLowerCase().includes(searchMobile.toLowerCase()) && !c.receipt_number?.toLowerCase().includes(searchMobile.toLowerCase())) return false;
+    return true;
+  });
+
   const handleExport = async () => {
     const XLSX = await import("xlsx");
     const fmt = (d: string | null) => (d ? format(new Date(d), "dd MMM yyyy, hh:mm a") : "");
@@ -193,14 +201,6 @@ export default function SuperAdminCashCollections() {
       <Download className="h-4 w-4 mr-1" />Export Excel
     </Button>
   );
-
-  // Client-side filtering
-  const filteredCollections = collections.filter(c => {
-    if (filterDivision !== "all" && c.division_id !== filterDivision) return false;
-    if (filterPanchayath !== "all" && (c.panchayath_name || "").trim() !== filterPanchayath) return false;
-    if (searchMobile && !c.mobile.includes(searchMobile) && !c.person_name.toLowerCase().includes(searchMobile.toLowerCase()) && !c.receipt_number?.toLowerCase().includes(searchMobile.toLowerCase())) return false;
-    return true;
-  });
 
   if (!isSuperAdmin) return <Navigate to="/unauthorized" replace />;
 
