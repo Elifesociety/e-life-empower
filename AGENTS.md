@@ -1,0 +1,1 @@
+- Keep Samrambhaka password changes and recovery inside `samrabhaka-auth`, and administrator resets inside the authenticated Pennyekart agents function, so credential changes remain server-authorized.
