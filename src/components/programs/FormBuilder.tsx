@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { Plus, Trash2, GripVertical, FileText, Loader2 } from "lucide-react";
 import { ProgramFormQuestion } from "@/hooks/usePrograms";
+import { BundleTextField } from "@/lib/bundleText";
 
 interface FormBuilderProps {
   programId: string;
@@ -43,6 +44,7 @@ const QUESTION_TYPES = [
   { value: "radio", label: "Single Choice (Radio)" },
   { value: "checkbox", label: "Multiple Choice (Checkbox)" },
   { value: "multi_text", label: "Multiple Answers (Add More)" },
+  { value: "bundle_text", label: "Bundle Text (Repeatable Section)" },
   { value: "yes_no", label: "Yes / No (with follow-up)" },
 ];
 const typeLabel = (v: string) => QUESTION_TYPES.find((t) => t.value === v)?.label ?? v.replace("_", " ");
@@ -59,6 +61,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   const [options, setOptions] = useState("");
   const [followupType, setFollowupType] = useState<"checkbox" | "radio">("checkbox");
   const [followupRequired, setFollowupRequired] = useState(false);
+  const [bundleFields, setBundleFields] = useState<BundleTextField[]>([]);
 
   const { toast } = useToast();
   const { adminToken } = useAuth();
@@ -72,6 +75,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setOptions("");
     setFollowupType("checkbox");
     setFollowupRequired(false);
+    setBundleFields([]);
     setEditingQuestion(null);
   };
 
@@ -81,6 +85,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setQuestionType(question.question_type);
     setIsRequired(question.is_required);
     const o: any = question.options;
+    setBundleFields(question.question_type === "bundle_text" && Array.isArray(o?.fields) ? o.fields : []);
     if (question.question_type === "yes_no") {
       setOptions((o?.followup_options ?? []).join("\n"));
       setFollowupType(o?.followup_type === "radio" ? "radio" : "checkbox");
@@ -109,7 +114,9 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
         question_text: questionText.trim(),
         question_type: questionType,
         is_required: isRequired,
-        options: questionType === "yes_no"
+        options: questionType === "bundle_text"
+          ? { fields: bundleFields }
+          : questionType === "yes_no"
           ? {
               followup_type: followupType,
               followup_required: followupRequired,
@@ -220,6 +227,13 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   };
 
   const needsOptions = ["select", "radio", "checkbox"].includes(questionType);
+
+  const addBundleField = () => {
+    setBundleFields((fields) => [
+      ...fields,
+      { id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, label: "", type: "text", required: false },
+    ]);
+  };
 
   return (
     <>
@@ -377,6 +391,53 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                     Follow-up required when "Yes"
                   </Label>
                 </div>
+              </div>
+            )}
+
+            {questionType === "bundle_text" && (
+              <div className="space-y-3 rounded-md border p-3 bg-muted/40">
+                <div>
+                  <p className="text-sm font-medium">Fields in each entry</p>
+                  <p className="text-xs text-muted-foreground">People can add another copy of this group while registering.</p>
+                </div>
+                {bundleFields.map((field, index) => (
+                  <div key={field.id} className="space-y-2 rounded-md border bg-background p-3">
+                    <div className="flex gap-2">
+                      <Input
+                        value={field.label}
+                        onChange={(event) => setBundleFields((items) => items.map((item, i) => i === index ? { ...item, label: event.target.value } : item))}
+                        placeholder={`Field ${index + 1} label (e.g. Name)`}
+                        aria-label={`Bundle field ${index + 1} label`}
+                      />
+                      <Button type="button" variant="ghost" size="icon" aria-label={`Remove field ${index + 1}`} onClick={() => setBundleFields((items) => items.filter((_, i) => i !== index))}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <Select
+                        value={field.type}
+                        onValueChange={(type: BundleTextField["type"]) => setBundleFields((items) => items.map((item, i) => i === index ? { ...item, type } : item))}
+                      >
+                        <SelectTrigger className="w-full sm:w-48"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="text">Short text</SelectItem>
+                          <SelectItem value="textarea">Long text</SelectItem>
+                          <SelectItem value="number">Number</SelectItem>
+                          <SelectItem value="email">Email</SelectItem>
+                          <SelectItem value="phone">Phone</SelectItem>
+                          <SelectItem value="date">Date</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <div className="flex items-center gap-2">
+                        <Switch id={`bundle-required-${field.id}`} checked={field.required} onCheckedChange={(required) => setBundleFields((items) => items.map((item, i) => i === index ? { ...item, required } : item))} />
+                        <Label htmlFor={`bundle-required-${field.id}`} className="text-sm">Required in each entry</Label>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Button type="button" variant="outline" size="sm" onClick={addBundleField}>
+                  <Plus className="h-4 w-4 mr-2" /> Add field
+                </Button>
               </div>
             )}
 

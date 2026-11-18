@@ -27,6 +27,7 @@ import { Loader2, Calendar, MapPin, ArrowLeft, Check, Megaphone, Video } from "l
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Program, ProgramFormQuestion, ProgramAnnouncement, ProgramAdvertisement } from "@/hooks/usePrograms";
+import { BundleTextField, validateBundleAnswer } from "@/lib/bundleText";
 import {
   FixedRegistrationFields,
   FixedFieldValues,
@@ -101,6 +102,14 @@ export default function ProgramPublicPage() {
 
     for (const question of sortedQuestions) {
       const answer = answers[question.id];
+      if (question.question_type === "bundle_text") {
+        const fields = ((question.options as any)?.fields || []) as BundleTextField[];
+        if (!validateBundleAnswer(answer, fields, question.is_required)) {
+          toast({ title: "Required field", description: `Complete the required details in: ${question.question_text}`, variant: "destructive" });
+          return;
+        }
+        continue;
+      }
       if (question.question_type === "yes_no") {
         const cfg = (question.options as any) || {};
         const missingMain = question.is_required && !answer?.value;
@@ -336,6 +345,46 @@ export default function ProgramPublicPage() {
               className="w-full"
             >
               + Add Another Answer
+            </Button>
+          </div>
+        );
+      }
+
+      case "bundle_text": {
+        const fields = ((question.options as any)?.fields || []) as BundleTextField[];
+        const entries = Array.isArray(value) && value.length > 0 ? value : [Object.fromEntries(fields.map((field) => [field.id, ""]))];
+        const updateEntry = (entryIndex: number, fieldId: string, fieldValue: string) => {
+          updateAnswer(question.id, entries.map((entry, index) => index === entryIndex ? { ...entry, [fieldId]: fieldValue } : entry));
+        };
+
+        return (
+          <div className="space-y-4">
+            {entries.map((entry: Record<string, string>, entryIndex: number) => (
+              <div key={entryIndex} className="space-y-3 rounded-md border p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-sm font-medium">Entry {entryIndex + 1}</p>
+                  {entries.length > 1 && (
+                    <Button type="button" variant="ghost" size="sm" onClick={() => updateAnswer(question.id, entries.filter((_, index) => index !== entryIndex))}>
+                      Remove
+                    </Button>
+                  )}
+                </div>
+                {fields.map((field) => (
+                  <div key={field.id} className="space-y-1.5">
+                    <Label htmlFor={`${question.id}-${entryIndex}-${field.id}`}>
+                      {field.label}{field.required && <span className="text-destructive ml-1">*</span>}
+                    </Label>
+                    {field.type === "textarea" ? (
+                      <Textarea id={`${question.id}-${entryIndex}-${field.id}`} value={entry?.[field.id] || ""} onChange={(event) => updateEntry(entryIndex, field.id, event.target.value)} />
+                    ) : (
+                      <Input id={`${question.id}-${entryIndex}-${field.id}`} type={field.type === "phone" ? "tel" : field.type} value={entry?.[field.id] || ""} onChange={(event) => updateEntry(entryIndex, field.id, event.target.value)} />
+                    )}
+                  </div>
+                ))}
+              </div>
+            ))}
+            <Button type="button" variant="outline" className="w-full" onClick={() => updateAnswer(question.id, [...entries, Object.fromEntries(fields.map((field) => [field.id, ""]))])}>
+              <span className="mr-2">+</span> Add More
             </Button>
           </div>
         );

@@ -34,6 +34,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { SearchableSelect } from "@/components/ui/searchable-select";
+import { BundleTextField, formatBundleAnswer } from "@/lib/bundleText";
 
 interface RegistrationsTableProps {
   programName: string;
@@ -219,6 +220,10 @@ export function RegistrationsTable({
     const answer = answers[questionId];
 
     if (answer === undefined || answer === null || answer === "") return "-";
+    const question = sortedQuestions.find((item) => item.id === questionId);
+    if (question?.question_type === "bundle_text") {
+      return formatBundleAnswer(answer, (((question.options as any)?.fields || []) as BundleTextField[])) || "-";
+    }
     if (Array.isArray(answer)) return answer.join(", ");
     if (typeof answer === "object" && "value" in answer) {
       const f = Array.isArray(answer.followup) && answer.followup.length ? ` — ${answer.followup.join(", ")}` : "";

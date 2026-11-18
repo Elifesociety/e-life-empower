@@ -18,6 +18,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Star, CheckCircle2, User } from "lucide-react";
 import { format } from "date-fns";
+import { BundleTextField, formatBundleAnswer } from "@/lib/bundleText";
 
 interface RegistrationVerificationProps {
   registration: ProgramRegistration | null;
@@ -71,6 +72,10 @@ export function RegistrationVerification({
     const answers = registration.answers as Record<string, any>;
     const answer = answers[questionId];
     if (answer === undefined || answer === null || answer === "") return "-";
+    const question = questions.find((item) => item.id === questionId);
+    if (question?.question_type === "bundle_text") {
+      return formatBundleAnswer(answer, (((question.options as any)?.fields || []) as BundleTextField[])) || "-";
+    }
     if (Array.isArray(answer)) return answer.join(", ");
     if (typeof answer === "object" && "value" in answer) {
       const f = Array.isArray(answer.followup) && answer.followup.length ? ` — ${answer.followup.join(", ")}` : "";

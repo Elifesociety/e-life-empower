@@ -1,4 +1,5 @@
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
+import { BundleTextField, formatBundleAnswer } from "@/lib/bundleText";
 
 export interface ExportColumn {
   header: string;
@@ -48,7 +49,9 @@ export async function exportRegistrationsToXlsx(
 
     sortedQuestions.forEach((question) => {
       const answer = answers[question.id];
-      if (Array.isArray(answer)) {
+      if (question.question_type === "bundle_text") {
+        row.push(formatBundleAnswer(answer, (((question.options as any)?.fields || []) as BundleTextField[])));
+      } else if (Array.isArray(answer)) {
         row.push(answer.join(", "));
       } else {
         row.push(answer || "");

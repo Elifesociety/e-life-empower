@@ -1,1 +1,2 @@
 - Keep Samrambhaka password changes and recovery inside `samrabhaka-auth`, and administrator resets inside the authenticated Pennyekart agents function, so credential changes remain server-authorized.
+- Bundle-text program questions store field definitions in question options and responses as arrays of objects, enabling repeatable grouped entries without a separate table.
