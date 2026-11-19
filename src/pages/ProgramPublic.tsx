@@ -27,7 +27,7 @@ import { Loader2, Calendar, MapPin, ArrowLeft, Check, Megaphone, Video } from "l
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Program, ProgramFormQuestion, ProgramAnnouncement, ProgramAdvertisement } from "@/hooks/usePrograms";
-import { BundleTextField, validateBundleAnswer } from "@/lib/bundleText";
+import { BundleTextField, getBundleFieldInitialValue, validateBundleAnswer } from "@/lib/bundleText";
 import {
   FixedRegistrationFields,
   FixedFieldValues,
@@ -352,7 +352,8 @@ export default function ProgramPublicPage() {
 
       case "bundle_text": {
         const fields = ((question.options as any)?.fields || []) as BundleTextField[];
-        const entries = Array.isArray(value) && value.length > 0 ? value : [Object.fromEntries(fields.map((field) => [field.id, ""]))];
+        const createEntry = () => Object.fromEntries(fields.map((field) => [field.id, getBundleFieldInitialValue(field)]));
+        const entries = Array.isArray(value) && value.length > 0 ? value : [createEntry()];
         const updateEntry = (entryIndex: number, fieldId: string, fieldValue: string) => {
           updateAnswer(question.id, entries.map((entry, index) => index === entryIndex ? { ...entry, [fieldId]: fieldValue } : entry));
         };
@@ -369,21 +370,128 @@ export default function ProgramPublicPage() {
                     </Button>
                   )}
                 </div>
-                {fields.map((field) => (
-                  <div key={field.id} className="space-y-1.5">
-                    <Label htmlFor={`${question.id}-${entryIndex}-${field.id}`}>
-                      {field.label}{field.required && <span className="text-destructive ml-1">*</span>}
-                    </Label>
-                    {field.type === "textarea" ? (
-                      <Textarea id={`${question.id}-${entryIndex}-${field.id}`} value={entry?.[field.id] || ""} onChange={(event) => updateEntry(entryIndex, field.id, event.target.value)} />
-                    ) : (
-                      <Input id={`${question.id}-${entryIndex}-${field.id}`} type={field.type === "phone" ? "tel" : field.type} value={entry?.[field.id] || ""} onChange={(event) => updateEntry(entryIndex, field.id, event.target.value)} />
-                    )}
-                  </div>
-                ))}
+                {fields.map((field) => {
+                  const inputId = `${question.id}-${entryIndex}-${field.id}`;
+                  const fieldValue = entry?.[field.id];
+                  const fieldOptions = field.options || [];
+                  const yesNoAnswer = fieldValue as { value?: string; followup?: string[] } | undefined;
+                  const followupValues = yesNoAnswer?.followup || [];
+
+                  return (
+                    <div key={field.id} className="space-y-1.5">
+                      <Label htmlFor={inputId}>
+                        {field.label}{field.required && <span className="text-destructive ml-1">*</span>}
+                      </Label>
+                      {field.type === "textarea" ? (
+                        <Textarea id={inputId} value={String(fieldValue || "")} onChange={(event) => updateEntry(entryIndex, field.id, event.target.value)} />
+                      ) : field.type === "select" ? (
+                        <Select value={String(fieldValue || "")} onValueChange={(nextValue) => updateEntry(entryIndex, field.id, nextValue)}>
+                          <SelectTrigger id={inputId}><SelectValue placeholder="Select an option" /></SelectTrigger>
+                          <SelectContent>{fieldOptions.map((option, optionIndex) => <SelectItem key={optionIndex} value={option}>{option}</SelectItem>)}</SelectContent>
+                        </Select>
+                      ) : field.type === "radio" ? (
+                        <RadioGroup value={String(fieldValue || "")} onValueChange={(nextValue) => updateEntry(entryIndex, field.id, nextValue)} className="space-y-2">
+                          {fieldOptions.map((option, optionIndex) => (
+                            <div key={optionIndex} className="flex items-center gap-2">
+                              <RadioGroupItem value={option} id={`${inputId}-${optionIndex}`} />
+                              <Label htmlFor={`${inputId}-${optionIndex}`}>{option}</Label>
+                            </div>
+                          ))}
+                        </RadioGroup>
+                      ) : field.type === "checkbox" ? (
+                        <div className="space-y-2">
+                          {fieldOptions.map((option, optionIndex) => {
+                            const selected = Array.isArray(fieldValue) ? fieldValue as string[] : [];
+                            const optionId = `${inputId}-${optionIndex}`;
+                            return (
+                              <div key={optionIndex} className="flex items-center gap-2">
+                                <Checkbox
+                                  id={optionId}
+                                  checked={selected.includes(option)}
+                                  onCheckedChange={(checked) => updateEntry(entryIndex, field.id, checked ? [...selected, option] : selected.filter((item) => item !== option))}
+                                />
+                                <Label htmlFor={optionId}>{option}</Label>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      ) : field.type === "multi_text" ? (
+                        <div className="space-y-2">
+                          {(Array.isArray(fieldValue) && fieldValue.length > 0 ? fieldValue as string[] : [""]).map((textValue, textIndex, values) => (
+                            <div key={textIndex} className="flex items-center gap-2">
+                              <Input
+                                value={textValue}
+                                placeholder={`Answer ${textIndex + 1}`}
+                                onChange={(event) => updateEntry(entryIndex, field.id, values.map((item, index) => index === textIndex ? event.target.value : item))}
+                              />
+                              {values.length > 1 && (
+                                <Button type="button" variant="ghost" size="icon" aria-label={`Remove answer ${textIndex + 1}`} onClick={() => updateEntry(entryIndex, field.id, values.filter((_, index) => index !== textIndex))}>×</Button>
+                              )}
+                            </div>
+                          ))}
+                          <Button type="button" variant="outline" size="sm" onClick={() => updateEntry(entryIndex, field.id, [...(Array.isArray(fieldValue) ? fieldValue as string[] : []), ""])}>+ Add Another Answer</Button>
+                        </div>
+                      ) : field.type === "yes_no" ? (
+                        <div className="space-y-2">
+                          <div className="grid grid-cols-2 gap-2">
+                            {(["yes", "no"] as const).map((choice) => (
+                              <Button
+                                key={choice}
+                                type="button"
+                                variant={yesNoAnswer?.value === choice ? "default" : "outline"}
+                                onClick={() => updateEntry(entryIndex, field.id, { value: choice, followup: choice === "yes" ? followupValues : [] } as unknown as string)}
+                              >
+                                {choice === "yes" ? "Yes / അതെ" : "No / ഇല്ല"}
+                              </Button>
+                            ))}
+                          </div>
+                          {yesNoAnswer?.value === "yes" && (field.followupOptions?.length ?? 0) > 0 && (
+                            field.followupType === "radio" ? (
+                              <RadioGroup
+                                value={followupValues[0] || ""}
+                                onValueChange={(choice) => updateEntry(entryIndex, field.id, { value: "yes", followup: [choice] } as unknown as string)}
+                                className="space-y-2 rounded-md border p-3"
+                              >
+                                {field.followupOptions?.map((option, optionIndex) => (
+                                  <div key={optionIndex} className="flex items-center gap-2">
+                                    <RadioGroupItem value={option} id={`${inputId}-followup-${optionIndex}`} />
+                                    <Label htmlFor={`${inputId}-followup-${optionIndex}`}>{option}</Label>
+                                  </div>
+                                ))}
+                              </RadioGroup>
+                            ) : (
+                              <div className="space-y-2 rounded-md border p-3">
+                                {field.followupOptions?.map((option, optionIndex) => {
+                                  const optionId = `${inputId}-followup-${optionIndex}`;
+                                  return (
+                                    <div key={optionIndex} className="flex items-center gap-2">
+                                      <Checkbox
+                                        id={optionId}
+                                        checked={followupValues.includes(option)}
+                                        onCheckedChange={(checked) => updateEntry(entryIndex, field.id, { value: "yes", followup: checked ? [...followupValues, option] : followupValues.filter((item) => item !== option) } as unknown as string)}
+                                      />
+                                      <Label htmlFor={optionId}>{option}</Label>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )
+                          )}
+                        </div>
+                      ) : (
+                        <Input
+                          id={inputId}
+                          type={field.type === "phone" ? "tel" : field.type}
+                          value={String(fieldValue || "")}
+                          onChange={(event) => updateEntry(entryIndex, field.id, event.target.value)}
+                        />
+                      )}
+                    </div>
+                  );
+                })}
               </div>
             ))}
-            <Button type="button" variant="outline" className="w-full" onClick={() => updateAnswer(question.id, [...entries, Object.fromEntries(fields.map((field) => [field.id, ""]))])}>
+            <Button type="button" variant="outline" className="w-full" onClick={() => updateAnswer(question.id, [...entries, createEntry()])}>
               <span className="mr-2">+</span> Add More
             </Button>
           </div>

@@ -85,7 +85,13 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setQuestionType(question.question_type);
     setIsRequired(question.is_required);
     const o: any = question.options;
-    setBundleFields(question.question_type === "bundle_text" && Array.isArray(o?.fields) ? o.fields : []);
+    setBundleFields(question.question_type === "bundle_text" && Array.isArray(o?.fields)
+      ? o.fields.map((field: BundleTextField) => ({
+          ...field,
+          options: Array.isArray(field.options) ? field.options : [],
+          followupOptions: Array.isArray(field.followupOptions) ? field.followupOptions : [],
+        }))
+      : []);
     if (question.question_type === "yes_no") {
       setOptions((o?.followup_options ?? []).join("\n"));
       setFollowupType(o?.followup_type === "radio" ? "radio" : "checkbox");
@@ -231,8 +237,12 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   const addBundleField = () => {
     setBundleFields((fields) => [
       ...fields,
-      { id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, label: "", type: "text", required: false },
+      { id: `field_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`, label: "", type: "text", required: false, options: [], followupOptions: [] },
     ]);
+  };
+
+  const updateBundleField = (index: number, updates: Partial<BundleTextField>) => {
+    setBundleFields((fields) => fields.map((field, i) => i === index ? { ...field, ...updates } : field));
   };
 
   return (
@@ -405,7 +415,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                     <div className="flex gap-2">
                       <Input
                         value={field.label}
-                        onChange={(event) => setBundleFields((items) => items.map((item, i) => i === index ? { ...item, label: event.target.value } : item))}
+                        onChange={(event) => updateBundleField(index, { label: event.target.value })}
                         placeholder={`Field ${index + 1} label (e.g. Name)`}
                         aria-label={`Bundle field ${index + 1} label`}
                       />
@@ -416,7 +426,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                     <div className="flex flex-wrap items-center justify-between gap-3">
                       <Select
                         value={field.type}
-                        onValueChange={(type: BundleTextField["type"]) => setBundleFields((items) => items.map((item, i) => i === index ? { ...item, type } : item))}
+                        onValueChange={(type: BundleTextField["type"]) => updateBundleField(index, { type })}
                       >
                         <SelectTrigger className="w-full sm:w-48"><SelectValue /></SelectTrigger>
                         <SelectContent>
@@ -426,10 +436,59 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                           <SelectItem value="email">Email</SelectItem>
                           <SelectItem value="phone">Phone</SelectItem>
                           <SelectItem value="date">Date</SelectItem>
+                          <SelectItem value="select">Dropdown</SelectItem>
+                          <SelectItem value="radio">Single choice (radio)</SelectItem>
+                          <SelectItem value="checkbox">Multiple choice (checkbox)</SelectItem>
+                          <SelectItem value="multi_text">Multiple answers (Add More)</SelectItem>
+                          <SelectItem value="yes_no">Yes / No (with follow-up)</SelectItem>
                         </SelectContent>
                       </Select>
+                      {["select", "radio", "checkbox"].includes(field.type) && (
+                        <div className="w-full space-y-2">
+                          <Label htmlFor={`bundle-options-${field.id}`} className="text-xs">Options (one per line)</Label>
+                          <Textarea
+                            id={`bundle-options-${field.id}`}
+                            value={(field.options || []).join("\n")}
+                            onChange={(event) => updateBundleField(index, { options: event.target.value.split("\n").map((option) => option.trim()).filter(Boolean) })}
+                            placeholder="Option 1\nOption 2"
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                      {field.type === "yes_no" && (
+                        <div className="w-full space-y-3 rounded-md border p-3">
+                          <div className="space-y-2">
+                            <Label htmlFor={`bundle-followup-options-${field.id}`} className="text-xs">Options shown when Yes (one per line, optional)</Label>
+                            <Textarea
+                              id={`bundle-followup-options-${field.id}`}
+                              value={(field.followupOptions || []).join("\n")}
+                              onChange={(event) => updateBundleField(index, { followupOptions: event.target.value.split("\n").map((option) => option.trim()).filter(Boolean) })}
+                              placeholder="Option 1\nOption 2"
+                              rows={3}
+                            />
+                          </div>
+                          <Select
+                            value={field.followupType || "checkbox"}
+                            onValueChange={(value: "checkbox" | "radio") => updateBundleField(index, { followupType: value })}
+                          >
+                            <SelectTrigger><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="checkbox">Multiple choice</SelectItem>
+                              <SelectItem value="radio">Single choice</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              id={`bundle-followup-required-${field.id}`}
+                              checked={!!field.followupRequired}
+                              onCheckedChange={(followupRequired) => updateBundleField(index, { followupRequired })}
+                            />
+                            <Label htmlFor={`bundle-followup-required-${field.id}`} className="text-sm">Require a follow-up when Yes</Label>
+                          </div>
+                        </div>
+                      )}
                       <div className="flex items-center gap-2">
-                        <Switch id={`bundle-required-${field.id}`} checked={field.required} onCheckedChange={(required) => setBundleFields((items) => items.map((item, i) => i === index ? { ...item, required } : item))} />
+                        <Switch id={`bundle-required-${field.id}`} checked={field.required} onCheckedChange={(required) => updateBundleField(index, { required })} />
                         <Label htmlFor={`bundle-required-${field.id}`} className="text-sm">Required in each entry</Label>
                       </div>
                     </div>
