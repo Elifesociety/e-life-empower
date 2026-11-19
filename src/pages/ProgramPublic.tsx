@@ -354,7 +354,7 @@ export default function ProgramPublicPage() {
         const fields = ((question.options as any)?.fields || []) as BundleTextField[];
         const createEntry = () => Object.fromEntries(fields.map((field) => [field.id, getBundleFieldInitialValue(field)]));
         const entries = Array.isArray(value) && value.length > 0 ? value : [createEntry()];
-        const updateEntry = (entryIndex: number, fieldId: string, fieldValue: string) => {
+        const updateEntry = (entryIndex: number, fieldId: string, fieldValue: unknown) => {
           updateAnswer(question.id, entries.map((entry, index) => index === entryIndex ? { ...entry, [fieldId]: fieldValue } : entry));
         };
 
