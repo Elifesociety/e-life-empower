@@ -121,7 +121,13 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
         question_type: questionType,
         is_required: isRequired,
         options: questionType === "bundle_text"
-          ? { fields: bundleFields }
+          ? {
+              fields: bundleFields.map((field) => ({
+                ...field,
+                options: (field.options || []).map((o) => o.trim()).filter(Boolean),
+                followupOptions: (field.followupOptions || []).map((o) => o.trim()).filter(Boolean),
+              })),
+            }
           : questionType === "yes_no"
           ? {
               followup_type: followupType,
@@ -449,7 +455,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                           <Textarea
                             id={`bundle-options-${field.id}`}
                             value={(field.options || []).join("\n")}
-                            onChange={(event) => updateBundleField(index, { options: event.target.value.split("\n").map((option) => option.trim()).filter(Boolean) })}
+                            onChange={(event) => updateBundleField(index, { options: event.target.value.split("\n") })}
                             placeholder="Option 1\nOption 2"
                             rows={3}
                           />
@@ -462,7 +468,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
                             <Textarea
                               id={`bundle-followup-options-${field.id}`}
                               value={(field.followupOptions || []).join("\n")}
-                              onChange={(event) => updateBundleField(index, { followupOptions: event.target.value.split("\n").map((option) => option.trim()).filter(Boolean) })}
+                              onChange={(event) => updateBundleField(index, { followupOptions: event.target.value.split("\n") })}
                               placeholder="Option 1\nOption 2"
                               rows={3}
                             />
