@@ -28,6 +28,8 @@ import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
 import { Program, ProgramFormQuestion, ProgramAnnouncement, ProgramAdvertisement } from "@/hooks/usePrograms";
 import { BundleTextField, getBundleFieldInitialValue, validateBundleAnswer } from "@/lib/bundleText";
+import { FollowupInput } from "@/components/programs/FollowupInput";
+import { isYesNoValid, normalizeFollowupType } from "@/lib/yesNoFollowup";
 import {
   FixedRegistrationFields,
   FixedFieldValues,
@@ -112,12 +114,13 @@ export default function ProgramPublicPage() {
       }
       if (question.question_type === "yes_no") {
         const cfg = (question.options as any) || {};
-        const missingMain = question.is_required && !answer?.value;
-        const missingFollow =
-          answer?.value === "yes" && cfg.followup_required &&
-          (cfg.followup_options?.length ?? 0) > 0 && !(answer.followup?.length > 0);
-        if (missingMain || missingFollow) {
-          toast({ title: "Required field", description: `Please fill in: ${question.question_text}`, variant: "destructive" });
+        const valid = isYesNoValid(answer, {
+          type: normalizeFollowupType(cfg.followup_type),
+          required: !!cfg.followup_required,
+          options: Array.isArray(cfg.followup_options) ? cfg.followup_options : [],
+        }, question.is_required);
+        if (!valid) {
+          toast({ title: "Required field", description: `Please complete the answer for: ${question.question_text}`, variant: "destructive" });
           return;
         }
         continue;
@@ -502,7 +505,8 @@ export default function ProgramPublicPage() {
         const cfg = (question.options as any) || {};
         const fOpts: string[] = Array.isArray(cfg.followup_options) ? cfg.followup_options : [];
         const cur = (value as { value?: string; followup?: string[] }) || {};
-        const picked = cur.followup || [];
+        const picked = Array.isArray(cur.followup) ? cur.followup : [];
+        const followupType = normalizeFollowupType(cfg.followup_type);
         return (
           <div className="space-y-3">
             <div className="grid grid-cols-2 gap-2">
@@ -517,39 +521,15 @@ export default function ProgramPublicPage() {
                 </Button>
               ))}
             </div>
-            {cur.value === "yes" && fOpts.length > 0 && (
-              <div className="rounded-md border bg-muted/40 p-3 space-y-2">
-                {cfg.followup_type === "radio" ? (
-                  <RadioGroup
-                    value={picked[0] || ""}
-                    onValueChange={(o) => updateAnswer(question.id, { value: "yes", followup: [o] })}
-                    className="space-y-2"
-                  >
-                    {fOpts.map((o, i) => (
-                      <div key={i} className="flex items-center gap-2">
-                        <RadioGroupItem value={o} id={`${question.id}-f${i}`} />
-                        <Label htmlFor={`${question.id}-f${i}`}>{o}</Label>
-                      </div>
-                    ))}
-                  </RadioGroup>
-                ) : (
-                  fOpts.map((o, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`${question.id}-f${i}`}
-                        checked={picked.includes(o)}
-                        onCheckedChange={(c) =>
-                          updateAnswer(question.id, {
-                            value: "yes",
-                            followup: c ? [...picked, o] : picked.filter((x) => x !== o),
-                          })
-                        }
-                      />
-                      <Label htmlFor={`${question.id}-f${i}`}>{o}</Label>
-                    </div>
-                  ))
-                )}
-              </div>
+            {cur.value === "yes" && (cfg.followup_question || cfg.followup_required || fOpts.length > 0) && (
+              <FollowupInput
+                id={`${question.id}-followup`}
+                type={followupType}
+                options={fOpts}
+                label={cfg.followup_question || "Additional details"}
+                value={picked}
+                onChange={(followup) => updateAnswer(question.id, { value: "yes", followup })}
+              />
             )}
           </div>
         );

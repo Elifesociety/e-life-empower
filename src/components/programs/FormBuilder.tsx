@@ -26,6 +26,7 @@ import {
 import { Plus, Trash2, GripVertical, FileText, Loader2 } from "lucide-react";
 import { ProgramFormQuestion } from "@/hooks/usePrograms";
 import { BundleTextField } from "@/lib/bundleText";
+import { FOLLOWUP_CHOICE_TYPES, FOLLOWUP_TYPES, FollowupType, normalizeFollowupType } from "@/lib/yesNoFollowup";
 
 interface FormBuilderProps {
   programId: string;
@@ -59,8 +60,9 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   const [questionType, setQuestionType] = useState("text");
   const [isRequired, setIsRequired] = useState(false);
   const [options, setOptions] = useState("");
-  const [followupType, setFollowupType] = useState<"checkbox" | "radio">("checkbox");
+  const [followupType, setFollowupType] = useState<FollowupType>("checkbox");
   const [followupRequired, setFollowupRequired] = useState(false);
+  const [followupPrompt, setFollowupPrompt] = useState("");
   const [bundleFields, setBundleFields] = useState<BundleTextField[]>([]);
 
   const { toast } = useToast();
@@ -75,6 +77,7 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
     setOptions("");
     setFollowupType("checkbox");
     setFollowupRequired(false);
+    setFollowupPrompt("");
     setBundleFields([]);
     setEditingQuestion(null);
   };
@@ -93,9 +96,10 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
         }))
       : []);
     if (question.question_type === "yes_no") {
-      setOptions((o?.followup_options ?? []).join("\n"));
-      setFollowupType(o?.followup_type === "radio" ? "radio" : "checkbox");
+      setOptions((Array.isArray(o?.followup_options) ? o.followup_options : []).join("\n"));
+      setFollowupType(normalizeFollowupType(o?.followup_type));
       setFollowupRequired(!!o?.followup_required);
+      setFollowupPrompt(typeof o?.followup_question === "string" ? o.followup_question : "");
     } else {
       setOptions(Array.isArray(o) ? o.join("\n") : "");
     }
@@ -109,6 +113,12 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
         description: "Question text is required",
         variant: "destructive",
       });
+      return;
+    }
+
+    const followupOptions = options.split("\n").map((option) => option.trim()).filter(Boolean);
+    if (questionType === "yes_no" && followupRequired && FOLLOWUP_CHOICE_TYPES.includes(followupType) && followupOptions.length === 0) {
+      toast({ title: "Add follow-up options", description: "Enter at least one option or turn off the required follow-up.", variant: "destructive" });
       return;
     }
 
@@ -132,7 +142,8 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
           ? {
               followup_type: followupType,
               followup_required: followupRequired,
-              followup_options: options.split("\n").map((o) => o.trim()).filter(Boolean),
+              followup_question: followupPrompt.trim(),
+              followup_options: FOLLOWUP_CHOICE_TYPES.includes(followupType) ? followupOptions : [],
             }
           : ["select", "radio", "checkbox"].includes(questionType) && options.trim()
             ? options
@@ -380,27 +391,37 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
 
             {questionType === "yes_no" && (
               <div className="space-y-3 rounded-md border p-3 bg-muted/40">
-                <Label htmlFor="followup" className="text-sm font-medium">
-                  Options shown when "Yes" is selected (one per line, optional)
-                </Label>
-                <Textarea
-                  id="followup"
-                  value={options}
-                  onChange={(e) => setOptions(e.target.value)}
-                  placeholder="Option 1&#10;Option 2"
-                  rows={4}
-                  className="text-base resize-none"
-                />
+                <div className="space-y-2">
+                  <Label htmlFor="followup-question" className="text-sm font-medium">Follow-up question shown after “Yes”</Label>
+                  <Input
+                    id="followup-question"
+                    value={followupPrompt}
+                    onChange={(e) => setFollowupPrompt(e.target.value)}
+                    placeholder="What details would you like to collect?"
+                  />
+                </div>
                 <div className="space-y-2">
                   <Label className="text-sm font-medium">Follow-up answer type</Label>
-                  <Select value={followupType} onValueChange={(v) => setFollowupType(v as "checkbox" | "radio")}>
+                  <Select value={followupType} onValueChange={(v) => setFollowupType(normalizeFollowupType(v))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="checkbox">Multiple choice (checkbox)</SelectItem>
-                      <SelectItem value="radio">Single choice (radio)</SelectItem>
+                      {FOLLOWUP_TYPES.map((type) => <SelectItem key={type.value} value={type.value}>{type.label}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </div>
+                {FOLLOWUP_CHOICE_TYPES.includes(followupType) && (
+                  <div className="space-y-2">
+                    <Label htmlFor="followup-options" className="text-sm font-medium">Answer options (one per line)</Label>
+                    <Textarea
+                      id="followup-options"
+                      value={options}
+                      onChange={(e) => setOptions(e.target.value)}
+                      placeholder="Option 1&#10;Option 2"
+                      rows={4}
+                      className="text-base resize-none"
+                    />
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
                   <Switch id="followupRequired" checked={followupRequired} onCheckedChange={setFollowupRequired} />
                   <Label htmlFor="followupRequired" className="text-sm cursor-pointer">

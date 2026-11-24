@@ -19,6 +19,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { Loader2, Star, CheckCircle2, User } from "lucide-react";
 import { format } from "date-fns";
 import { BundleTextField, formatBundleAnswer } from "@/lib/bundleText";
+import { formatYesNoAnswer } from "@/lib/yesNoFollowup";
 
 interface RegistrationVerificationProps {
   registration: ProgramRegistration | null;
@@ -76,11 +77,10 @@ export function RegistrationVerification({
     if (question?.question_type === "bundle_text") {
       return formatBundleAnswer(answer, (((question.options as any)?.fields || []) as BundleTextField[])) || "-";
     }
-    if (Array.isArray(answer)) return answer.join(", ");
-    if (typeof answer === "object" && "value" in answer) {
-      const f = Array.isArray(answer.followup) && answer.followup.length ? ` — ${answer.followup.join(", ")}` : "";
-      return answer.value === "yes" ? `Yes${f}` : answer.value === "no" ? "No" : "-";
+    if (question?.question_type === "yes_no") {
+      return formatYesNoAnswer(answer, (question.options as any)?.followup_question) || "-";
     }
+    if (Array.isArray(answer)) return answer.join(", ");
     if (typeof answer === "string" && /^\d{4}-\d{2}-\d{2}$/.test(answer)) return new Date(answer).toLocaleDateString("en-IN");
     return String(answer);
   };

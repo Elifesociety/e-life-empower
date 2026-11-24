@@ -1,5 +1,6 @@
 import { ProgramFormQuestion, ProgramRegistration } from "@/hooks/usePrograms";
 import { BundleTextField, formatBundleAnswer } from "@/lib/bundleText";
+import { formatYesNoAnswer } from "@/lib/yesNoFollowup";
 
 export interface ExportColumn {
   header: string;
@@ -51,6 +52,8 @@ export async function exportRegistrationsToXlsx(
       const answer = answers[question.id];
       if (question.question_type === "bundle_text") {
         row.push(formatBundleAnswer(answer, (((question.options as any)?.fields || []) as BundleTextField[])));
+      } else if (question.question_type === "yes_no") {
+        row.push(formatYesNoAnswer(answer, (question.options as any)?.followup_question));
       } else if (Array.isArray(answer)) {
         row.push(answer.join(", "));
       } else {
