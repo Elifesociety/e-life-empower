@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/useAuth";
@@ -23,10 +23,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Plus, Trash2, GripVertical, FileText, Loader2 } from "lucide-react";
+import { Plus, Trash2, GripVertical, FileText, Loader2, ArrowDown, ArrowUp } from "lucide-react";
 import { ProgramFormQuestion } from "@/hooks/usePrograms";
 import { BundleTextField } from "@/lib/bundleText";
 import { FOLLOWUP_CHOICE_TYPES, FOLLOWUP_TYPES, FollowupType, normalizeFollowupType } from "@/lib/yesNoFollowup";
+import { moveQuestion } from "@/lib/formQuestionOrder";
 
 interface FormBuilderProps {
   programId: string;
@@ -53,6 +54,9 @@ const typeLabel = (v: string) => QUESTION_TYPES.find((t) => t.value === v)?.labe
 export function FormBuilder({ programId, questions, onQuestionsChange }: FormBuilderProps) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isReordering, setIsReordering] = useState(false);
+  const [draggedQuestionId, setDraggedQuestionId] = useState<string | null>(null);
+  const [localQuestions, setLocalQuestions] = useState(questions);
   const [editingQuestion, setEditingQuestion] = useState<ProgramFormQuestion | null>(null);
 
   // Form state
@@ -68,7 +72,65 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
   const { toast } = useToast();
   const { adminToken } = useAuth();
 
-  const sortedQuestions = [...questions].sort((a, b) => a.sort_order - b.sort_order);
+  useEffect(() => {
+    setLocalQuestions(questions);
+  }, [questions]);
+
+  const sortedQuestions = [...localQuestions].sort((a, b) => a.sort_order - b.sort_order);
+
+  const handleReorder = async (sourceId: string, targetIndex: number) => {
+    if (isReordering) return;
+
+    const currentOrder = [...localQuestions].sort((a, b) => a.sort_order - b.sort_order);
+    const sourceIndex = currentOrder.findIndex((question) => question.id === sourceId);
+    const reorderedQuestions = moveQuestion(currentOrder, sourceIndex, targetIndex);
+    if (reorderedQuestions === currentOrder) return;
+
+    setLocalQuestions(reorderedQuestions);
+    setIsReordering(true);
+
+    try {
+      const results = await Promise.allSettled(
+        reorderedQuestions.map(async (question) => {
+          if (adminToken) {
+            const response = await supabase.functions.invoke("admin-form-questions", {
+              body: { action: "update", data: { id: question.id, sort_order: question.sort_order } },
+              headers: { "x-admin-token": adminToken },
+            });
+
+            if (response.error) throw new Error(response.error.message || "API call failed");
+            const result = response.data as { error?: string } | null;
+            if (result?.error) throw new Error(result.error);
+            return;
+          }
+
+          const { error } = await supabase
+            .from("program_form_questions")
+            .update({ sort_order: question.sort_order })
+            .eq("id", question.id)
+            .eq("program_id", programId);
+          if (error) throw error;
+        }),
+      );
+
+      const failedResult = results.find((result) => result.status === "rejected");
+      if (failedResult?.status === "rejected") throw failedResult.reason;
+
+      toast({ title: "Question order saved", description: "The registration form order has been updated." });
+      onQuestionsChange();
+    } catch (err) {
+      setLocalQuestions(currentOrder);
+      onQuestionsChange();
+      toast({
+        title: "Could not save order",
+        description: err instanceof Error ? err.message : "Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsReordering(false);
+      setDraggedQuestionId(null);
+    }
+  };
 
   const resetForm = () => {
     setQuestionText("");
@@ -294,9 +356,61 @@ export function FormBuilder({ programId, questions, onQuestionsChange }: FormBui
               {sortedQuestions.map((question, index) => (
                 <div
                   key={question.id}
-                  className="flex items-center gap-3 p-3 border rounded-lg bg-muted/50"
+                  className={`flex items-center gap-2 sm:gap-3 p-3 border rounded-lg bg-muted/50 ${draggedQuestionId === question.id ? "opacity-50" : ""}`}
+                  onDragOver={(event) => {
+                    if (draggedQuestionId && !isReordering) event.preventDefault();
+                  }}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const sourceId = event.dataTransfer.getData("text/plain") || draggedQuestionId;
+                    if (sourceId && sourceId !== question.id) void handleReorder(sourceId, index);
+                    setDraggedQuestionId(null);
+                  }}
                 >
-                  <GripVertical className="h-4 w-4 text-muted-foreground cursor-move" />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 shrink-0 cursor-grab active:cursor-grabbing"
+                    aria-label={`Drag ${question.question_text} to reorder`}
+                    title="Drag to reorder"
+                    draggable={!isReordering}
+                    disabled={isReordering}
+                    onDragStart={(event) => {
+                      setDraggedQuestionId(question.id);
+                      event.dataTransfer.effectAllowed = "move";
+                      event.dataTransfer.setData("text/plain", question.id);
+                    }}
+                    onDragEnd={() => setDraggedQuestionId(null)}
+                  >
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </Button>
+                  <div className="flex shrink-0 flex-col">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={`Move ${question.question_text} up`}
+                      title="Move up"
+                      disabled={isReordering || index === 0}
+                      onClick={() => void handleReorder(question.id, index - 1)}
+                    >
+                      <ArrowUp className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      aria-label={`Move ${question.question_text} down`}
+                      title="Move down"
+                      disabled={isReordering || index === sortedQuestions.length - 1}
+                      onClick={() => void handleReorder(question.id, index + 1)}
+                    >
+                      <ArrowDown className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <span className="font-medium">{question.question_text}</span>
